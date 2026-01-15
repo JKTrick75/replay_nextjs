@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${roboto.className} antialiased bg-white-off dark:bg-gray-900 text-dark dark:text-white-off flex flex-col min-h-screen transition-colors duration-300`}>
+      <body className={`${roboto.className} antialiased bg-white-off dark:bg-neutral-950 text-dark dark:text-white-off flex flex-col min-h-screen transition-colors duration-300`}>
         <Providers>
           <Navbar />
           <main className="grow">
