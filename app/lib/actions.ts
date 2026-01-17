@@ -1,6 +1,6 @@
 'use server';
  
-import { signIn } from '@/auth';
+import { signIn,signOut } from '@/auth';
 import { AuthError } from 'next-auth';
 import { z } from 'zod';
 import connectDB from '@/app/lib/db';
@@ -85,7 +85,7 @@ export async function register(prevState: State, formData: FormData) {
       name,
       email,
       password: hashedPassword,
-      image: `https://ui-avatars.com/api/?name=${name}&background=random`,
+      image: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${email}`,
       role: 'user'
     });
 
@@ -96,4 +96,9 @@ export async function register(prevState: State, formData: FormData) {
   }
 
   redirect('/login');
+}
+
+// --- 3. ACCIÓN DE CERRAR SESIÓN (LOGOUT) ---
+export async function logout() {
+  await signOut({ redirectTo: '/' });
 }
