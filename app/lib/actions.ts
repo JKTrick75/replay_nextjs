@@ -1,125 +1,37 @@
 'use server';
-
-import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import postgres from 'postgres';
+ 
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import { z } from 'zod';
+import connectDB from '@/app/lib/db';
+import { User } from '@/app/lib/models';
+import bcrypt from 'bcryptjs';
+import { redirect } from 'next/navigation';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
-
-const FormSchema = z.object({
-  id: z.string(),
-  customerId: z.string({
-    invalid_type_error: 'Please select a customer.',
-  }),
-  amount: z.coerce
-    .number()
-    .gt(0, { message: 'Please enter an amount greater than $0.' }),
-  status: z.enum(['pending', 'paid'], {
-    invalid_type_error: 'Please select an invoice status.',
-  }),
-  date: z.string(),
-});
-
-const CreateInvoice = FormSchema.omit({ id: true, date: true });
-const UpdateInvoice = FormSchema.omit({ id: true, date: true });
-
+// --- DEFINICIÓN DE TIPOS ---
 export type State = {
   errors?: {
-    customerId?: string[];
-    amount?: string[];
-    status?: string[];
+    name?: string[];
+    email?: string[];
+    password?: string[];
   };
   message?: string | null;
 };
 
-export async function createInvoice(prevState: State, formData: FormData) {
-  // Validate form fields using Zod
-  const validatedFields = CreateInvoice.safeParse({
-    customerId: formData.get('customerId'),
-    amount: formData.get('amount'),
-    status: formData.get('status'),
-  });
- 
-  // If form validation fails, return errors early. Otherwise, continue.
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Create Invoice.',
-    };
-  }
+// --- ESQUEMAS DE VALIDACIÓN ---
+const LoginSchema = z.object({
+  email: z.string().email({ message: 'Email inválido.' }),
+  password: z.string().min(6, { message: 'Mínimo 6 caracteres.' }),
+});
 
-  // Prepare data for insertion into the database
-  const { customerId, amount, status } = validatedFields.data;
- 
-  const amountInCents = amount * 100;
-  const date = new Date().toISOString().split('T')[0];
- 
-  // Insert data into the database
-  try {
-    await sql`
-      INSERT INTO invoices (customer_id, amount, status, date)
-      VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
-    `;
-  } catch (error) {
-    // If a database error occurs, return a more specific error.
-    return {
-      message: 'Database Error: Failed to Create Invoice.',
-    };
-  }
-  
-  // Revalidate the cache for the invoices page and redirect the user.
-  revalidatePath('/dashboard/invoices');
-  redirect('/dashboard/invoices');
-}
+const RegisterSchema = z.object({
+  name: z.string().min(2, { message: 'El nombre debe tener al menos 2 letras.' }),
+  email: z.string().email({ message: 'Email inválido.' }),
+  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
+});
 
-export async function updateInvoice( id: string, prevState: State, formData: FormData) {
-  // Validate form fields using Zod
-  const validatedFields = UpdateInvoice.safeParse({
-    customerId: formData.get('customerId'),
-    amount: formData.get('amount'),
-    status: formData.get('status'),
-  });
-
-  // If form validation fails, return errors early. Otherwise, continue.
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Update Invoice.',
-    };
-  }
- 
-  // Prepare data for insertion into the database
-  const { customerId, amount, status } = validatedFields.data;
-
-  const amountInCents = amount * 100;
- 
-  // Insert data to the database
-  try {
-    await sql`
-        UPDATE invoices
-        SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-        WHERE id = ${id}
-      `;
-  } catch (error) {
-    // If a database error occurs, return a more specific error.
-    return { message: 'Database Error: Failed to Update Invoice.' };
-  }
- 
-  // Revalidate the cache for the invoices page and redirect the user.
-  revalidatePath('/dashboard/invoices');
-  redirect('/dashboard/invoices');
-}
-
-export async function deleteInvoice(id: string) {
-  // throw new Error('Failed to Delete Invoice');
-  
-  await sql`DELETE FROM invoices WHERE id = ${id}`;
-  revalidatePath('/dashboard/invoices');
-}
-
+// --- 1. ACCIÓN DE LOGIN ---
+// Nota: Authenticate suele devolver string o undefined, lo dejamos simple por ahora
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
@@ -130,11 +42,58 @@ export async function authenticate(
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
-          return 'Invalid credentials.';
+          return 'Credenciales incorrectas.';
         default:
-          return 'Something went wrong.';
+          return 'Algo salió mal.';
       }
     }
     throw error;
   }
+}
+
+// --- 2. ACCIÓN DE REGISTRO ---
+// Aquí cambiamos el tipo de entrada a 'State'
+export async function register(prevState: State, formData: FormData) {
+  
+  // 1. Validar campos
+  const validatedFields = RegisterSchema.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    password: formData.get('password'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Faltan campos obligatorios.',
+    };
+  }
+
+  const { name, email, password } = validatedFields.data;
+
+  try {
+    await connectDB();
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return { message: 'Este correo ya está registrado.' };
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      image: `https://ui-avatars.com/api/?name=${name}&background=random`,
+      role: 'user'
+    });
+
+  } catch (error) {
+    return {
+      message: 'Error en la base de datos.',
+    };
+  }
+
+  redirect('/login');
 }

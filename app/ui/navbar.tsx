@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
+import { LogIn } from 'lucide-react';
 
 // Definimos los enlaces en una lista para no repetir código
 const navLinks = [
@@ -49,16 +50,17 @@ export default function Navbar() {
               );
             })}
              
-             {/* TOGGLE */}
-             <ThemeToggle />
+            {/* TOGGLE */}
+            <ThemeToggle />
 
-             {/* Botón Registro */}
-             <Link 
-               href="/registro" 
-               className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded shadow-sm transition-colors"
-             >
-               Registro
-             </Link>
+            {/* Botón Login */}
+            <Link 
+              href="/login" 
+              className="bg-primary hover:bg-primary-hover text-white font-bold py-2 px-4 rounded-2xl transition-colors flex items-center gap-2 shadow-md hover:shadow-lg"
+            >
+              <LogIn size={18} />
+              <span className="hidden sm:inline">Iniciar Sesión</span>
+            </Link>
           </div>
         </div>
       </div>
