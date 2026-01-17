@@ -4,12 +4,14 @@ import { Listing as IListing } from '@/app/lib/definitions';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Heart, ShoppingCart, Tag, Monitor, Calendar, Globe } from 'lucide-react';
+// IMPORTAMOS EL MAP LOADER
+import MapLoader from '@/app/ui/shop/map-loader';
 
 // Tipado correcto para params en Next.js 15 (es una Promesa)
 type Params = Promise<{ id: string }>;
 
 export default async function ProductPage({ params }: { params: Params }) {
-  // 1. Desempaquetamos los parámetros (obligatorio en últimas versiones)
+  // 1. Desempaquetamos los parámetros
   const { id } = await params;
 
   await connectDB();
@@ -18,14 +20,17 @@ export default async function ProductPage({ params }: { params: Params }) {
   const listingRaw = await Listing.findById(id)
     .populate('game')
     .populate('platform')
-    .populate('seller', 'name image') // Traemos nombre y foto del vendedor
+    .populate('seller', 'name image') 
     .lean();
 
   if (!listingRaw) {
-    notFound(); // Esto muestra la página 404 de Next.js
+    notFound(); 
   }
 
   const listing = JSON.parse(JSON.stringify(listingRaw)) as IListing;
+
+  // Preparamos el array para el mapa (solo contiene este producto)
+  const listingsArray = [listing];
 
   return (
     <div className="min-h-screen bg-white-off dark:bg-neutral-800 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
@@ -127,7 +132,7 @@ export default async function ProductPage({ params }: { params: Params }) {
               </div>
 
               {/* Vendedor */}
-              <div className="mt-auto pt-6 border-t border-gray-light dark:border-gray-700 flex items-center gap-4">
+              <div className="mb-8 pt-6 border-t border-gray-light dark:border-gray-700 flex items-center gap-4">
                 <img 
                   src={listing.seller.image || `https://ui-avatars.com/api/?name=${listing.seller.name}`} 
                   alt={listing.seller.name}
@@ -137,6 +142,20 @@ export default async function ProductPage({ params }: { params: Params }) {
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Vendido por</p>
                   <p className="font-bold text-dark dark:text-white">{listing.seller.name}</p>
                 </div>
+              </div>
+
+              {/* MINI MAPA DE UBICACIÓN */}
+              <div className="space-y-3">
+                <h3 className="font-bold text-dark dark:text-white flex items-center gap-2">
+                  📍 Ubicación del producto
+                </h3>
+                {/* Contenedor con altura fija para el mapa */}
+                <div className="h-48 w-full rounded-xl overflow-hidden border border-gray-200 dark:border-neutral-700 shadow-inner bg-gray-100 dark:bg-neutral-900 relative z-0">
+                   <MapLoader listings={listingsArray} />
+                </div>
+                <p className="text-xs text-gray-400 text-center">
+                  Ubicación aproximada por seguridad.
+                </p>
               </div>
 
             </div>

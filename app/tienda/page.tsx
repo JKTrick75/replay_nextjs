@@ -3,9 +3,10 @@ import { Listing, Console } from '@/app/lib/models';
 import { Listing as IListing, Console as IConsole } from '@/app/lib/definitions'; 
 import GameCard from '@/app/ui/game-card';
 import ShopFilters from '@/app/ui/shop/filters';
-import Pagination from '@/app/ui/pagination'; // <--- IMPORTAMOS TU NUEVO COMPONENTE
+import Pagination from '@/app/ui/pagination';
 import Link from 'next/link';
-import { Map } from 'lucide-react';
+// Importamos nuestro Loader de cliente para el mapa
+import MapLoader from '@/app/ui/shop/map-loader';
 
 // Tipado de searchParams para Next.js 15
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
@@ -14,7 +15,7 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
   const searchParams = await props.searchParams;
   await connectDB();
 
-  // 1. Obtener parámetros
+  // 1. Obtener parámetros de la URL
   const query = searchParams.query?.toString().toLowerCase() || '';
   const platformFilter = searchParams.platform?.toString() || '';
   const conditionFilter = searchParams.condition?.toString() || '';
@@ -23,43 +24,52 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
   const currentPage = Number(searchParams.page) || 1;
   const ITEMS_PER_PAGE = 6; 
 
-  // 2. Traer datos
+  // 2. Traer datos de la Base de Datos
+  // Nota: Usamos .lean() para que sean objetos JS planos y más rápidos
   const [listingsRaw, platformsRaw] = await Promise.all([
     Listing.find({ status: 'active' }).populate('game').populate('platform').lean(),
     Console.find({}).sort({ name: 1 }).lean()
   ]);
 
+  // Serialización para evitar errores de objetos complejos de Mongoose en Next.js
   const allListings = JSON.parse(JSON.stringify(listingsRaw)) as IListing[];
   const platforms = JSON.parse(JSON.stringify(platformsRaw)) as IConsole[];
 
-  // 3. FILTRADO EN MEMORIA ACTUALIZADO
+  // 3. Lógica de Filtrado (En memoria)
   let filteredListings = allListings.filter((ad) => {
-    // Filtro Texto (Título)
+    // Texto
     const matchesSearch = ad.game.title.toLowerCase().includes(query);
     
-    // Filtro Plataforma (Tu versión flexible mejorada)
+    // Plataforma (Búsqueda flexible)
     const matchesPlatform = platformFilter 
       ? ad.platform.shortName.toLowerCase().includes(platformFilter.toLowerCase()) 
       : true;
 
-    // Filtro Condición
+    // Estado
     const matchesCondition = conditionFilter ? ad.condition === conditionFilter : true;
 
-    // --- NUEVO: Filtro Género ---
-    // Verificamos si existe el género en el juego y si coincide con la URL
+    // Género
     const matchesGenre = genreFilter 
       ? ad.game.genre?.toLowerCase().includes(genreFilter.toLowerCase()) 
       : true;
 
-    // AÑADIMOS matchesGenre AL FINAL
     return matchesSearch && matchesPlatform && matchesCondition && matchesGenre;
   });
 
-  // 4. Ordenación
-  if (sortFilter === 'asc') filteredListings.sort((a, b) => a.price - b.price);
-  if (sortFilter === 'desc') filteredListings.sort((a, b) => b.price - a.price);
+  // 4. Lógica de Ordenación
+  if (sortFilter === 'asc') {
+    // Precio: Menor a Mayor
+    filteredListings.sort((a, b) => a.price - b.price);
+  } else if (sortFilter === 'desc') {
+    // Precio: Mayor a Menor
+    filteredListings.sort((a, b) => b.price - a.price);
+  } else {
+    // POR DEFECTO: Novedades primero (Fecha más reciente arriba)
+    // Convertimos la fecha (string) a número (milisegundos) para comparar
+    filteredListings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
 
-  // 5. Paginación
+  // 5. Lógica de Paginación
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedListings = filteredListings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -67,9 +77,9 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
   return (
     <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)] bg-white-off dark:bg-neutral-800 transition-colors duration-300">
       
-      {/* --- COLUMNA IZQUIERDA: LISTA --- */}
-      <div className="w-full lg:w-1/2 p-4 sm:p-6 overflow-y-auto h-full">
-        <div className="max-w-3xl mx-auto">
+      {/* --- COLUMNA IZQUIERDA: LISTA (60%) --- */}
+      <div className="w-full lg:w-3/5 p-4 sm:p-6 overflow-y-auto h-full">
+        <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-dark dark:text-white mb-6">
             Catálogo ({filteredListings.length})
           </h1>
@@ -93,20 +103,15 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
             </div>
           )}
 
-          {/* USAMOS EL COMPONENTE DE PAGINACIÓN AQUÍ */}
           <div className="flex justify-center mt-8">
             <Pagination totalPages={totalPages} />
           </div>
         </div>
       </div>
 
-      {/* --- COLUMNA DERECHA: MAPA PLACEHOLDER --- */}
-      <div className="hidden lg:block w-1/2 sticky top-[64px] h-[calc(100vh-64px)] bg-gray-200 dark:bg-neutral-900 border-l border-gray-light dark:border-neutral-800 relative">
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
-            <Map size={64} className="mb-4 opacity-50" />
-            <p className="text-xl font-bold">Mapa de Vendedores</p>
-            <p className="text-sm">Próximamente con Leaflet</p>
-        </div>
+      {/* --- COLUMNA DERECHA: MAPA (40%) --- */}
+      <div className="hidden lg:block w-2/5 sticky top-16 h-[calc(100vh-64px)] bg-gray-200 dark:bg-neutral-900 border-l border-gray-light dark:border-neutral-800 z-0">
+         <MapLoader listings={paginatedListings} /> 
       </div>
     </div>
   );

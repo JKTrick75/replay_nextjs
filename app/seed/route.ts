@@ -2,6 +2,22 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/db';
 import { User, Brand, Console, Game, Listing } from '@/app/lib/models';
 
+// --- COORDENADAS BASE (Ciudades de España) ---
+const SPANISH_CITIES = [
+  { name: 'Madrid', lat: 40.416775, lng: -3.703790 },
+  { name: 'Barcelona', lat: 41.385064, lng: 2.173404 },
+  { name: 'Valencia', lat: 39.469907, lng: -0.376288 },
+  { name: 'Sevilla', lat: 37.389092, lng: -5.984459 },
+  { name: 'Bilbao', lat: 43.263013, lng: -2.934985 },
+  { name: 'Málaga', lat: 36.721261, lng: -4.421266 },
+  { name: 'Zaragoza', lat: 41.648823, lng: -0.889085 },
+  { name: 'Alicante', lat: 38.345996, lng: -0.490686 },
+  { name: 'Vigo', lat: 42.240577, lng: -8.720727 },
+  { name: 'Granada', lat: 37.177336, lng: -3.598557 },
+  { name: 'Murcia', lat: 37.992240, lng: -1.130654 },
+  { name: 'Palma', lat: 39.569600, lng: 2.650160 }
+];
+
 // --- DATOS RAW (Traducciones aplicadas) ---
 const OLD_MARCAS = [
   { "_id": { "$oid": "69047fcd3bc991d7f84958e4" }, "nom": "Nintendo", "pais_origen": "Japón" },
@@ -69,8 +85,6 @@ export async function GET() {
     await connectDB();
     
     // 1. Limpieza total PROFUNDA
-    // Usamos .collection.drop() en lugar de deleteMany() para borrar también los índices viejos (como el slug)
-    // Ponemos try/catch por si la colección no existe todavía (la primera vez), para que no de error
     try { await Listing.collection.drop(); } catch (error) {}
     try { await Game.collection.drop(); } catch (error) {}
     try { await Console.collection.drop(); } catch (error) {}
@@ -120,7 +134,7 @@ export async function GET() {
       consoleMap[oldConsole._id.$oid] = newConsole;
     }
 
-    // 5. Crear Juegos (Con traducción automática de slug si hiciera falta, pero ya lo quitamos)
+    // 5. Crear Juegos
     const createdGames = [];
 
     for (const oldGame of OLD_JUEGOS) {
@@ -131,7 +145,6 @@ export async function GET() {
 
       const newGame = await Game.create({
         title: oldGame.nom,
-        // Eliminado slug
         genre: oldGame.genero,
         coverImage: oldGame.foto,
         platforms: newPlatformIds
@@ -139,17 +152,23 @@ export async function GET() {
       createdGames.push(newGame);
     }
 
-    // 6. Generar Anuncios (¡AHORA SÍ, TODOS!)
-    // Recorremos TODOS los juegos creados y ponemos al menos 1 anuncio de cada uno
+    // 6. Generar Anuncios CON UBICACIÓN ESPAÑOLA
     let listingsCount = 0;
     const conditions = ['Nuevo', 'Seminuevo', 'Usado'];
 
     for (const game of createdGames) {
-      // Solo si el juego tiene plataformas disponibles
       if (game.platforms.length > 0) {
-        // Elegimos una plataforma random de las compatibles
         const randomPlatformId = game.platforms[Math.floor(Math.random() * game.platforms.length)];
         const randomUser = Math.random() > 0.5 ? user1 : user2;
+
+        // --- LÓGICA DE UBICACIÓN ---
+        // 1. Elegimos una ciudad de España al azar
+        const city = SPANISH_CITIES[Math.floor(Math.random() * SPANISH_CITIES.length)];
+        
+        // 2. Le damos un pequeño "jitter" (desviación aleatoria) para que no caigan todos en el mismo pixel
+        // Variación aprox de +/- 0.05 grados (unos 5-8 km)
+        const jitterLat = (Math.random() - 0.5) * 0.1;
+        const jitterLng = (Math.random() - 0.5) * 0.1;
 
         await Listing.create({
           seller: randomUser._id,
@@ -157,18 +176,23 @@ export async function GET() {
           platform: randomPlatformId,
           price: Math.floor(Math.random() * 60) + 10, 
           condition: conditions[Math.floor(Math.random() * conditions.length)],
-          description: `Vendo ${game.title} en perfecto estado.`,
-          status: 'active'
+          description: `Vendo ${game.title} en perfecto estado. Entrega en mano en ${city.name} o envío.`,
+          status: 'active',
+          // 👇 Aquí insertamos las coordenadas generadas
+          location: {
+            lat: city.lat + jitterLat,
+            lng: city.lng + jitterLng
+          }
         });
         listingsCount++;
       }
     }
 
     return NextResponse.json({ 
-      message: 'Base de datos limpia y en español poblada con éxito 🇪🇸🚀', 
+      message: 'Base de datos limpia, en español y geolocalizada con éxito 🇪🇸🗺️', 
       stats: {
         brands: Object.keys(brandMap).length,
-        consoles: Object.keys(consoleMap).length,
+        consolas: Object.keys(consoleMap).length,
         games: createdGames.length,
         listings: listingsCount
       }

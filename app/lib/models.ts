@@ -44,8 +44,9 @@ const listingSchema = new mongoose.Schema({
   condition: { type: String, enum: ['Nuevo', 'Seminuevo', 'Usado'], required: true },
   description: { type: String },
   status: { type: String, default: 'active', enum: ['active', 'sold', 'reserved'] },
-  photos: [{ type: String }]
-});
+  photos: [{ type: String }],
+  location: { lat: { type: Number }, lng: { type: Number }}
+}, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', userSchema);
 export const Brand = mongoose.models.Brand || mongoose.model('Brand', brandSchema);

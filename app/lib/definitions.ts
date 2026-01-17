@@ -43,5 +43,9 @@ export interface Listing {
   seller: User; 
   game: Game;      
   platform: Console; 
-  createdAt: string; 
+  createdAt: string;
+  location?: {
+    lat: number;
+    lng: number;
+  };
 }
