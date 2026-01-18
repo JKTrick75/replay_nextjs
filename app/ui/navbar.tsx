@@ -4,10 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-import { LogIn, LogOut, LayoutDashboard, ChevronDown } from 'lucide-react'; // Iconos necesarios
-import { logout } from '@/app/lib/actions'; // Importamos la acción de salir
+import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X } from 'lucide-react'; // Añadidos Menu y X
+import { logout } from '@/app/lib/actions';
 
-// Tipo para el usuario que recibimos del layout
 type UserProps = {
   name?: string | null;
   email?: string | null;
@@ -20,10 +19,10 @@ const navLinks = [
   { name: 'Vender', href: '/vender' },
 ];
 
-// Recibimos 'user' como prop
 export default function Navbar({ user }: { user?: UserProps }) {
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);        // Dropdown escritorio
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Menú móvil
 
   return (
     <nav className="w-full bg-white dark:bg-dark border-b border-gray-light dark:border-gray sticky top-0 z-50 transition-colors duration-300">
@@ -37,10 +36,9 @@ export default function Navbar({ user }: { user?: UserProps }) {
             </div> 
           </Link>
 
-          {/* ENLACES Y ACCIONES */}
+          {/* --- MENÚ ESCRITORIO (Hidden en móvil) --- */}
           <div className="hidden md:flex items-center space-x-6 font-medium">
             
-            {/* Links de Navegación */}
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -60,9 +58,8 @@ export default function Navbar({ user }: { user?: UserProps }) {
              
             <ThemeToggle />
 
-            {/* --- LÓGICA DE USUARIO --- */}
+            {/* Lógica de Usuario Escritorio */}
             {user ? (
-              // CASO 1: USUARIO LOGUEADO (Avatar + Dropdown)
               <div className="relative">
                 <button 
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -83,13 +80,11 @@ export default function Navbar({ user }: { user?: UserProps }) {
                 {isMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-gray-light dark:border-gray py-2 animate-in fade-in slide-in-from-top-2">
                     
-                    {/* Header del Menu */}
                     <div className="px-4 py-3 border-b border-gray-light dark:border-gray mb-2">
                       <p className="text-xs text-gray-500 dark:text-gray-400">Conectado como</p>
                       <p className="text-sm font-bold text-dark dark:text-white truncate">{user.email}</p>
                     </div>
 
-                    {/* Opciones */}
                     <Link 
                       href="/dashboard" 
                       onClick={() => setIsMenuOpen(false)}
@@ -112,17 +107,12 @@ export default function Navbar({ user }: { user?: UserProps }) {
                   </div>
                 )}
                 
-                {/* Backdrop invisible para cerrar al hacer click fuera */}
                 {isMenuOpen && (
-                  <div 
-                    className="fixed inset-0 z-[-1]" 
-                    onClick={() => setIsMenuOpen(false)}
-                  />
+                  <div className="fixed inset-0 z-[-1]" onClick={() => setIsMenuOpen(false)} />
                 )}
               </div>
 
             ) : (
-              // CASO 2: USUARIO NO LOGUEADO (Botón Login)
               <Link 
                 href="/login" 
                 className="bg-primary hover:bg-primary-hover text-white font-bold py-2 px-4 rounded-2xl transition-colors flex items-center gap-2 shadow-md hover:shadow-lg"
@@ -131,10 +121,92 @@ export default function Navbar({ user }: { user?: UserProps }) {
                 <span className="hidden sm:inline">Iniciar Sesión</span>
               </Link>
             )}
-
           </div>
+
+          {/* --- BOTÓN MENÚ MÓVIL (Visible solo en móvil) --- */}
+          <div className="flex md:hidden items-center gap-4">
+            <ThemeToggle />
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-gray-500 dark:text-gray-300 hover:text-primary focus:outline-none"
+            >
+              {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
+
         </div>
       </div>
+
+      {/* --- DESPLEGABLE MÓVIL --- */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-light dark:border-gray bg-white dark:bg-dark animate-in slide-in-from-top-5">
+          <div className="px-4 pt-2 pb-6 space-y-2">
+            
+            {navLinks.map((link) => {
+               const isActive = pathname === link.href;
+               return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block px-3 py-3 rounded-md text-base font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-800 hover:text-primary'
+                  }`}
+                >
+                  {link.name}
+                </Link>
+               )
+            })}
+
+            <div className="border-t border-gray-light dark:border-gray my-2"></div>
+
+            {user ? (
+              <div className="px-3 space-y-3">
+                <div className="flex items-center gap-3 py-2">
+                   <img 
+                    src={user.image || `https://ui-avatars.com/api/?name=${user.name}`} 
+                    alt="Avatar" 
+                    className="w-10 h-10 rounded-full border border-gray-200 dark:border-neutral-700"
+                  />
+                  <div>
+                    <p className="font-bold text-dark dark:text-white">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                </div>
+                
+                <Link 
+                  href="/dashboard"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover"
+                >
+                   <LayoutDashboard size={18} /> Mi Panel
+                </Link>
+
+                {/* BOTÓN LOGOUT MÓVIL (Respetando tus colores) */}
+                <button
+                   onClick={async () => {
+                      await logout();
+                      setIsMobileMenuOpen(false);
+                   }}
+                   className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-primary bg-red-50 dark:bg-primary-hover/10 rounded-lg hover:bg-red-100 dark:hover:bg-primary-hover/20"
+                >
+                  <LogOut size={18} /> Cerrar Sesión
+                </button>
+              </div>
+            ) : (
+              <Link 
+                href="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 text-white bg-primary rounded-lg font-bold hover:bg-primary-hover shadow-md"
+              >
+                <LogIn size={20} /> Iniciar Sesión
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
