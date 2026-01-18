@@ -1,19 +1,16 @@
-import connectDB from '@/app/lib/db';
-import { Listing, Console } from '@/app/lib/models';
+import { prisma } from '@/app/lib/db'; // Importamos Prisma
 import { Listing as IListing, Console as IConsole } from '@/app/lib/definitions'; 
 import GameCard from '@/app/ui/game-card';
 import ShopFilters from '@/app/ui/shop/filters';
 import Pagination from '@/app/ui/pagination';
 import Link from 'next/link';
-// Importamos nuestro Loader de cliente para el mapa
 import MapLoader from '@/app/ui/shop/map-loader';
 
-// Tipado de searchParams para Next.js 15
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
 export default async function ShopPage(props: { searchParams: SearchParams }) {
   const searchParams = await props.searchParams;
-  await connectDB();
+  // Ya no hace falta connectDB(), Prisma gestiona la conexión
 
   // 1. Obtener parámetros de la URL
   const query = searchParams.query?.toString().toLowerCase() || '';
@@ -24,25 +21,37 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
   const currentPage = Number(searchParams.page) || 1;
   const ITEMS_PER_PAGE = 6; 
 
-  // 2. Traer datos de la Base de Datos
-  // Nota: Usamos .lean() para que sean objetos JS planos y más rápidos
+  // 2. Traer datos de la Base de Datos (VERSIÓN PRISMA)
   const [listingsRaw, platformsRaw] = await Promise.all([
-    Listing.find({ status: 'active' }).populate('game').populate('platform').lean(),
-    Console.find({}).sort({ name: 1 }).lean()
+    prisma.listing.findMany({
+      where: { 
+        status: 'active' 
+      },
+      include: {
+        game: true,     // Equivale a .populate('game')
+        platform: true, // Equivale a .populate('platform')
+        seller: true    // Necesitamos el vendedor para la UI
+      }
+    }),
+    prisma.console.findMany({
+      orderBy: { name: 'asc' } // Equivale a .sort({ name: 1 })
+    })
   ]);
 
-  // Serialización para evitar errores de objetos complejos de Mongoose en Next.js
-  const allListings = JSON.parse(JSON.stringify(listingsRaw)) as IListing[];
-  const platforms = JSON.parse(JSON.stringify(platformsRaw)) as IConsole[];
+  // Transformación de datos (Prisma devuelve tipos estrictos con null)
+  // Mapeamos para asegurarnos de que encajen con IListing y IConsole
+  const allListings = listingsRaw as unknown as IListing[];
+  const platforms = platformsRaw as unknown as IConsole[];
 
   // 3. Lógica de Filtrado (En memoria)
+  // Mantenemos la lógica en memoria por ahora para no complicar la query SQL dinámica todavía
   let filteredListings = allListings.filter((ad) => {
-    // Texto
-    const matchesSearch = ad.game.title.toLowerCase().includes(query);
+    // Texto (título del juego)
+    const matchesSearch = ad.game?.title.toLowerCase().includes(query) ?? false;
     
-    // Plataforma (Búsqueda flexible)
+    // Plataforma
     const matchesPlatform = platformFilter 
-      ? ad.platform.shortName.toLowerCase().includes(platformFilter.toLowerCase()) 
+      ? ad.platform?.shortName?.toLowerCase().includes(platformFilter.toLowerCase()) 
       : true;
 
     // Estado
@@ -50,7 +59,7 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
 
     // Género
     const matchesGenre = genreFilter 
-      ? ad.game.genre?.toLowerCase().includes(genreFilter.toLowerCase()) 
+      ? ad.game?.genre?.toLowerCase().includes(genreFilter.toLowerCase()) 
       : true;
 
     return matchesSearch && matchesPlatform && matchesCondition && matchesGenre;
@@ -58,14 +67,11 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
 
   // 4. Lógica de Ordenación
   if (sortFilter === 'asc') {
-    // Precio: Menor a Mayor
     filteredListings.sort((a, b) => a.price - b.price);
   } else if (sortFilter === 'desc') {
-    // Precio: Mayor a Menor
     filteredListings.sort((a, b) => b.price - a.price);
   } else {
-    // POR DEFECTO: Novedades primero (Fecha más reciente arriba)
-    // Convertimos la fecha (string) a número (milisegundos) para comparar
+    // Por defecto: Más recientes primero
     filteredListings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
@@ -96,7 +102,8 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {paginatedListings.map((ad) => (
-                <div key={ad._id} className="h-full">
+                // OJO: En Mongo era _id, en Prisma es id
+                <div key={ad.id} className="h-full">
                    <GameCard ad={ad} />
                 </div>
               ))}

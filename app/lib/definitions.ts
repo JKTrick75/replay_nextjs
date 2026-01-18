@@ -1,51 +1,64 @@
 // app/lib/definitions.ts
 
 export interface User {
-  _id: string;
+  id: string;
   name: string;
   email: string;
-  image?: string;
-  role: 'user' | 'admin';
+  image?: string | null;
+  role: string;
 }
 
 export interface Brand {
-  _id: string;
+  id: string;
   name: string;
-  country?: string;
-  logo?: string;
+  country?: string | null;
+  logo?: string | null;
 }
 
 export interface Console {
-  _id: string;
+  id: string;
   name: string;
-  shortName: string;
-  brand: Brand | string; 
-  releaseYear?: number;
-  image?: string;
+  shortName?: string | null;
+  brandId: string;
+  releaseYear?: number | null;
+  image?: string | null;
+  // Relación opcional para la UI
+  brand?: Brand;
 }
 
 export interface Game {
-  _id: string;
+  id: string;
   title: string;
-  coverImage?: string;
-  genre?: string;
-  releaseYear?: number;
-  description?: string;
-  platforms: Console[] | string[]; 
+  coverImage?: string | null;
+  genre?: string | null;
+  releaseYear?: number | null;
+  description?: string | null;
+  // Relación opcional
+  platforms?: Console[]; 
 }
 
 export interface Listing {
-  _id: string;
+  id: string;
   price: number;
-  condition: 'Nuevo' | 'Seminuevo' | 'Usado';
-  description?: string;
-  status: 'active' | 'sold' | 'reserved';
-  seller: User; 
-  game: Game;      
-  platform: Console; 
-  createdAt: string;
-  location?: {
-    lat: number;
-    lng: number;
-  };
+  condition: 'Nuevo' | 'Seminuevo' | 'Usado' | string;
+  description?: string | null;
+  status: 'active' | 'sold' | 'reserved' | string;
+  
+  sellerId: string;
+  gameId: string;
+  platformId: string;
+  
+  createdAt: Date;
+  
+  // Ubicación aplanada
+  lat?: number | null;
+  lng?: number | null;
+
+  // Relaciones completas (se rellenan con 'include' en Prisma)
+  seller?: User; 
+  game?: Game;      
+  platform?: Console;
+  
+  // Para el frontend lo mantenemos simple: solo una lista de URLs
+  photos?: string[];
 }

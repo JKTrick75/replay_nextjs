@@ -1,35 +1,38 @@
-import connectDB from '@/app/lib/db';
-import { Listing } from '@/app/lib/models';
+import { prisma } from '@/app/lib/db'; // Importamos Prisma
 import { Listing as IListing } from '@/app/lib/definitions';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Heart, ShoppingCart, Tag, Monitor, Calendar, Globe } from 'lucide-react';
-// IMPORTAMOS EL MAP LOADER
 import MapLoader from '@/app/ui/shop/map-loader';
 
-// Tipado correcto para params en Next.js 15 (es una Promesa)
+// Tipado para params (Next.js 15)
 type Params = Promise<{ id: string }>;
 
 export default async function ProductPage({ params }: { params: Params }) {
   // 1. Desempaquetamos los parámetros
   const { id } = await params;
 
-  await connectDB();
+  // Ya no hace falta connectDB()
 
-  // 2. Buscamos el anuncio por ID y poblamos los datos
-  const listingRaw = await Listing.findById(id)
-    .populate('game')
-    .populate('platform')
-    .populate('seller', 'name image') 
-    .lean();
+  // 2. Buscamos el anuncio por ID (VERSIÓN PRISMA)
+  const listingRaw = await prisma.listing.findUnique({
+    where: { id: id },
+    include: {
+      game: true,     // .populate('game')
+      platform: true, // .populate('platform')
+      seller: true    // .populate('seller')
+    }
+  });
 
+  // Si no existe, 404
   if (!listingRaw) {
     notFound(); 
   }
 
-  const listing = JSON.parse(JSON.stringify(listingRaw)) as IListing;
+  // Casting de tipos para asegurar compatibilidad con la interfaz
+  const listing = listingRaw as unknown as IListing;
 
-  // Preparamos el array para el mapa (solo contiene este producto)
+  // Preparamos el array para el mapa
   const listingsArray = [listing];
 
   return (
@@ -48,8 +51,8 @@ export default async function ProductPage({ params }: { params: Params }) {
             {/* COLUMNA IZQUIERDA: IMAGEN */}
             <div className="relative h-96 md:h-auto bg-gray-200 dark:bg-gray-700">
               <img 
-                src={listing.game.coverImage || '/placeholder.png'} 
-                alt={listing.game.title}
+                src={listing.game?.coverImage || '/placeholder.png'} 
+                alt={listing.game?.title || 'Juego'}
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-4 left-4">
@@ -66,11 +69,11 @@ export default async function ProductPage({ params }: { params: Params }) {
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-primary font-bold uppercase text-sm tracking-wide">
-                    {listing.platform.name}
+                    {listing.platform?.name}
                   </span>
                 </div>
                 <h1 className="text-3xl md:text-4xl font-bold text-dark dark:text-white mb-2">
-                  {listing.game.title}
+                  {listing.game?.title}
                 </h1>
               </div>
 
@@ -97,21 +100,21 @@ export default async function ProductPage({ params }: { params: Params }) {
                   <Tag className="text-primary mt-1" size={18} />
                   <div>
                     <p className="font-bold text-dark dark:text-white">Género</p>
-                    <p className="text-gray dark:text-gray-400">{listing.game.genre || 'N/A'}</p>
+                    <p className="text-gray dark:text-gray-400">{listing.game?.genre || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Monitor className="text-primary mt-1" size={18} />
                   <div>
                     <p className="font-bold text-dark dark:text-white">Plataforma</p>
-                    <p className="text-gray dark:text-gray-400">{listing.platform.name}</p>
+                    <p className="text-gray dark:text-gray-400">{listing.platform?.name}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Calendar className="text-primary mt-1" size={18} />
                   <div>
                     <p className="font-bold text-dark dark:text-white">Lanzamiento</p>
-                    <p className="text-gray dark:text-gray-400">{listing.game.releaseYear || 'Desconocido'}</p>
+                    <p className="text-gray dark:text-gray-400">{listing.game?.releaseYear || 'Desconocido'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -127,29 +130,28 @@ export default async function ProductPage({ params }: { params: Params }) {
               <div className="mb-8">
                 <h3 className="font-bold text-lg text-dark dark:text-white mb-2">Descripción del vendedor</h3>
                 <p className="text-gray dark:text-gray-300 leading-relaxed">
-                  {listing.description || `Vendo ${listing.game.title} en estado ${listing.condition}. Funciona perfectamente.`}
+                  {listing.description || `Vendo ${listing.game?.title} en estado ${listing.condition}. Funciona perfectamente.`}
                 </p>
               </div>
 
               {/* Vendedor */}
               <div className="mb-8 pt-6 border-t border-gray-light dark:border-gray-700 flex items-center gap-4">
                 <img 
-                  src={listing.seller.image || `https://ui-avatars.com/api/?name=${listing.seller.name}`} 
-                  alt={listing.seller.name}
+                  src={listing.seller?.image || `https://ui-avatars.com/api/?name=${listing.seller?.name}`} 
+                  alt={listing.seller?.name || 'Vendedor'}
                   className="w-12 h-12 rounded-full border border-gray-200"
                 />
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Vendido por</p>
-                  <p className="font-bold text-dark dark:text-white">{listing.seller.name}</p>
+                  <p className="font-bold text-dark dark:text-white">{listing.seller?.name}</p>
                 </div>
               </div>
 
-              {/* MINI MAPA DE UBICACIÓN */}
+              {/* MINI MAPA */}
               <div className="space-y-3">
                 <h3 className="font-bold text-dark dark:text-white flex items-center gap-2">
                   📍 Ubicación del producto
                 </h3>
-                {/* Contenedor con altura fija para el mapa */}
                 <div className="h-48 w-full rounded-xl overflow-hidden border border-gray-200 dark:border-neutral-700 shadow-inner bg-gray-100 dark:bg-neutral-900 relative z-0">
                    <MapLoader listings={listingsArray} />
                 </div>

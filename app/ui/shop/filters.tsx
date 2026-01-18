@@ -23,12 +23,10 @@ export default function ShopFilters({ platforms }: { platforms: Console[] }) {
   };
 
   return (
-    // CAMBIO: dark:bg-neutral-800 y dark:border-neutral-700
     <div className="bg-white dark:bg-neutral-800 p-4 rounded-xl shadow-sm border border-gray-light dark:border-neutral-700 mb-6 space-y-4">
       
       {/* Fila 1: Buscador de Texto */}
       <div className="relative">
-        {/* CAMBIO: dark:border-neutral-600 y dark:bg-neutral-900 */}
         <input
           className="w-full pl-10 pr-4 py-2 border border-gray-light dark:border-neutral-600 rounded-lg bg-gray-50 dark:bg-neutral-900 text-dark dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
           placeholder="Buscar juego..."
@@ -49,7 +47,11 @@ export default function ShopFilters({ platforms }: { platforms: Console[] }) {
         >
           <option value="">Todas las Consolas</option>
           {platforms.map((p) => (
-            <option key={p._id} value={p.shortName}>{p.name}</option>
+            // 🔴 CAMBIO: Usamos p.id en lugar de p._id
+            // También aseguramos que el value no sea null/undefined
+            <option key={p.id} value={p.shortName || p.name}>
+              {p.name}
+            </option>
           ))}
         </select>
 

@@ -1,0 +1,91 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  name      String
+  email     String    @unique @db.VarChar(191)
+  password  String
+  image     String?   @db.Text
+  role      String    @default("user")
+  
+  listings  Listing[]
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Brand {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  name      String    @unique @db.VarChar(191)
+  country   String?
+  logo      String?
+  
+  consoles  Console[]
+}
+
+model Console {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  name        String
+  shortName   String?
+  releaseYear Int?
+  image       String?
+  
+  brandId     String    @db.VarChar(36)
+  brand       Brand     @relation(fields: [brandId], references: [id])
+  
+  games       Game[]    @relation("GamePlatforms")
+  listings    Listing[]
+}
+
+model Game {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  title       String
+  coverImage  String?
+  description String?   @db.Text
+  genre       String?
+  releaseYear Int?
+  
+  platforms   Console[] @relation("GamePlatforms")
+  listings    Listing[]
+}
+
+model Listing {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  price       Float
+  condition   String
+  description String?   @db.Text
+  status      String    @default("active")
+  
+  photos      ListingPhoto[]
+  
+  lat         Float?
+  lng         Float?
+
+  sellerId    String    @db.VarChar(36)
+  seller      User      @relation(fields: [sellerId], references: [id])
+  
+  gameId      String    @db.VarChar(36)
+  game        Game      @relation(fields: [gameId], references: [id])
+  
+  platformId  String    @db.VarChar(36)
+  platform    Console   @relation(fields: [platformId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ListingPhoto {
+  id        String  @id @default(uuid()) @db.VarChar(36)
+  url       String
+  listingId String  @db.VarChar(36)
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}

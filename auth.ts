@@ -1,12 +1,11 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { authConfig } from './auth.config'; // Subimos 2 niveles para encontrar el archivo en la raíz
 import { z } from 'zod';
-import connectDB from '@/app/lib/db'; // Tu conexión a Mongo
-import { User } from '@/app/lib/models'; // Tu modelo de Usuario
-import bcrypt from 'bcryptjs'; // La librería que instalamos
+import { prisma } from '@/app/lib/db'; // 👇 Importamos Prisma
+import bcrypt from 'bcryptjs';
+import { authConfig } from './auth.config';
 
-// Esquema de validación para el formulario
+// Esquema para validar lo que llega del formulario de login
 const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -17,26 +16,29 @@ export const { auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
-        // 1. Validar que los datos del formulario son correctos (formato)
+        // 1. Validar formato de email/password con Zod
         const parsedCredentials = LoginSchema.safeParse(credentials);
- 
+
         if (parsedCredentials.success) {
           const { email, password } = parsedCredentials.data;
-          
-          // 2. Conectar a MongoDB
-          await connectDB();
-          
-          // 3. Buscar el usuario por email
-          const user = await User.findOne({ email });
-          
-          if (!user) return null; // Usuario no encontrado
-          
-          // 4. Comparar la contraseña del formulario con la encriptada en la BD
+
+          // 2. Buscar usuario en MySQL usando PRISMA 👇
+          const user = await prisma.user.findUnique({
+            where: { email },
+          });
+
+          // Si no existe el usuario, retornamos null
+          if (!user) return null;
+
+          // 3. Comparar contraseñas
           const passwordsMatch = await bcrypt.compare(password, user.password);
- 
-          if (passwordsMatch) return user;
+
+          if (passwordsMatch) {
+            // ¡Éxito! Devolvemos el usuario
+            return user;
+          }
         }
- 
+
         console.log('Credenciales inválidas');
         return null;
       },

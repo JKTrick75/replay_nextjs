@@ -1,27 +1,29 @@
-import connectDB from '@/app/lib/db';
-import { Listing } from '@/app/lib/models';
-// Importamos la interfaz correcta para TypeScript
+import { prisma } from '@/app/lib/db'; // Importamos Prisma
 import { Listing as IListing } from '@/app/lib/definitions'; 
-// Importamos todos los componentes visuales
 import Hero from '@/app/ui/hero';
 import CategoryGrid from '@/app/ui/home/category-grid';
 import GameCard from '@/app/ui/game-card';
 import Link from 'next/link';
 
 export default async function Home() {
-  // 1. Conexión a Base de Datos
-  await connectDB();
+  // 1. Obtener los últimos 8 anuncios activos (VERSIÓN PRISMA)
+  const listingsRaw = await prisma.listing.findMany({
+    where: { 
+      status: 'active' 
+    },
+    include: {
+      game: true,     // .populate('game')
+      platform: true, // .populate('platform')
+      seller: true    // Necesario para evitar errores de tipo en la interfaz
+    },
+    orderBy: {
+      createdAt: 'desc' // .sort({ createdAt: -1 })
+    },
+    take: 8 // .limit(8)
+  });
 
-  // 2. Obtener los últimos 8 anuncios activos
-  const listingsRaw = await Listing.find({ status: 'active' })
-    .populate('game')
-    .populate('platform')
-    .sort({ createdAt: -1 }) // Opcional: Ordenar por más recientes
-    .limit(8) 
-    .lean();
-
-  // 3. Serializar datos (truco para evitar error de objetos complejos en Next.js)
-  const listings = JSON.parse(JSON.stringify(listingsRaw)) as IListing[];
+  // 2. Adaptar tipos (Prisma devuelve objetos con nulls, forzamos la interfaz)
+  const listings = listingsRaw as unknown as IListing[];
 
   return (
     <main className="min-h-screen bg-white-off dark:bg-neutral-800 transition-colors duration-300">
@@ -29,7 +31,7 @@ export default async function Home() {
       {/* 1. SECCIÓN HERO (Portada) */}
       <Hero />
 
-      {/* 2. NUEVA SECCIÓN: CATEGORÍAS (Consolas y Géneros) */}
+      {/* 2. SECCIÓN: CATEGORÍAS */}
       <CategoryGrid />
 
       {/* 3. SECCIÓN: JUEGOS DESTACADOS */}
@@ -52,13 +54,13 @@ export default async function Home() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {listings.map((ad) => (
-              // Usamos el componente GameCard reutilizable
-              <GameCard key={ad._id} ad={ad} />
+              // OJO: Cambiamos _id por id
+              <GameCard key={ad.id} ad={ad} />
             ))}
           </div>
         )}
         
-        {/* Enlace móvil para ver todo (por si se ocultó el de arriba) */}
+        {/* Enlace móvil */}
         <div className="mt-8 text-center sm:hidden">
           <Link href="/tienda" className="text-primary font-medium hover:underline">
             Ver todo el catálogo &rarr;

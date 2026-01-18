@@ -1,57 +1,13 @@
-import mongoose from 'mongoose';
+import { PrismaClient } from '@prisma/client';
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-if (!MONGODB_URI) {
-  throw new Error(
-    'Por favor define la variable MONGODB_URI en tu archivo .env',
-  );
-}
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: ['query'], // Esto te mostrará las queries SQL en la consola (útil para debug)
+  });
 
-/**
- * Global es utilizado aquí para mantener una conexión en caché
- * a través de recargas en caliente (hot reloads) en desarrollo.
- * Esto evita que se creen conexiones múltiples.
- */
-interface MongooseCache {
-  conn: mongoose.Connection | null;
-  promise: Promise<mongoose.Connection> | null;
-}
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-declare global {
-  // eslint-disable-next-line no-var
-  var mongoose: MongooseCache;
-}
-
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
-  }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose.connection;
-    });
-  }
-
-  try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    throw e;
-  }
-
-  return cached.conn;
-}
-
-export default connectDB;
+export default prisma;

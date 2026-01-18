@@ -1,10 +1,9 @@
 'use server';
  
-import { signIn,signOut } from '@/auth';
+import { signIn, signOut } from '@/auth';
 import { AuthError } from 'next-auth';
 import { z } from 'zod';
-import connectDB from '@/app/lib/db';
-import { User } from '@/app/lib/models';
+import { prisma } from '@/app/lib/db';
 import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
 
@@ -31,7 +30,6 @@ const RegisterSchema = z.object({
 });
 
 // --- 1. ACCIÓN DE LOGIN ---
-// Nota: Authenticate suele devolver string o undefined, lo dejamos simple por ahora
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
@@ -52,7 +50,6 @@ export async function authenticate(
 }
 
 // --- 2. ACCIÓN DE REGISTRO ---
-// Aquí cambiamos el tipo de entrada a 'State'
 export async function register(prevState: State, formData: FormData) {
   
   // 1. Validar campos
@@ -72,33 +69,40 @@ export async function register(prevState: State, formData: FormData) {
   const { name, email, password } = validatedFields.data;
 
   try {
-    await connectDB();
+    // 2. Verificar si existe (usando Prisma)
+    const userExists = await prisma.user.findUnique({
+      where: { email },
+    });
 
-    const userExists = await User.findOne({ email });
     if (userExists) {
       return { message: 'Este correo ya está registrado.' };
     }
 
+    // 3. Hash Password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      image: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${email}`,
-      role: 'user'
+    // 4. Crear usuario en MySQL
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        image: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${email}`,
+        role: 'user',
+      },
     });
 
   } catch (error) {
+    console.error('Error DB:', error);
     return {
-      message: 'Error en la base de datos.',
+      message: 'Error al crear el usuario en la base de datos.',
     };
   }
 
   redirect('/login');
 }
 
-// --- 3. ACCIÓN DE CERRAR SESIÓN (LOGOUT) ---
+// --- 3. ACCIÓN DE CERRAR SESIÓN ---
 export async function logout() {
   await signOut({ redirectTo: '/' });
 }
