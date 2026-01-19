@@ -61,3 +61,29 @@ body {
   overflow: hidden;
   padding: 0 !important;
 }
+
+/* --- HACK AUTOCOMPLETE --- */
+/* Esto fuerza el color de fondo cuando el navegador rellena el campo automáticamente */
+
+/* MODO CLARO (Por defecto) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    /* Forzamos fondo blanco tapando el azul */
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    /* Forzamos el texto al color oscuro de tu tema */
+    -webkit-text-fill-color: #444444 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* MODO OSCURO (Cuando la clase .dark está activa en el HTML/Body) */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark input:-webkit-autofill:active {
+    /* Forzamos fondo gris oscuro (Neutral 900 #171717) */
+    -webkit-box-shadow: 0 0 0 30px #171717 inset !important;
+    /* Forzamos texto blanco */
+    -webkit-text-fill-color: white !important;
+}

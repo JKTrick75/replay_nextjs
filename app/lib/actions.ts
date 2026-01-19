@@ -16,10 +16,28 @@ const LoginSchema = z.object({
   password: z.string().min(6, { message: 'Mínimo 6 caracteres.' }),
 });
 
+// 1. --- SCHEMA DE REGISTRO MEJORADO ---
 const RegisterSchema = z.object({
   name: z.string().min(2, { message: 'El nombre debe tener al menos 2 letras.' }),
-  email: z.string().email({ message: 'Email inválido.' }),
-  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
+  email: z.string().email({ message: 'Introduce un email válido.' }),
+  
+  // Password con Regex: Mínimo 6, 1 mayúscula, 1 minúscula, 1 número
+  password: z.string()
+    .min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' })
+    .regex(/[A-Z]/, { message: 'Debe contener al menos una mayúscula.' })
+    .regex(/[a-z]/, { message: 'Debe contener al menos una minúscula.' })
+    .regex(/[0-9]/, { message: 'Debe contener al menos un número.' }),
+    
+  confirmPassword: z.string(),
+
+  // Datos de ubicación (vendrán del buscador de ciudades)
+  city: z.string().min(1, { message: 'Debes seleccionar una ciudad.' }),
+  lat: z.coerce.number(), // coerce convierte el string del form a number
+  lng: z.coerce.number(),
+})
+.refine((data) => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden.",
+  path: ["confirmPassword"], // El error saldrá en este campo
 });
 
 // --- 1. ACCIÓN DE LOGIN ---
@@ -42,54 +60,42 @@ export async function authenticate(
   }
 }
 
-// --- 2. ACCIÓN DE REGISTRO ---
+// --- ACCIÓN DE REGISTRO ---
 export async function register(prevState: State, formData: FormData) {
-  
-  // 1. Validar campos
-  const validatedFields = RegisterSchema.safeParse({
-    name: formData.get('name'),
-    email: formData.get('email'),
-    password: formData.get('password'),
-  });
+  // Validamos todo (incluyendo que las passwords coincidan)
+  const validatedFields = RegisterSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Faltan campos obligatorios.',
+      message: 'Revisa los errores del formulario.',
     };
   }
 
-  const { name, email, password } = validatedFields.data;
+  const { name, email, password, city, lat, lng } = validatedFields.data;
+  
+  // Hash de contraseña
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // 👇 GENERAMOS EL AVATAR AUTOMÁTICO (DiceBear)
+  // Usamos el nombre del usuario como 'seed' para que siempre salga el mismo muñeco
+  const profileImage = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(name)}`;
 
   try {
-    // 2. Verificar si existe (usando Prisma)
-    const userExists = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (userExists) {
-      return { message: 'Este correo ya está registrado.' };
-    }
-
-    // 3. Hash Password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // 4. Crear usuario en MySQL
     await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        image: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${email}`,
-        role: 'user',
+        city,
+        lat,
+        lng,
+        image: profileImage, // 👈 GUARDAMOS LA FOTO AQUÍ
       },
     });
-
   } catch (error) {
-    console.error('Error DB:', error);
-    return {
-      message: 'Error al crear el usuario en la base de datos.',
-    };
+    console.error(error);
+    return { message: 'Error: El usuario ya existe o falló la base de datos.' };
   }
 
   redirect('/login');
@@ -127,16 +133,17 @@ export async function createListing(prevState: State, formData: FormData) {
     return { message: 'Debes iniciar sesión.' };
   }
 
+  // Buscamos al usuario para obtener su ID y SU UBICACIÓN (lat/lng)
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
   });
 
   if (!user) return { message: 'Usuario no encontrado.' };
 
-  // Validamos los datos
+  // Validamos los datos del formulario
   const validatedFields = CreateListingSchema.safeParse({
     gameId: formData.get('gameId'),
-    newGameTitle: formData.get('gameSearch'), // El input visible se llamará 'gameSearch'
+    newGameTitle: formData.get('gameSearch'), // El input de texto se llama 'gameSearch'
     platformId: formData.get('platformId'),
     price: formData.get('price'),
     condition: formData.get('condition'),
@@ -151,13 +158,13 @@ export async function createListing(prevState: State, formData: FormData) {
   }
 
   const { gameId, newGameTitle, platformId, price, condition, description } = validatedFields.data;
+  
   let finalGameId = gameId;
 
   try {
-    // LÓGICA DE JUEGO NUEVO
-    // Si no hay ID (el usuario escribió algo nuevo), creamos el juego primero
+    // 1. GESTIÓN DEL JUEGO (Existente vs Nuevo)
     if (!finalGameId && newGameTitle) {
-      // 1. Comprobamos si ya existe por nombre (para evitar duplicados tontos)
+      // Buscamos si existe por nombre (para evitar duplicados por error)
       const existingGame = await prisma.game.findFirst({
         where: { title: newGameTitle },
       });
@@ -165,15 +172,13 @@ export async function createListing(prevState: State, formData: FormData) {
       if (existingGame) {
         finalGameId = existingGame.id;
       } else {
-        // 2. Creamos el juego nuevo
+        // Si no existe, LO CREAMOS
         const newGame = await prisma.game.create({
           data: {
             title: newGameTitle,
-            coverImage: '/placeholder.png', // Imagen por defecto hasta que alguien la edite
+            coverImage: '/placeholder.png', 
             genre: 'Varios',
-            description: 'Juego añadido por la comunidad.',
-            // Ojo: Aquí NO vinculamos plataforma obligatoriamente, 
-            // la relación N:M se llena implícitamente o se deja limpia.
+            description: 'Añadido por la comunidad.',
           },
         });
         finalGameId = newGame.id;
@@ -181,16 +186,19 @@ export async function createListing(prevState: State, formData: FormData) {
     }
 
     if (!finalGameId) {
-      return { message: 'Error al identificar el juego.' };
+      return { message: 'Error: No se pudo identificar el juego.' };
     }
 
-    // Coordenadas simuladas (Madrid + Jitter)
-    const BASE_LAT = 40.416775;
-    const BASE_LNG = -3.703790;
-    const jitterLat = (Math.random() - 0.5) * 0.1;
-    const jitterLng = (Math.random() - 0.5) * 0.1;
+    // 2. CÁLCULO DE UBICACIÓN (Basado en el Usuario)
+    // Usamos la ubicación del perfil del usuario. Si no tiene (null), usamos Madrid por defecto.
+    const userLat = user.lat ?? 40.416775; 
+    const userLng = user.lng ?? -3.703790;
 
-    // CREAMOS EL ANUNCIO
+    // "Jitter": Desplazamiento aleatorio pequeño (~2km) para no revelar la casa exacta
+    const jitterLat = (Math.random() - 0.5) * 0.02; 
+    const jitterLng = (Math.random() - 0.5) * 0.02;
+
+    // 3. CREAR EL ANUNCIO
     await prisma.listing.create({
       data: {
         sellerId: user.id,
@@ -200,14 +208,15 @@ export async function createListing(prevState: State, formData: FormData) {
         condition,
         description: description || '',
         status: 'active',
-        lat: BASE_LAT + jitterLat,
-        lng: BASE_LNG + jitterLng,
+        // Guardamos la ubicación calculada (Ciudad del usuario + margen aleatorio)
+        lat: userLat + jitterLat,
+        lng: userLng + jitterLng,
       },
     });
 
   } catch (error) {
     console.error('Database Error:', error);
-    return { message: 'Error al crear el anuncio.' };
+    return { message: 'Error al guardar en base de datos.' };
   }
 
   revalidatePath('/dashboard/ventas');

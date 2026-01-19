@@ -20,6 +20,10 @@ model User {
   password  String
   image     String?   @db.Text
   role      String    @default("user")
+
+  city      String?   // Nombre del pueblo/ciudad (ej: "Valencia")
+  lat       Float?    // Latitud base del usuario
+  lng       Float?    // Longitud base del usuario
   
   // Relaciones existentes
   listings      Listing[]    // Anuncios que vende este usuario
