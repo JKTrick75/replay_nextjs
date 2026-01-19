@@ -2,7 +2,6 @@
 @config "../tailwind.config.ts";
 
 @theme {
-  
   /* Color Principal (Coral/Salmón) */
   --color-primary: #E96B56;
   --color-primary-hover: #ee8b7a;
@@ -17,7 +16,6 @@
   --color-white-off: #F8F9FA;  /* Blanco roto para fondos */
 
   /* --- TIPOGRAFÍA --- */
-  /* Conectamos la variable de Next.js con Tailwind */
   --font-roboto: var(--font-roboto);
 }
 

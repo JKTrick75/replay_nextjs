@@ -1,32 +1,24 @@
 import { prisma } from '@/app/lib/db';
 import CreateListingForm from '@/app/ui/dashboard/create-form';
-import { Game, Console } from '@/app/lib/definitions';
-
-// Definimos el tipo exacto que espera el componente
-interface GameWithPlatforms extends Game {
-  platforms: Console[];
-}
 
 export default async function CreatePage() {
-  // Obtenemos juegos y sus plataformas
-  const gamesRaw = await prisma.game.findMany({
-    include: {
-      platforms: true,
-    },
-    orderBy: {
-      title: 'asc',
-    },
+  // 1. Obtenemos TODOS los juegos (solo necesitamos id y titulo para el buscador)
+  const games = await prisma.game.findMany({
+    select: { id: true, title: true, coverImage: true },
+    orderBy: { title: 'asc' },
   });
 
-  // Casting seguro
-  const games = gamesRaw as unknown as GameWithPlatforms[];
+  // 2. Obtenemos TODAS las plataformas
+  const consoles = await prisma.console.findMany({
+    orderBy: { name: 'asc' },
+  });
 
   return (
     <main className="max-w-2xl mx-auto">
       <h1 className="mb-8 text-2xl font-bold text-dark dark:text-white">
         Publicar Nuevo Anuncio
       </h1>
-      <CreateListingForm games={games} />
+      <CreateListingForm games={games} consoles={consoles} />
     </main>
   );
 }
