@@ -50,3 +50,16 @@ body {
 .animate-dislike-trigger {
   animation: dislike-effect 0.4s ease-in-out;
 }
+
+/* --- LEAFLET CUSTOMIZACIÓN --- */
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+/* Opcional: Ajustar la sombra y el borde para que sea más moderno */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem !important; /* rounded-lg */
+  overflow: hidden;
+  padding: 0 !important;
+}
