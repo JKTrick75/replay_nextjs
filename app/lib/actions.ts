@@ -6,16 +6,9 @@ import { z } from 'zod';
 import { prisma } from '@/app/lib/db';
 import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
-
-// --- DEFINICIÓN DE TIPOS ---
-export type State = {
-  errors?: {
-    name?: string[];
-    email?: string[];
-    password?: string[];
-  };
-  message?: string | null;
-};
+import { revalidatePath } from 'next/cache';
+import { auth } from '@/auth';
+import { State } from '@/app/lib/definitions';
 
 // --- ESQUEMAS DE VALIDACIÓN ---
 const LoginSchema = z.object({
@@ -105,4 +98,86 @@ export async function register(prevState: State, formData: FormData) {
 // --- 3. ACCIÓN DE CERRAR SESIÓN ---
 export async function logout() {
   await signOut({ redirectTo: '/' });
+}
+
+// --- SCHEMA PARA VALIDAR EL ANUNCIO ---
+const CreateListingSchema = z.object({
+  gameId: z.string().min(1, { message: 'Selecciona un juego.' }),
+  platformId: z.string().min(1, { message: 'Selecciona una plataforma.' }),
+  price: z.coerce
+    .number()
+    .gt(0, { message: 'El precio debe ser mayor a 0.' }),
+  condition: z.enum(['Nuevo', 'Seminuevo', 'Usado'] as const)
+    .refine(val => val !== undefined, {
+      message: 'Selecciona un estado válido.',
+    }),
+  description: z.string().optional(),
+});
+
+// --- ACCIÓN: CREAR ANUNCIO ---
+export async function createListing(prevState: State, formData: FormData) {
+  // 1. Verificar sesión
+  const session = await auth();
+  if (!session?.user?.email) {
+    return { message: 'Debes iniciar sesión para publicar un anuncio.' };
+  }
+
+  // 2. Obtener ID real del usuario desde MySQL
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) {
+    return { message: 'Usuario no encontrado.' };
+  }
+
+  // 3. Validar datos
+  const validatedFields = CreateListingSchema.safeParse({
+    gameId: formData.get('gameId'),
+    platformId: formData.get('platformId'),
+    price: formData.get('price'),
+    condition: formData.get('condition'),
+    description: formData.get('description'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Revisa los campos obligatorios.',
+    };
+  }
+
+  const { gameId, platformId, price, condition, description } = validatedFields.data;
+
+  try {
+    // Generamos ubicación con "jitter" cerca de Madrid (Simulación)
+    const BASE_LAT = 40.416775;
+    const BASE_LNG = -3.703790;
+    const jitterLat = (Math.random() - 0.5) * 0.1;
+    const jitterLng = (Math.random() - 0.5) * 0.1;
+
+    // 4. Crear en Prisma
+    await prisma.listing.create({
+      data: {
+        sellerId: user.id,
+        gameId,
+        platformId,
+        price,
+        condition,
+        description: description || '',
+        status: 'active',
+        lat: BASE_LAT + jitterLat,
+        lng: BASE_LNG + jitterLng,
+      },
+    });
+
+  } catch (error) {
+    console.error(error);
+    return { message: 'Error de base de datos al crear el anuncio.' };
+  }
+
+  // 5. Redirigir
+  revalidatePath('/dashboard/ventas');
+  revalidatePath('/tienda');
+  redirect('/dashboard/ventas');
 }

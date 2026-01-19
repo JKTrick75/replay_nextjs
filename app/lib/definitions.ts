@@ -62,3 +62,11 @@ export interface Listing {
   // Para el frontend lo mantenemos simple: solo una lista de URLs
   photos?: string[];
 }
+
+// --- TIPO GLOBAL PARA EL ESTADO DE LOS FORMULARIOS (SERVER ACTIONS) ---
+export type State = {
+  errors?: {
+    [key: string]: string[] | undefined;
+  };
+  message?: string | null;
+};

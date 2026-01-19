@@ -1,7 +1,8 @@
 'use client';
 
 import { useActionState } from 'react';
-import { register, State } from '@/app/lib/actions';
+import { register } from '@/app/lib/actions';
+import { State } from '@/app/lib/definitions';
 import { User, AtSign, Key, AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 

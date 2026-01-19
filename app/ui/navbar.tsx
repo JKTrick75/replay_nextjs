@@ -16,7 +16,7 @@ type UserProps = {
 const navLinks = [
   { name: 'Home', href: '/' },
   { name: 'Tienda', href: '/tienda' },
-  { name: 'Vender', href: '/vender' },
+  { name: 'Vender', href: '/dashboard/ventas/crear' },
 ];
 
 export default function Navbar({ user }: { user?: UserProps }) {
