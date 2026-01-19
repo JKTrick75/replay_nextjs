@@ -181,3 +181,58 @@ export async function createListing(prevState: State, formData: FormData) {
   revalidatePath('/tienda');
   redirect('/dashboard/ventas');
 }
+
+// --- ACCIÓN: ALTERNAR FAVORITO (TOGGLE LIKE) ---
+export async function toggleFavorite(listingId: string) {
+  // 1. Autenticación
+  const session = await auth();
+  if (!session?.user?.email) {
+    return { message: 'Debes iniciar sesión.' };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) return { message: 'Usuario no encontrado.' };
+
+  try {
+    // 2. Comprobar si ya existe el like
+    const existingFavorite = await prisma.favorite.findUnique({
+      where: {
+        // Prisma crea esta clave compuesta automáticamente por el @@unique
+        userId_listingId: {
+          userId: user.id,
+          listingId: listingId,
+        },
+      },
+    });
+
+    if (existingFavorite) {
+      // SI EXISTE -> BORRAMOS (Dislike)
+      await prisma.favorite.delete({
+        where: {
+          id: existingFavorite.id,
+        },
+      });
+      revalidatePath('/dashboard/favoritos');
+      revalidatePath(`/tienda/${listingId}`);
+      return { message: 'Eliminado de favoritos.', isFavorite: false };
+    } else {
+      // NO EXISTE -> CREAMOS (Like)
+      await prisma.favorite.create({
+        data: {
+          userId: user.id,
+          listingId: listingId,
+        },
+      });
+      revalidatePath('/dashboard/favoritos');
+      revalidatePath(`/tienda/${listingId}`);
+      return { message: 'Añadido a favoritos.', isFavorite: true };
+    }
+
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    return { message: 'Error al actualizar favorito.' };
+  }
+}
