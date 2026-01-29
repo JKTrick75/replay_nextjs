@@ -6,6 +6,9 @@ export interface User {
   email: string;
   image?: string | null;
   role: string;
+  city?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface Brand {

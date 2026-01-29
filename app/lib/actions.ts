@@ -411,3 +411,147 @@ export async function toggleFavorite(listingId: string) {
     return { message: 'Error al actualizar favorito.' };
   }
 }
+
+// =========================================================================== //
+// --- PERFIL DE USUARIO --- //
+// =========================================================================== //
+
+// Schema para la actualización de perfil
+const UpdateProfileSchema = z.object({
+  name: z.string().min(2, { message: 'El nombre es muy corto.' }),
+  
+  city: z.string().optional(),
+  lat: z.coerce.number().optional(),
+  lng: z.coerce.number().optional(),
+  
+  email: z.string().email().optional().or(z.literal('')),
+  confirmEmail: z.string().optional().or(z.literal('')),
+
+  currentPassword: z.string().optional().or(z.literal('')),
+  
+  // 👇 VALIDACIÓN SEGURA (Igual que Register)
+  newPassword: z.string()
+    .min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' })
+    .regex(/[A-Z]/, { message: 'Debe contener al menos una mayúscula.' })
+    .regex(/[a-z]/, { message: 'Debe contener al menos una minúscula.' })
+    .regex(/[0-9]/, { message: 'Debe contener al menos un número.' })
+    .optional()
+    .or(z.literal('')), // Permite que esté vacía si no quiere cambiarla
+
+  confirmNewPassword: z.string().optional().or(z.literal('')),
+  
+  image: z.string().optional(),
+})
+.refine((data) => {
+  // SOLUCIÓN: Solo validamos si el usuario ha escrito una confirmación
+  if (data.confirmEmail && data.confirmEmail !== '') {
+    return data.email === data.confirmEmail;
+  }
+  return true; 
+}, {
+  message: "Los correos electrónicos no coinciden.",
+  path: ["confirmEmail"],
+})
+.refine((data) => {
+  // Lo mismo para la contraseña
+  if (data.confirmNewPassword && data.confirmNewPassword !== '') {
+    return data.newPassword === data.confirmNewPassword;
+  }
+  return true;
+}, {
+  message: "Las contraseñas nuevas no coinciden.",
+  path: ["confirmNewPassword"],
+});
+
+export async function updateProfile(prevState: State, formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado' };
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) return { message: 'Usuario no encontrado' };
+
+  // 1. Validar datos
+  const validatedFields = UpdateProfileSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Revisa los errores del formulario.',
+    };
+  }
+
+  const { 
+    name, city, lat, lng, image, 
+    email, currentPassword, newPassword 
+  } = validatedFields.data;
+
+  const dataToUpdate: any = { 
+    name, 
+    city,
+    lat, 
+    lng, 
+    image 
+  };
+
+  // 2. Lógica de cambio de EMAIL
+  if (email && email !== user.email) {
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return { 
+        errors: { email: ['Este correo ya está en uso por otro usuario.'] },
+        message: 'Error en el correo.' 
+      };
+    }
+    dataToUpdate.email = email;
+  }
+
+  // 3. Lógica de cambio de CONTRASEÑA
+  if (newPassword) {
+    if (!currentPassword) {
+      return { 
+        errors: { currentPassword: ['Debes introducir tu contraseña actual.'] },
+        message: 'Falta contraseña actual.' 
+      };
+    }
+
+    // 👇 VALIDACIÓN: Que no sea igual a la actual (Solo si se escribe una nueva)
+    if (newPassword === currentPassword) {
+         return {
+            errors: { newPassword: ['La nueva contraseña no puede ser igual a la actual.'] },
+            message: 'La contraseña debe ser diferente.'
+         };
+    }
+
+    const passwordsMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!passwordsMatch) {
+      return { 
+        errors: { currentPassword: ['La contraseña actual es incorrecta.'] },
+        message: 'Error de seguridad.' 
+      };
+    }
+
+    // Hashear la nueva
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    dataToUpdate.password = hashedPassword;
+  }
+
+  // 4. Actualizar en DB
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: dataToUpdate,
+    });
+    
+    revalidatePath('/dashboard/perfil');
+    revalidatePath('/', 'layout'); 
+    
+    return { message: '¡Perfil actualizado con éxito!' };
+
+  } catch (error) {
+    console.error(error);
+    return { message: 'Error al actualizar el perfil.' };
+  }
+}
