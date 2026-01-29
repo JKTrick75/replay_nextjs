@@ -1,34 +1,50 @@
-import { prisma } from '@/app/lib/db'; // Importamos Prisma
+import { prisma } from '@/app/lib/db'; 
 import { Listing as IListing } from '@/app/lib/definitions'; 
 import Hero from '@/app/ui/hero';
 import CategoryGrid from '@/app/ui/home/category-grid';
 import GameCard from '@/app/ui/game-card';
 import Link from 'next/link';
+import { auth } from '@/auth'; // 👈 IMPORTANTE
 
 export default async function Home() {
-  // 1. Obtener los últimos 8 anuncios activos (VERSIÓN PRISMA)
+  
+  // 1. OBTENER SESIÓN Y FAVORITOS (NUEVO)
+  const session = await auth();
+  const userEmail = session?.user?.email;
+  let favoriteIds: string[] = [];
+
+  if (userEmail) {
+    const user = await prisma.user.findUnique({
+      where: { email: userEmail },
+      include: { favorites: true }
+    });
+    if (user) {
+      favoriteIds = user.favorites.map(fav => fav.listingId);
+    }
+  }
+
+  // 2. Obtener los últimos 8 anuncios activos
   const listingsRaw = await prisma.listing.findMany({
     where: { 
       status: 'active' 
     },
     include: {
-      game: true,     // .populate('game')
-      platform: true, // .populate('platform')
-      seller: true    // Necesario para evitar errores de tipo en la interfaz
+      game: true,     
+      platform: true, 
+      seller: true    
     },
     orderBy: {
-      createdAt: 'desc' // .sort({ createdAt: -1 })
+      createdAt: 'desc' 
     },
-    take: 8 // .limit(8)
+    take: 8 
   });
 
-  // 2. Adaptar tipos (Prisma devuelve objetos con nulls, forzamos la interfaz)
   const listings = listingsRaw as unknown as IListing[];
 
   return (
     <main className="min-h-screen bg-white-off dark:bg-neutral-800 transition-colors duration-300">
       
-      {/* 1. SECCIÓN HERO (Portada) */}
+      {/* 1. SECCIÓN HERO */}
       <Hero />
 
       {/* 2. SECCIÓN: CATEGORÍAS */}
@@ -54,8 +70,13 @@ export default async function Home() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {listings.map((ad) => (
-              // OJO: Cambiamos _id por id
-              <GameCard key={ad.id} ad={ad} />
+              // 👇 AQUÍ PASAMOS LAS PROPS QUE FALTABAN
+              <GameCard 
+                key={ad.id} 
+                ad={ad} 
+                isLoggedIn={!!userEmail}
+                initialIsFavorite={favoriteIds.includes(ad.id)}
+              />
             ))}
           </div>
         )}

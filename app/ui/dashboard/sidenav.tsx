@@ -8,14 +8,15 @@ import {
   Package, 
   Heart, 
   Settings, 
-  LogOut 
+  LogOut
+  // ClipboardList <-- Ya no necesitamos este icono
 } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
 
-// Definimos los enlaces del menú
 const links = [
   { name: 'Resumen', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Mis Productos', href: '/dashboard/ventas', icon: Package },
+  // ❌ ELIMINADO: Historial Ventas
   { name: 'Mis Compras', href: '/dashboard/compras', icon: ShoppingBag },
   { name: 'Favoritos', href: '/dashboard/favoritos', icon: Heart },
   { name: 'Perfil', href: '/dashboard/perfil', icon: Settings },
@@ -26,8 +27,6 @@ export default function SideNav() {
 
   return (
     <div className="flex h-full flex-col px-3 py-4 md:px-2">
-      
-      {/* Enlaces de Navegación */}
       <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
         {links.map((link) => {
           const LinkIcon = link.icon;
@@ -50,10 +49,8 @@ export default function SideNav() {
           );
         })}
 
-        {/* Espaciador flexible (empuja el botón de salir abajo en desktop) */}
         <div className="hidden h-auto w-full grow rounded-md bg-gray-50 dark:bg-transparent md:block"></div>
 
-        {/* Botón Cerrar Sesión (Versión Sidebar) */}
         <button
           onClick={async () => await logout()}
           className="flex h-12 w-full grow items-center justify-center gap-2 rounded-xl bg-white dark:bg-neutral-800 p-3 text-sm font-medium text-primary hover:bg-red-50 dark:hover:bg-primary-hover/20 md:flex-none md:justify-start md:p-2 md:px-3 transition-colors border border-gray-200 dark:border-neutral-700"

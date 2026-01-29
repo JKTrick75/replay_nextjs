@@ -1,14 +1,16 @@
 import Link from 'next/link';
 import { Listing } from '@/app/lib/definitions';
 import { Tag } from 'lucide-react';
-import FavoriteButton from './favorite-button'; // 👇 Importamos el botón
+import FavoriteButton from './favorite-button'; 
 
 export default function GameCard({ 
   ad, 
-  initialIsFavorite = false // Por defecto false si no se pasa
+  initialIsFavorite = false,
+  isLoggedIn // 👇 NUEVA PROP REQUERIDA
 }: { 
   ad: Listing,
-  initialIsFavorite?: boolean 
+  initialIsFavorite?: boolean,
+  isLoggedIn: boolean // Definimos el tipo
 }) {
   
   // LÓGICA DE NOVEDAD:
@@ -52,7 +54,8 @@ export default function GameCard({
             <div className="absolute bottom-2 left-2 z-30">
                 <FavoriteButton 
                     listingId={ad.id} 
-                    initialIsFavorite={initialIsFavorite} 
+                    initialIsFavorite={initialIsFavorite}
+                    isLoggedIn={isLoggedIn} // 👈 SE LO PASAMOS AQUÍ
                 />
             </div>
         </div>

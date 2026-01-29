@@ -21,18 +21,17 @@ model User {
   image     String?   @db.Text
   role      String    @default("user")
 
-  city      String?   // Nombre del pueblo/ciudad (ej: "Valencia")
+  city      String?   // Nombre del pueblo/ciudad
   lat       Float?    // Latitud base del usuario
   lng       Float?    // Longitud base del usuario
   
-  // Relaciones existentes
-  listings      Listing[]    // Anuncios que vende este usuario
+  // --- RELACIONES DE VENTA Y COMPRA ---
+  sales     Listing[] @relation("SellerRelation") // Lo que vende
+  purchases Listing[] @relation("BuyerRelation")  // Lo que compra
   
-  // --- NOVEDADES DASHBOARD ---
-  favorites     Favorite[]   // Productos que le gustan
-  ordersBought  Order[]      @relation("BuyerOrders") // Pedidos que ha COMPRADO
-  ordersSold    Order[]      @relation("SellerOrders") // Pedidos que ha VENDIDO
-  
+  // --- FAVORITOS ---
+  favorites Favorite[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -42,12 +41,12 @@ model User {
 // --------------------------------------------------------
 
 model Brand {
-  id        String    @id @default(uuid()) @db.VarChar(36)
-  name      String    @unique @db.VarChar(191)
-  country   String?
-  logo      String?
+  id       String    @id @default(uuid()) @db.VarChar(36)
+  name     String    @unique @db.VarChar(191)
+  country  String?
+  logo     String?
   
-  consoles  Console[]
+  consoles Console[]
 }
 
 model Console {
@@ -60,7 +59,7 @@ model Console {
   brandId     String    @db.VarChar(36)
   brand       Brand     @relation(fields: [brandId], references: [id])
   
-  games       Game[]    @relation("GamePlatforms") // Relación N:M para filtros
+  games       Game[]    @relation("GamePlatforms") 
   listings    Listing[]
 }
 
@@ -72,7 +71,7 @@ model Game {
   genre       String?
   releaseYear Int?
   
-  platforms   Console[] @relation("GamePlatforms") // Relación N:M para filtros
+  platforms   Console[] @relation("GamePlatforms") 
   listings    Listing[]
 }
 
@@ -85,16 +84,23 @@ model Listing {
   price       Float
   condition   String
   description String?   @db.Text
-  status      String    @default("active") // 'active', 'sold', 'reserved'
+  status      String    @default("active") // 'active', 'sold'
   
-  // Ubicación plana
+  // Ubicación del anuncio
   lat         Float?
   lng         Float?
 
-  // Relaciones del Producto
+  // --- VENDEDOR (Seller) ---
   sellerId    String    @db.VarChar(36)
-  seller      User      @relation(fields: [sellerId], references: [id])
+  seller      User      @relation("SellerRelation", fields: [sellerId], references: [id])
   
+  // --- COMPRADOR (Buyer) - Nuevo Campo ---
+  buyerId     String?   @db.VarChar(36)
+  buyer       User?     @relation("BuyerRelation", fields: [buyerId], references: [id])
+
+  soldAt      DateTime? // Se rellenará solo cuando status pase a 'sold'
+
+  // Relaciones del Producto
   gameId      String    @db.VarChar(36)
   game        Game      @relation(fields: [gameId], references: [id])
   
@@ -102,10 +108,7 @@ model Listing {
   platform    Console   @relation(fields: [platformId], references: [id])
   
   photos      ListingPhoto[]
-
-  // --- NOVEDADES DASHBOARD ---
-  favoritedBy Favorite[] // Usuarios que han dado like
-  order       Order?     // Si se vende, tendrá un pedido asociado (Relación 1 a 1 opcional)
+  favoritedBy Favorite[] 
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -118,7 +121,10 @@ model ListingPhoto {
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 }
 
-// --- TABLA NUEVA: FAVORITOS ---
+// --------------------------------------------------------
+// 4. EXTRAS (Favoritos)
+// --------------------------------------------------------
+
 model Favorite {
   id        String   @id @default(uuid()) @db.VarChar(36)
   
@@ -130,26 +136,5 @@ model Favorite {
 
   createdAt DateTime @default(now())
 
-  // Un usuario no puede dar like dos veces al mismo anuncio
   @@unique([userId, listingId]) 
-}
-
-// --- TABLA NUEVA: PEDIDOS (Historial) ---
-model Order {
-  id        String   @id @default(uuid()) @db.VarChar(36)
-  
-  totalPrice Float    // Guardamos el precio al que se vendió (por si cambia luego)
-  status     String   @default("completed") // 'pending', 'completed', 'cancelled'
-
-  // Relaciones
-  listingId String   @unique @db.VarChar(36) // Un anuncio solo se vende una vez
-  listing   Listing  @relation(fields: [listingId], references: [id])
-
-  buyerId   String   @db.VarChar(36)
-  buyer     User     @relation("BuyerOrders", fields: [buyerId], references: [id])
-
-  sellerId  String   @db.VarChar(36) // Redundante pero útil para consultas rápidas de "Mis Ventas"
-  seller    User     @relation("SellerOrders", fields: [sellerId], references: [id])
-
-  createdAt DateTime @default(now())
 }

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // 👈 Importamos useEffect
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X } from 'lucide-react'; // Añadidos Menu y X
+import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
 
 type UserProps = {
@@ -23,6 +23,13 @@ export default function Navbar({ user }: { user?: UserProps }) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);        // Dropdown escritorio
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Menú móvil
+
+  // 👇 SOLUCIÓN: Cerrar menús automáticamente al cambiar de ruta
+  // Esto arregla que se quede abierto al hacer login/redirect
+  useEffect(() => {
+    setIsMenuOpen(false);
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
     <nav className="w-full bg-white dark:bg-dark border-b border-gray-light dark:border-gray sticky top-0 z-50 transition-colors duration-300">
@@ -184,7 +191,6 @@ export default function Navbar({ user }: { user?: UserProps }) {
                    <LayoutDashboard size={18} /> Mi Panel
                 </Link>
 
-                {/* BOTÓN LOGOUT MÓVIL (Respetando tus colores) */}
                 <button
                    onClick={async () => {
                       await logout();

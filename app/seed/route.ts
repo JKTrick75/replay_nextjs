@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/db'; // Importamos Prisma
+import { prisma } from '@/app/lib/db';
 
-// --- COORDENADAS BASE (Ciudades de España) ---
+// ... (MANTÉN TUS CONSTANTES DE CIUDADES, MARCAS, CONSOLAS Y JUEGOS AQUÍ ARRIBA IGUAL QUE ANTES) ...
+// Para no hacer el mensaje eterno, asumo que las constantes OLD_MARCAS, OLD_CONSOLAS, etc. siguen ahí.
+
 const SPANISH_CITIES = [
+  { name: 'Aielo de Malferit', lat: 38.8786, lng: -0.5906 },
+  { name: 'Ontinyent', lat: 38.8228, lng: -0.6074 },
   { name: 'Madrid', lat: 40.416775, lng: -3.703790 },
   { name: 'Barcelona', lat: 41.385064, lng: 2.173404 },
   { name: 'Valencia', lat: 39.469907, lng: -0.376288 },
@@ -17,7 +21,6 @@ const SPANISH_CITIES = [
   { name: 'Palma', lat: 39.569600, lng: 2.650160 }
 ];
 
-// --- DATOS RAW ---
 const OLD_MARCAS = [
   { "_id": "69047fcd3bc991d7f84958e4", "nom": "Nintendo", "pais_origen": "Japón" },
   { "_id": "690480b73bc991d7f84958e9", "nom": "Sony", "pais_origen": "EEUU" },
@@ -25,9 +28,7 @@ const OLD_MARCAS = [
 ];
 
 const OLD_CONSOLAS = [
-  // 👇 NUEVA PLATAFORMA: PC (Usamos ID inventado 'pc-id-001' y marca Microsoft)
   { "_id": "pc-id-001", "nom": "PC", "any_eixida": 1980, "marca_id": "691379f728c1cdaa2d7cf1bb", "foto": "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?q=80&w=800&auto=format&fit=crop" },
-  
   { "_id": "69137ba428c1cdaa2d7cf1fe", "nom": "PlayStation 1", "any_eixida": 1994, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/yLOfOCMUbl6KwAcr9ctPd8GMXZM_umAwlYmy0Qx00u0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMjE5/NzUxMDgyMy9mci9w/aG90by9zb255LXBs/YXlzdGF0aW9uLTEt/dmlkZW8tZ2FtZS1j/b25zb2xlLmpwZz9z/PTYxMng2MTImdz0w/Jms9MjAmYz1qU21i/OVhBXzluMzh4LVpk/V0dNc1ZiM3VwbERf/M0FwdGs0MjVXcU1w/TUtVPQ" },
   { "_id": "69137bb328c1cdaa2d7cf200", "nom": "PlayStation 2", "any_eixida": 2000, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/jPhxvz47YdX9bKF3_5wtk1JopTk9FtzFQtXS0ZrwNyA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy8w/LzAzL1BTMi1TbGlt/LUNvbnNvbGUtU2V0/LmpwZw" },
   { "_id": "69137bc428c1cdaa2d7cf202", "nom": "PlayStation 3", "any_eixida": 2006, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/DzvvboIMRLfGDhxOHfZMmfTVAoMZs51EJh-GnAgTt0w/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvNDU4/NTkzMDkzL3Bob3Rv/L3NvbnktcGxheXN0/YXRpb24tMy13aXRo/LWNvbnRyb2xsZXIu/anBnP3M9NjEyeDYx/MiZ3PTAmaz0yMCZj/PThMQlRrVjF3MThP/X3ZMUDl2N2JQVGhV/YmpybzB4SlIzbnQ5/X19GTlRxYWs9" },
@@ -35,7 +36,7 @@ const OLD_CONSOLAS = [
   { "_id": "69137bdc28c1cdaa2d7cf206", "nom": "PlayStation 5", "any_eixida": 2020, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/CIlHpm-0VY8WvVR6QW1zbZEx7FM0oK5uZRyi0T6-_YU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMTU4/MDkyMDAwNS9waG90/by9wbGF5c3RhdGlv/bi1kdWFsc2Vuc2Ut/Y29udHJvbGxlci1h/bmQtcGxheXN0YXRp/b24tNS1jb25zb2xl/LWFyZS1zZWVuLWlu/LXRoaXMtaWxsdXN0/cmF0aW9uLmpwZz9z/PTYxMng2MTImdz0w/Jms9MjAmYz1ZRlNF/d0h5VnBxMGw0Ulg0/OGJ5aVVXWmpIbFZl/bFVDSnQzLWk2c0JF/YS1FPQ" },
   { "_id": "69137bec28c1cdaa2d7cf208", "nom": "PSP", "any_eixida": 2004, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/St3aPBCbQIGhIFjDBfb_h6RMQdfOMgtfGYTAx1mCJTk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tLm1l/ZGlhLWFtYXpvbi5j/b20vaW1hZ2VzL0kv/NjE0dlF4Zk1jTEwu/anBn" },
   { "_id": "69137bfc28c1cdaa2d7cf20a", "nom": "PS Vita", "any_eixida": 2011, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/I9YQq4p93g-yVAdQrE19MCBDCkpaJzEz0LBF5WKc5aA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvNDU5/MDEwNjc5L3Bob3Rv/L3BsYXlzdGF0aW9u/LXZpdGEuanBnP3M9/NjEyeDYxMiZ3PTAm/az0yMCZjPXJ1bG1H/RGJza2xtRGxIUWZm/Y2dDWVF5MVJ5ekxp/dWZCUWFJX0FkS0N3/TWM9" },
-  { "_id": "69137c0828c1cdaa2d7cf20c", "nom": "Xbox", "any_eixida": 2001, "marca_id": "691379f728c1cdaa2d7cf1bb", "foto": "https://imgs.search.brave.com/j-Xa8h33XCJhw0_bTSPsgyLM2Bq3CntTiP9A9Kls4Ro/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvOTAx/MDg4L3Bob3RvL21p/Y3Jvc29mdHMteGJv/eC12aWRlby1nYW1l/LWNvbnNvbGUtaXMt/b24tZGlzcGxheS1p/bi1hbi11bmRhdGVk/LXBob3RvLXRoZS14/Ym94LWFkdmVydGlz/ZXMtd2l0aC5qcGc_/cz02MTJ4NjEyJnc9/MCZrPTIwJmM9dnFL/ZWY2OG5NaXplZTNK/MjhzMUlIRmlTUElR/cWxnMnl4RG9kdjEz/Y29vND0" },
+  { "_id": "69137c0828c1cdaa2d7cf20c", "nom": "Xbox", "any_eixida": 2001, "marca_id": "691379f728c1cdaa2d7cf1bb", "foto": "https://imgs.search.brave.com/j-Xa8h33XCJhw0_bTSPsgyLM2Bq3CntTiP9A9Kls4Ro/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvOTAx/MDg4L3Bob3Rv/L21p/Y3Jvc29mdHMteGJv/eC12aWRlby1nYW1l/LWNvbnNvbGUtaXMt/b24tZGlzcGxheS1p/bi1hbi11bmRhdGVk/LXBob3RvLXRoZS14/Ym94LWFkdmVydGlz/ZXMtd2l0aC5qcGc_/cz02MTJ4NjEyJnc9/MCZrPTIwJmM9dnFL/ZWY2OG5NaXplZTNK/MjhzMUlIRmlTUElR/cWxnMnl4RG9kdjEz/Y29vND0" },
   { "_id": "69137c1728c1cdaa2d7cf20e", "nom": "Xbox 360", "any_eixida": 2005, "marca_id": "691379f728c1cdaa2d7cf1bb", "foto": "https://imgs.search.brave.com/d_7G6ac0S5PGaE70-MvJn6CMTakxwuXGUYWmG260AAg/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWFn/ZXMtbmEuc3NsLWlt/YWdlcy1hbWF6b24u/Y29tL2ltYWdlcy9J/LzYxb0Zxc29qOW5M/LmpwZw" },
   { "_id": "69137c2c28c1cdaa2d7cf210", "nom": "Xbox One", "any_eixida": 2013, "marca_id": "691379f728c1cdaa2d7cf1bb", "foto": "https://imgs.search.brave.com/GzNZmbteK9zOMgAD6r89k3beSMbMpsnORlkWzZH-n_k/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/bW9zLmNtcy5mdXR1/cmVjZG4ubmV0Lzl2/aGJoVnJkaXlaMnhG/UlJZV05aajguanBn" },
   { "_id": "69137c3628c1cdaa2d7cf212", "nom": "Xbox Series X", "any_eixida": 2020, "marca_id": "691379f728c1cdaa2d7cf1bb", "foto": "https://imgs.search.brave.com/ekCkfBrjGkUcziUGQIFGAOSZsrkjPShozUFtQscwBEg/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJzLmNvbS9p/bWFnZXMvaGQvYmxh/Y2steGJveC1zZXJp/ZXMteC1zZXQtNzV5/Nmxmem9vOXdra3hm/cC5qcGc" },
@@ -46,7 +47,6 @@ const OLD_CONSOLAS = [
 ];
 
 const OLD_JUEGOS = [
-  // He añadido 'pc-id-001' a los juegos multiplataforma para que el seed genere también anuncios de PC
   { "nom": "Elden Ring", "genero": "RPG de Acción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co4jni.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
   { "nom": "The Legend of Zelda: Tears of the Kingdom", "genero": "Aventura", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co5vmg.webp", "consolas_disponibles": ["69137c3c28c1cdaa2d7cf214"] },
   { "nom": "Grand Theft Auto V", "genero": "Mundo Abierto", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2lbd.webp", "consolas_disponibles": ["pc-id-001", "69137bc428c1cdaa2d7cf202", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
@@ -82,79 +82,90 @@ const OLD_JUEGOS = [
   { "nom": "Hollow Knight: Silksong", "genero": "Metroidvania", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaend.webp", "consolas_disponibles": ["pc-id-001", "69137bdc28c1cdaa2d7cf206", "69137c3628c1cdaa2d7cf212", "69137c5628c1cdaa2d7cf216", "69137c3c28c1cdaa2d7cf214", "69137bcd28c1cdaa2d7cf204", "69137c2c28c1cdaa2d7cf210"] }
 ];
 
-
 export async function GET() {
   try {
-    // 1. Limpieza total (Borramos en orden inverso para no romper Foreign Keys)
+    // 1. Limpieza
+    // 👇 ¡AQUÍ ESTÁ LA SOLUCIÓN! Borramos favoritos antes que listings
+    await prisma.favorite.deleteMany({});
+    
     await prisma.listing.deleteMany({});
     await prisma.game.deleteMany({});
     await prisma.console.deleteMany({});
     await prisma.brand.deleteMany({});
-    await prisma.user.deleteMany({});
+    // await prisma.user.deleteMany({}); 
 
-    // 2. Crear Usuarios (Para que sean los vendedores)
-    // Nota: Como es seed, guardamos la password plana o hasheada si importas bcrypt.
-    // Para simplificar, ponemos un string fijo.
-    const user1 = await prisma.user.create({
-      data: {
-        name: 'David Gamer',
-        email: 'david@example.com',
-        password: '$2a$10$abcdefg...', // Hash falso o importa bcrypt
-        role: 'admin',
-        image: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=david@example.com'
-      }
+    // 2. GESTIÓN DE USUARIOS
+    let realDavid = await prisma.user.findUnique({
+      where: { email: 'david@gmail.com' }
     });
 
-    const user2 = await prisma.user.create({
-      data: {
-        name: 'Maria Vendedora',
-        email: 'maria@example.com',
-        password: '$2a$10$abcdefg...', 
-        role: 'user',
-        image: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=maria@example.com'
-      }
-    });
-
-    // 3. Crear Marcas y Mapa de IDs
-    // Necesitamos mapear ID_VIEJO_MONGO -> ID_NUEVO_PRISMA (UUID)
-    const brandMap: Record<string, string> = {}; 
-
-    for (const oldBrand of OLD_MARCAS) {
-      const newBrand = await prisma.brand.create({
+    if (!realDavid) {
+      realDavid = await prisma.user.create({
         data: {
-          name: oldBrand.nom,
-          country: oldBrand.pais_origen
+          name: 'david',
+          email: 'david@gmail.com',
+          password: 'changeme',
+          city: 'Aielo de Malferit',
+          lat: 38.8786,
+          lng: -0.5906,
+          image: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=david'
         }
       });
-      // Guardamos la relación: "6904..." -> "uuid-nuevo-..."
+    }
+
+    const fakeUser1 = await prisma.user.upsert({
+      where: { email: 'david.gamer@example.com' },
+      update: {},
+      create: {
+        name: 'David Gamer',
+        email: 'david.gamer@example.com',
+        password: '$2a$10$abcdefg...',
+        role: 'user',
+        image: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=DavidGamer',
+        city: 'Madrid', lat: 40.416775, lng: -3.703790
+      }
+    });
+
+    const fakeUser2 = await prisma.user.upsert({
+      where: { email: 'maria.vendedora@example.com' },
+      update: {},
+      create: {
+        name: 'Maria Vendedora',
+        email: 'maria.vendedora@example.com',
+        password: '$2a$10$abcdefg...',
+        role: 'user',
+        image: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=MariaVendedora',
+        city: 'Barcelona', lat: 41.385064, lng: 2.173404
+      }
+    });
+
+    // 3. CATÁLOGO
+    const brandMap: Record<string, string> = {}; 
+    for (const oldBrand of OLD_MARCAS) {
+      const newBrand = await prisma.brand.create({
+        data: { name: oldBrand.nom, country: oldBrand.pais_origen }
+      });
       brandMap[oldBrand._id] = newBrand.id;
     }
 
-    // 4. Crear Consolas y Mapa
     const consoleMap: Record<string, any> = {}; 
-
     for (const oldConsole of OLD_CONSOLAS) {
-      // Buscamos el ID nuevo de la marca usando el mapa
       const newBrandId = brandMap[oldConsole.marca_id];
       if (!newBrandId) continue; 
-
       const newConsole = await prisma.console.create({
         data: {
           name: oldConsole.nom,
           shortName: oldConsole.nom.replace("Nintendo ", "").replace("PlayStation ", "PS").replace("Microsoft ", ""),
           releaseYear: oldConsole.any_eixida,
           image: oldConsole.foto,
-          brandId: newBrandId // Relación SQL
+          brandId: newBrandId
         }
       });
       consoleMap[oldConsole._id] = newConsole;
     }
 
-    // 5. Crear Juegos (Relación Muchos a Muchos con Consolas)
     const createdGames = [];
-
     for (const oldGame of OLD_JUEGOS) {
-      // Traducimos los IDs de consolas viejos a nuevos UUIDs
       const validPlatformIds = oldGame.consolas_disponibles
         .map((oldId) => consoleMap[oldId]?.id)
         .filter((id) => id !== undefined);
@@ -164,28 +175,24 @@ export async function GET() {
           title: oldGame.nom,
           genre: oldGame.genero,
           coverImage: oldGame.foto,
-          // Conectamos las plataformas en Prisma
-          platforms: {
-            connect: validPlatformIds.map((id) => ({ id }))
-          }
+          platforms: { connect: validPlatformIds.map((id) => ({ id })) }
         },
-        include: { platforms: true } // Para tenerlas disponibles abajo
+        include: { platforms: true }
       });
       createdGames.push(newGame);
     }
 
-    // 6. Generar Anuncios (Listings)
+    // 4. GENERAR ANUNCIOS
+    
+    // A) RELLENO MASIVO
+    const conditions = ['Nuevo', 'Seminuevo', 'Usado'] as const;
     let listingsCount = 0;
-    const conditions = ['Nuevo', 'Seminuevo', 'Usado'];
 
     for (const game of createdGames) {
-      // Solo creamos anuncio si el juego tiene plataformas compatibles
       if (game.platforms.length > 0) {
+        const randomUser = Math.random() > 0.5 ? fakeUser1 : fakeUser2;
         const randomPlatform = game.platforms[Math.floor(Math.random() * game.platforms.length)];
-        const randomUser = Math.random() > 0.5 ? user1 : user2;
         const city = SPANISH_CITIES[Math.floor(Math.random() * SPANISH_CITIES.length)];
-        
-        // Jitter de ubicación
         const jitterLat = (Math.random() - 0.5) * 0.1;
         const jitterLng = (Math.random() - 0.5) * 0.1;
 
@@ -194,11 +201,10 @@ export async function GET() {
             sellerId: randomUser.id,
             gameId: game.id,
             platformId: randomPlatform.id,
-            price: Math.floor(Math.random() * 60) + 10, 
+            price: Math.floor(Math.random() * 60) + 10,
             condition: conditions[Math.floor(Math.random() * conditions.length)],
-            description: `Vendo ${game.title} en perfecto estado. Entrega en mano en ${city.name} o envío.`,
+            description: `Vendo ${game.title} en buen estado.`,
             status: 'active',
-            // 👇 UBICACIÓN PLANA (MySQL)
             lat: city.lat + jitterLat,
             lng: city.lng + jitterLng
           }
@@ -207,14 +213,56 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ 
-      message: 'Base de datos MySQL sembrada con éxito 🇪🇸🚀', 
-      stats: {
-        brands: Object.keys(brandMap).length,
-        consolas: Object.keys(consoleMap).length,
-        games: createdGames.length,
-        listings: listingsCount
+    // B) TUS VENTAS
+    await prisma.listing.create({
+      data: {
+        sellerId: realDavid.id,
+        gameId: createdGames[0].id, // Elden Ring
+        platformId: createdGames[0].platforms[0].id,
+        price: 45,
+        condition: 'Seminuevo',
+        description: 'Me lo he pasado y quiero comprar otro.',
+        status: 'active',
+        lat: realDavid.lat || 38.8786, lng: realDavid.lng || -0.5906
       }
+    });
+
+    await prisma.listing.create({
+      data: {
+        sellerId: realDavid.id,
+        gameId: createdGames[2].id, // GTA V
+        platformId: createdGames[2].platforms[0].id,
+        price: 20, 
+        condition: 'Usado',
+        description: 'Vendido a un colega.',
+        status: 'sold',
+        buyerId: fakeUser1.id, 
+        soldAt: new Date('2023-11-15'), 
+        lat: realDavid.lat || 38.8786, lng: realDavid.lng || -0.5906,
+        updatedAt: new Date('2023-11-15')
+      }
+    });
+
+    // C) TUS COMPRAS
+    await prisma.listing.create({
+      data: {
+        sellerId: fakeUser2.id, 
+        gameId: createdGames[9].id, // Witcher 3
+        platformId: createdGames[9].platforms[0].id,
+        price: 15,
+        condition: 'Usado',
+        description: 'Edición GOTY',
+        status: 'sold',
+        buyerId: realDavid.id, 
+        soldAt: new Date('2024-02-10'), 
+        lat: fakeUser2.lat || 41.3850, lng: fakeUser2.lng || 2.1734,
+        updatedAt: new Date('2024-02-10')
+      }
+    });
+
+    return NextResponse.json({ 
+      message: 'Seed actualizado con limpieza de favoritos 🚀', 
+      details: 'La base de datos se ha limpiado correctamente y ya no hay inconsistencias.' 
     });
 
   } catch (error) {

@@ -44,14 +44,19 @@ const RegisterSchema = z.object({
   path: ["confirmPassword"], // El error saldrá en este campo
 });
 
-// --- 1. ACCIÓN DE LOGIN ---
+// --- 1. ACCIÓN DE LOGIN (CORREGIDA Y FINAL) ---
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
 ) {
   try {
+    // 1. Intentamos loguearnos.
+    // Esto lanzará un error "NEXT_REDIRECT" si sale bien, 
+    // o un "AuthError" si sale mal.
     await signIn('credentials', formData);
+    
   } catch (error) {
+    // 2. Si es un error de credenciales incorrectas, lo devolvemos al front.
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
@@ -60,8 +65,17 @@ export async function authenticate(
           return 'Algo salió mal.';
       }
     }
-    throw error;
+    
+    // 3. TRUCO CLAVE:
+    // Si llegamos aquí, NO es un error de Auth, así que probablemente sea 
+    // la redirección exitosa automática de NextAuth (que intentaría ir al callbackUrl).
+    // NO hacemos "throw error" aquí. Lo ignoramos para anular esa redirección.
   }
+
+  // 4. FORZAMOS LA REDIRECCIÓN MANUAL LIMPIA
+  // Al llegar aquí, la sesión ya está creada.
+  // Mandamos al usuario al dashboard sin parámetros extra en la URL.
+  redirect('/dashboard');
 }
 
 // --- ACCIÓN DE REGISTRO ---

@@ -1,18 +1,33 @@
-import { prisma } from '@/app/lib/db'; // Importamos Prisma
+import { prisma } from '@/app/lib/db'; 
 import { Listing as IListing, Console as IConsole } from '@/app/lib/definitions'; 
 import GameCard from '@/app/ui/game-card';
 import ShopFilters from '@/app/ui/shop/filters';
 import Pagination from '@/app/ui/pagination';
 import Link from 'next/link';
 import MapLoader from '@/app/ui/shop/map-loader';
+import { auth } from '@/auth'; // 👈 IMPORTANTE
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
 export default async function ShopPage(props: { searchParams: SearchParams }) {
   const searchParams = await props.searchParams;
-  // Ya no hace falta connectDB(), Prisma gestiona la conexión
 
-  // 1. Obtener parámetros de la URL
+  // 1. OBTENER SESIÓN Y FAVORITOS (NUEVO)
+  const session = await auth();
+  const userEmail = session?.user?.email;
+  let favoriteIds: string[] = []; // Lista de IDs que le gustan al usuario
+
+  if (userEmail) {
+    const user = await prisma.user.findUnique({
+      where: { email: userEmail },
+      include: { favorites: true } // Traemos los favoritos
+    });
+    if (user) {
+      favoriteIds = user.favorites.map(fav => fav.listingId);
+    }
+  }
+
+  // 2. Obtener parámetros de la URL
   const query = searchParams.query?.toString().toLowerCase() || '';
   const platformFilter = searchParams.platform?.toString() || '';
   const conditionFilter = searchParams.condition?.toString() || '';
@@ -21,43 +36,36 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
   const currentPage = Number(searchParams.page) || 1;
   const ITEMS_PER_PAGE = 6; 
 
-  // 2. Traer datos de la Base de Datos (VERSIÓN PRISMA)
+  // 3. Traer datos de la Base de Datos
   const [listingsRaw, platformsRaw] = await Promise.all([
     prisma.listing.findMany({
       where: { 
         status: 'active' 
       },
       include: {
-        game: true,     // Equivale a .populate('game')
-        platform: true, // Equivale a .populate('platform')
-        seller: true    // Necesitamos el vendedor para la UI
+        game: true,     
+        platform: true, 
+        seller: true    
       }
     }),
     prisma.console.findMany({
-      orderBy: { name: 'asc' } // Equivale a .sort({ name: 1 })
+      orderBy: { name: 'asc' } 
     })
   ]);
 
-  // Transformación de datos (Prisma devuelve tipos estrictos con null)
-  // Mapeamos para asegurarnos de que encajen con IListing y IConsole
   const allListings = listingsRaw as unknown as IListing[];
   const platforms = platformsRaw as unknown as IConsole[];
 
-  // 3. Lógica de Filtrado (En memoria)
-  // Mantenemos la lógica en memoria por ahora para no complicar la query SQL dinámica todavía
+  // 4. Lógica de Filtrado
   let filteredListings = allListings.filter((ad) => {
-    // Texto (título del juego)
     const matchesSearch = ad.game?.title.toLowerCase().includes(query) ?? false;
     
-    // Plataforma
     const matchesPlatform = platformFilter 
       ? ad.platform?.shortName?.toLowerCase().includes(platformFilter.toLowerCase()) 
       : true;
 
-    // Estado
     const matchesCondition = conditionFilter ? ad.condition === conditionFilter : true;
 
-    // Género
     const matchesGenre = genreFilter 
       ? ad.game?.genre?.toLowerCase().includes(genreFilter.toLowerCase()) 
       : true;
@@ -65,17 +73,16 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
     return matchesSearch && matchesPlatform && matchesCondition && matchesGenre;
   });
 
-  // 4. Lógica de Ordenación
+  // 5. Lógica de Ordenación
   if (sortFilter === 'asc') {
     filteredListings.sort((a, b) => a.price - b.price);
   } else if (sortFilter === 'desc') {
     filteredListings.sort((a, b) => b.price - a.price);
   } else {
-    // Por defecto: Más recientes primero
     filteredListings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  // 5. Lógica de Paginación
+  // 6. Lógica de Paginación
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedListings = filteredListings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -83,7 +90,7 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
   return (
     <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)] bg-white-off dark:bg-neutral-800 transition-colors duration-300">
       
-      {/* --- COLUMNA IZQUIERDA: LISTA (60%) --- */}
+      {/* --- COLUMNA IZQUIERDA: LISTA --- */}
       <div className="w-full lg:w-3/5 p-4 sm:p-6 overflow-y-auto h-full">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-dark dark:text-white mb-6">
@@ -102,9 +109,13 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {paginatedListings.map((ad) => (
-                // OJO: En Mongo era _id, en Prisma es id
                 <div key={ad.id} className="h-full">
-                   <GameCard ad={ad} />
+                   {/* 👇 AQUÍ PASAMOS LAS PROPS QUE FALTABAN */}
+                   <GameCard 
+                      ad={ad} 
+                      isLoggedIn={!!userEmail}
+                      initialIsFavorite={favoriteIds.includes(ad.id)}
+                   />
                 </div>
               ))}
             </div>
@@ -116,7 +127,7 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
         </div>
       </div>
 
-      {/* --- COLUMNA DERECHA: MAPA (40%) --- */}
+      {/* --- COLUMNA DERECHA: MAPA --- */}
       <div className="hidden lg:block w-2/5 sticky top-16 h-[calc(100vh-64px)] bg-gray-200 dark:bg-neutral-900 border-l border-gray-light dark:border-neutral-800 z-0">
          <MapLoader listings={paginatedListings} /> 
       </div>
