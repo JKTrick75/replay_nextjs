@@ -55,7 +55,7 @@ model Console {
   name        String
   shortName   String?
   releaseYear Int?
-  image       String?
+  image       String?   @db.Text
   
   brandId     String    @db.VarChar(36)
   brand       Brand     @relation(fields: [brandId], references: [id])
@@ -67,7 +67,7 @@ model Console {
 model Game {
   id          String    @id @default(uuid()) @db.VarChar(36)
   title       String
-  coverImage  String?
+  coverImage  String?   @db.Text
   description String?   @db.Text
   genre       String?
   releaseYear Int?

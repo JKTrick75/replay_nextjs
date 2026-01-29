@@ -1,37 +1,23 @@
 import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
-import { Plus, Pencil, Trash2, PackageOpen } from 'lucide-react';
+import { Plus, Pencil, Trash2, PackageOpen, ExternalLink } from 'lucide-react'; // 👈 Añadí icono opcional por si quieres decorar
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
+import { DeleteButton } from '@/app/ui/dashboard/delete-button';
 
 export default async function MyProductsPage() {
-  // 1. Obtener usuario autenticado
   const session = await auth();
   const userEmail = session?.user?.email;
 
-  if (!userEmail) {
-    return <div>No tienes permiso para ver esto.</div>;
-  }
+  if (!userEmail) return <div>No tienes permiso.</div>;
 
-  // 2. Buscar usuario en DB para tener su ID real
-  const user = await prisma.user.findUnique({
-    where: { email: userEmail },
-  });
-
+  const user = await prisma.user.findUnique({ where: { email: userEmail } });
   if (!user) return <div>Usuario no encontrado.</div>;
 
-  // 3. Obtener SUS anuncios (Relación One-to-Many)
   const listings = await prisma.listing.findMany({
-    where: {
-      sellerId: user.id, // <--- EL FILTRO CLAVE
-    },
-    include: {
-      game: true,     // Necesitamos el título y la foto del juego
-      platform: true, // Necesitamos el nombre de la consola
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    where: { sellerId: user.id },
+    include: { game: true, platform: true },
+    orderBy: { createdAt: 'desc' },
   });
 
   return (
@@ -50,7 +36,6 @@ export default async function MyProductsPage() {
       </div>
 
       {listings.length === 0 ? (
-        // ESTADO VACÍO
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800/50 p-12 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-700 mb-4">
             <PackageOpen className="text-gray-400" size={24} />
@@ -69,10 +54,11 @@ export default async function MyProductsPage() {
           </Link>
         </div>
       ) : (
-        // TABLA DE PRODUCTOS
         <div className="mt-6 flow-root">
           <div className="inline-block min-w-full align-middle">
             <div className="rounded-xl bg-gray-50 dark:bg-neutral-800 p-2 md:pt-0">
+              
+              {/* --- VISTA MÓVIL --- */}
               <div className="md:hidden">
                 {listings.map((listing) => (
                   <div
@@ -80,17 +66,24 @@ export default async function MyProductsPage() {
                     className="mb-2 w-full rounded-md bg-white dark:bg-neutral-900 p-4 border border-gray-100 dark:border-neutral-700"
                   >
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-700 pb-4">
-                      <div className="flex items-center">
+                      {/* 👇 AHORA ESTO ES UN LINK AL DETALLE DEL PRODUCTO */}
+                      <Link 
+                        href={`/tienda/${listing.id}`}
+                        className="flex items-center group cursor-pointer"
+                      >
                         <img
                           src={listing.game?.coverImage || '/placeholder.png'}
-                          className="mr-2 h-10 w-10 rounded-md object-cover"
+                          className="mr-2 h-10 w-10 rounded-md object-cover group-hover:opacity-80 transition-opacity"
                           alt="Cover"
                         />
                         <div>
-                          <p className="font-medium text-dark dark:text-white truncate max-w-37.5">{listing.game?.title}</p>
+                          <p className="font-medium text-dark dark:text-white truncate max-w-37.5 group-hover:text-primary transition-colors">
+                            {listing.game?.title}
+                          </p>
                           <p className="text-xs text-gray-500">{listing.platform?.shortName}</p>
                         </div>
-                      </div>
+                      </Link>
+
                       <div className={`text-xs px-2 py-1 rounded-full font-medium
                         ${listing.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700'}`
                       }>
@@ -101,21 +94,22 @@ export default async function MyProductsPage() {
                       <p className="text-xl font-bold text-dark dark:text-white">
                         {formatCurrency(listing.price * 100)}
                       </p>
-                      <div className="flex justify-end gap-2">
-                         {/* Botones placeholder para futuras acciones */}
-                         <button className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors">
+                      <div className="flex justify-end gap-2 items-center">
+                         {/* Botones de acción */}
+                         <Link 
+                            href={`/dashboard/ventas/${listing.id}/editar`}
+                            className="p-2 rounded-md text-gray-400 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 transition-colors"
+                         >
                             <Pencil size={18} />
-                         </button>
-                         <button className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md text-red-600 transition-colors">
-                            <Trash2 size={18} />
-                         </button>
+                         </Link>
+                         <DeleteButton id={listing.id} />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
               
-              {/* TABLA ESCRITORIO */}
+              {/* --- TABLA ESCRITORIO --- */}
               <table className="hidden min-w-full text-gray-900 dark:text-gray-200 md:table">
                 <thead className="rounded-lg text-left text-sm font-normal">
                   <tr>
@@ -136,16 +130,20 @@ export default async function MyProductsPage() {
                       className="w-full border-b border-gray-light dark:border-neutral-800 py-3 text-sm last-of-type:border-none hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors"
                     >
                       <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                        <div className="flex items-center gap-3">
+                        {/* 👇 AHORA LA CELDA DE FOTO+TITULO ES UN LINK */}
+                        <Link 
+                           href={`/tienda/${listing.id}`} 
+                           className="flex items-center gap-3 group"
+                        >
                           <img
                             src={listing.game?.coverImage || '/placeholder.png'}
-                            className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-neutral-700"
+                            className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-neutral-700 group-hover:opacity-80 transition-opacity"
                             alt="Cover"
                           />
-                          <p className="font-semibold text-dark dark:text-white max-w-50 truncate">
+                          <p className="font-semibold text-dark dark:text-white max-w-50 truncate group-hover:text-primary transition-colors">
                             {listing.game?.title}
                           </p>
-                        </div>
+                        </Link>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3">
                          <span className="inline-flex items-center rounded-md bg-gray-50 dark:bg-neutral-800 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 ring-1 ring-inset ring-gray-500/10">
@@ -168,13 +166,14 @@ export default async function MyProductsPage() {
                         {formatDateToLocal(listing.createdAt.toString())}
                       </td>
                       <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                        <div className="flex justify-end gap-3">
-                           <button className="text-gray-400 hover:text-primary transition-colors">
+                        <div className="flex justify-end gap-3 items-center">
+                           <Link 
+                              href={`/dashboard/ventas/${listing.id}/editar`}
+                              className="p-2 rounded-md text-gray-400 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 transition-colors"
+                           >
                               <Pencil size={18} />
-                           </button>
-                           <button className="text-gray-400 hover:text-red-600 transition-colors">
-                              <Trash2 size={18} />
-                           </button>
+                           </Link>
+                           <DeleteButton id={listing.id} />
                         </div>
                       </td>
                     </tr>

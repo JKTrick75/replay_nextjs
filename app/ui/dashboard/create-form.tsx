@@ -1,39 +1,54 @@
 'use client';
 
 import { useActionState, useState, useEffect, useRef } from 'react';
-import { createListing } from '@/app/lib/actions';
+import { createListing, updateListing } from '@/app/lib/actions';
 import { State } from '@/app/lib/definitions';
 import Link from 'next/link';
-import { Save, Gamepad2, Monitor, DollarSign, Search, Plus } from 'lucide-react';
+import { Save, Monitor, DollarSign, Search, Plus, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 
-// Tipos básicos para las props
+// Tipos básicos
 type SimpleGame = { id: string; title: string; coverImage: string | null };
 type SimpleConsole = { id: string; name: string };
 
+// 👇 CORRECCIÓN AQUÍ: Permitimos que description sea string | null
+type ListingToEdit = {
+  id: string;
+  price: number;
+  condition: string;
+  description: string | null; // <--- ANTES: string, AHORA: string | null
+  gameId: string;
+  platformId: string;
+  game: { title: string; coverImage: string | null };
+};
+
 export default function CreateListingForm({ 
   games, 
-  consoles 
+  consoles,
+  listing 
 }: { 
   games: SimpleGame[], 
-  consoles: SimpleConsole[] 
+  consoles: SimpleConsole[],
+  listing?: ListingToEdit | null // Permitimos null también aquí
 }) {
   const initialState: State = { message: null, errors: {} };
-  const [state, formAction] = useActionState(createListing, initialState);
+  
+  const updateListingWithId = listing ? updateListing.bind(null, listing.id) : null;
+  const [state, formAction] = useActionState(listing ? updateListingWithId! : createListing, initialState);
 
-  // --- ESTADO PARA EL BUSCADOR DE JUEGOS ---
-  const [query, setQuery] = useState('');
-  const [selectedGameId, setSelectedGameId] = useState<string>('');
+  // --- ESTADOS INICIALES ---
+  const [query, setQuery] = useState(listing?.game.title || '');
+  const [selectedGameId, setSelectedGameId] = useState<string>(listing?.gameId || '');
+  const [customImageUrl, setCustomImageUrl] = useState(listing?.game.coverImage || '');
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Filtramos juegos en tiempo real
   const filteredGames = query === ''
     ? []
     : games.filter((game) =>
         game.title.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 5); // Limitamos a 5 resultados para no saturar
+      ).slice(0, 5);
 
-  // Cerrar dropdown si clicamos fuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -44,30 +59,30 @@ export default function CreateListingForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [wrapperRef]);
 
-  // Al seleccionar un juego de la lista
   const handleSelectGame = (game: SimpleGame) => {
     setQuery(game.title);
     setSelectedGameId(game.id);
+    if (!listing) setCustomImageUrl(''); 
     setIsDropdownOpen(false);
   };
 
-  // Al escribir manualmente
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
-    setSelectedGameId(''); // Si escribe, reseteamos el ID (asumimos que puede ser nuevo)
+    setSelectedGameId(''); 
     setIsDropdownOpen(true);
   };
 
+  const showImageInput = (query.length > 0 && selectedGameId === '') || !!listing;
+
   return (
-    <form action={formAction} className="rounded-xl bg-white-off dark:bg-neutral-800 p-6 md:p-8 border border-gray-light dark:border-neutral-700 shadow-sm">
+    <form action={formAction} className="rounded-xl bg-white-off dark:bg-neutral-800 p-6 md:p-8 border border-gray-light dark:border-neutral-700 shadow-sm transition-all duration-300">
       
-      {/* 1. BUSCADOR DE JUEGOS (COMBOBOX) */}
+      {/* 1. BUSCADOR DE JUEGOS */}
       <div className="mb-6 relative" ref={wrapperRef}>
         <label htmlFor="gameSearch" className="mb-2 block text-sm font-bold text-dark dark:text-white">
           ¿Qué juego vendes?
         </label>
         
-        {/* Input Visible (Buscador/Texto Nuevo) */}
         <div className="relative">
           <input
             type="text"
@@ -83,10 +98,8 @@ export default function CreateListingForm({
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray" />
         </div>
 
-        {/* Input Oculto (Para enviar el ID si existe) */}
         <input type="hidden" name="gameId" value={selectedGameId} />
 
-        {/* Dropdown de Sugerencias */}
         {isDropdownOpen && query.length > 0 && (
           <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 shadow-xl overflow-hidden">
             {filteredGames.length > 0 ? (
@@ -101,22 +114,57 @@ export default function CreateListingForm({
                     <span className="text-sm font-medium text-dark dark:text-white">{game.title}</span>
                   </li>
                 ))}
+                <li className="px-4 py-2 bg-gray-50 dark:bg-neutral-800/50 text-xs text-gray-500 border-t border-gray-light dark:border-neutral-700">
+                   Sigue escribiendo para crear <strong>&quot;{query}&quot;</strong> como nuevo juego.
+                </li>
               </ul>
             ) : (
               <div className="px-4 py-3 text-sm text-gray flex items-center gap-2">
                 <Plus size={16} className="text-primary" />
-                <span>Se creará como <strong>&quot;{query}&quot;</strong></span>
+                <span>Se creará el juego: <strong>&quot;{query}&quot;</strong></span>
               </div>
             )}
           </div>
         )}
-
         {state.errors?.newGameTitle && (
           <p className="mt-2 text-sm text-primary font-medium">{state.errors.newGameTitle[0]}</p>
         )}
       </div>
 
-      {/* 2. SELECCIONAR PLATAFORMA (Ahora muestra TODAS) */}
+      {/* CAMPO IMAGEN */}
+      {showImageInput && (
+        <div className="mb-6 animate-fade-in-down">
+           <label htmlFor="coverImage" className="mb-2 block text-sm font-bold text-dark dark:text-white justify-between items-center">
+             <span>URL de la Carátula (Opcional)</span>
+             <span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-neutral-700 px-2 py-0.5 rounded-full">
+                {listing ? 'Editar Imagen' : 'Juego Nuevo'}
+             </span>
+           </label>
+           <div className="flex gap-4 items-start">
+             <div className="relative flex-1">
+                <input
+                  id="coverImage"
+                  name="coverImage"
+                  type="url"
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  value={customImageUrl}
+                  onChange={(e) => setCustomImageUrl(e.target.value)}
+                  className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-3 pl-10 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white"
+                />
+                <LinkIcon className="pointer-events-none absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray" />
+             </div>
+             <div className="w-11 h-11 rounded-lg border border-gray-light dark:border-neutral-600 bg-gray-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden shrink-0">
+                {customImageUrl ? (
+                  <img src={customImageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => e.currentTarget.style.display = 'none'} />
+                ) : (
+                  <ImageIcon size={20} className="text-gray-400" />
+                )}
+             </div>
+           </div>
+        </div>
+      )}
+
+      {/* 2. PLATAFORMA */}
       <div className="mb-6">
         <label htmlFor="platformId" className="mb-2 block text-sm font-bold text-dark dark:text-white">
           Plataforma / Consola
@@ -126,7 +174,7 @@ export default function CreateListingForm({
             id="platformId"
             name="platformId"
             className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-3 pl-10 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white appearance-none cursor-pointer"
-            defaultValue=""
+            defaultValue={listing?.platformId || ""}
           >
             <option value="" disabled>Selecciona la plataforma</option>
             {consoles.map((console) => (
@@ -153,6 +201,7 @@ export default function CreateListingForm({
               type="number"
               step="0.01"
               placeholder="0.00"
+              defaultValue={listing?.price}
               className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-3 pl-10 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white"
             />
             <DollarSign className="pointer-events-none absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray" />
@@ -168,7 +217,7 @@ export default function CreateListingForm({
             id="condition"
             name="condition"
             className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-3 pl-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white appearance-none cursor-pointer"
-            defaultValue=""
+            defaultValue={listing?.condition || ""}
           >
             <option value="" disabled>Selecciona estado</option>
             <option value="Nuevo">Nuevo</option>
@@ -188,19 +237,19 @@ export default function CreateListingForm({
           id="description"
           name="description"
           rows={4}
+          // 👇 Aquí el cambio permite que si es null, se use ""
+          defaultValue={listing?.description || ""} 
           className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-2 px-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white resize-none"
           placeholder="Ej: Solo cartucho, caja un poco dañada..."
         ></textarea>
       </div>
 
-      {/* MENSAJE GENERAL ERROR */}
       {state.message && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-primary border border-primary/20 rounded-lg text-sm text-center font-medium">
           {state.message}
         </div>
       )}
 
-      {/* BOTONES */}
       <div className="flex justify-end gap-4 pt-2">
         <Link
           href="/dashboard/ventas"
@@ -212,7 +261,8 @@ export default function CreateListingForm({
           type="submit"
           className="flex h-11 items-center rounded-lg bg-primary px-6 text-sm font-bold text-white transition-colors hover:bg-primary-hover shadow-md shadow-primary/20"
         >
-          <Save size={18} className="mr-2" /> Publicar Anuncio
+          <Save size={18} className="mr-2" /> 
+          {listing ? 'Guardar Cambios' : 'Publicar Anuncio'}
         </button>
       </div>
     </form>

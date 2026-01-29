@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/db'; // Importamos Prisma
-// Ya no importamos 'models' ni 'connectDB'
 
 // --- COORDENADAS BASE (Ciudades de España) ---
 const SPANISH_CITIES = [
@@ -18,7 +17,7 @@ const SPANISH_CITIES = [
   { name: 'Palma', lat: 39.569600, lng: 2.650160 }
 ];
 
-// --- DATOS RAW (Mantenemos los IDs viejos solo para mapear relaciones) ---
+// --- DATOS RAW ---
 const OLD_MARCAS = [
   { "_id": "69047fcd3bc991d7f84958e4", "nom": "Nintendo", "pais_origen": "Japón" },
   { "_id": "690480b73bc991d7f84958e9", "nom": "Sony", "pais_origen": "EEUU" },
@@ -26,6 +25,9 @@ const OLD_MARCAS = [
 ];
 
 const OLD_CONSOLAS = [
+  // 👇 NUEVA PLATAFORMA: PC (Usamos ID inventado 'pc-id-001' y marca Microsoft)
+  { "_id": "pc-id-001", "nom": "PC", "any_eixida": 1980, "marca_id": "691379f728c1cdaa2d7cf1bb", "foto": "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?q=80&w=800&auto=format&fit=crop" },
+  
   { "_id": "69137ba428c1cdaa2d7cf1fe", "nom": "PlayStation 1", "any_eixida": 1994, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/yLOfOCMUbl6KwAcr9ctPd8GMXZM_umAwlYmy0Qx00u0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMjE5/NzUxMDgyMy9mci9w/aG90by9zb255LXBs/YXlzdGF0aW9uLTEt/dmlkZW8tZ2FtZS1j/b25zb2xlLmpwZz9z/PTYxMng2MTImdz0w/Jms9MjAmYz1qU21i/OVhBXzluMzh4LVpk/V0dNc1ZiM3VwbERf/M0FwdGs0MjVXcU1w/TUtVPQ" },
   { "_id": "69137bb328c1cdaa2d7cf200", "nom": "PlayStation 2", "any_eixida": 2000, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/jPhxvz47YdX9bKF3_5wtk1JopTk9FtzFQtXS0ZrwNyA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy8w/LzAzL1BTMi1TbGlt/LUNvbnNvbGUtU2V0/LmpwZw" },
   { "_id": "69137bc428c1cdaa2d7cf202", "nom": "PlayStation 3", "any_eixida": 2006, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/DzvvboIMRLfGDhxOHfZMmfTVAoMZs51EJh-GnAgTt0w/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvNDU4/NTkzMDkzL3Bob3Rv/L3NvbnktcGxheXN0/YXRpb24tMy13aXRo/LWNvbnRyb2xsZXIu/anBnP3M9NjEyeDYx/MiZ3PTAmaz0yMCZj/PThMQlRrVjF3MThP/X3ZMUDl2N2JQVGhV/YmpybzB4SlIzbnQ5/X19GTlRxYWs9" },
@@ -44,39 +46,40 @@ const OLD_CONSOLAS = [
 ];
 
 const OLD_JUEGOS = [
-  { "nom": "Elden Ring", "genero": "RPG de Acción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co4jni.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
+  // He añadido 'pc-id-001' a los juegos multiplataforma para que el seed genere también anuncios de PC
+  { "nom": "Elden Ring", "genero": "RPG de Acción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co4jni.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
   { "nom": "The Legend of Zelda: Tears of the Kingdom", "genero": "Aventura", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co5vmg.webp", "consolas_disponibles": ["69137c3c28c1cdaa2d7cf214"] },
-  { "nom": "Grand Theft Auto V", "genero": "Mundo Abierto", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2lbd.webp", "consolas_disponibles": ["69137bc428c1cdaa2d7cf202", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
-  { "nom": "Red Dead Redemption 2", "genero": "Mundo Abierto", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1q1f.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137c2c28c1cdaa2d7cf210"] },
-  { "nom": "Minecraft", "genero": "Sandbox", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co8fu7.webp", "consolas_disponibles": ["69137bc428c1cdaa2d7cf202", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137bfc28c1cdaa2d7cf20a", "69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212", "69137c8328c1cdaa2d7cf21a", "69137c3c28c1cdaa2d7cf214", "69137c7828c1cdaa2d7cf218"] },
-  { "nom": "God of War Ragnarök", "genero": "Acción / Aventura", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co5s5v.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206"] },
-  { "nom": "Halo Infinite", "genero": "Shooter", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2dto.webp", "consolas_disponibles": ["69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
+  { "nom": "Grand Theft Auto V", "genero": "Mundo Abierto", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2lbd.webp", "consolas_disponibles": ["pc-id-001", "69137bc428c1cdaa2d7cf202", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
+  { "nom": "Red Dead Redemption 2", "genero": "Mundo Abierto", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1q1f.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137c2c28c1cdaa2d7cf210"] },
+  { "nom": "Minecraft", "genero": "Sandbox", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co8fu7.webp", "consolas_disponibles": ["pc-id-001", "69137bc428c1cdaa2d7cf202", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137bfc28c1cdaa2d7cf20a", "69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212", "69137c8328c1cdaa2d7cf21a", "69137c3c28c1cdaa2d7cf214", "69137c7828c1cdaa2d7cf218"] },
+  { "nom": "God of War Ragnarök", "genero": "Acción / Aventura", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co5s5v.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206"] },
+  { "nom": "Halo Infinite", "genero": "Shooter", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2dto.webp", "consolas_disponibles": ["pc-id-001", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
   { "nom": "Super Mario Odyssey", "genero": "Plataformas", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1mxf.webp", "consolas_disponibles": ["69137c3c28c1cdaa2d7cf214"] },
-  { "nom": "Cyberpunk 2077", "genero": "RPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaih8.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
-  { "nom": "The Witcher 3: Wild Hunt", "genero": "RPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaarl.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212", "69137c3c28c1cdaa2d7cf214"] },
+  { "nom": "Cyberpunk 2077", "genero": "RPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaih8.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
+  { "nom": "The Witcher 3: Wild Hunt", "genero": "RPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaarl.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212", "69137c3c28c1cdaa2d7cf214"] },
   { "nom": "Animal Crossing: New Horizons", "genero": "Simulación", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co3wls.webp", "consolas_disponibles": ["69137c3c28c1cdaa2d7cf214"] },
-  { "nom": "Call of Duty: Modern Warfare III", "genero": "Shooter", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co7ctx.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
+  { "nom": "Call of Duty: Modern Warfare III", "genero": "Shooter", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co7ctx.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
   { "nom": "Final Fantasy VII Rebirth", "genero": "JRPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co73ju.webp", "consolas_disponibles": ["69137bdc28c1cdaa2d7cf206"] },
   { "nom": "Marvel's Spider-Man 2", "genero": "Acción / Aventura", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co79vq.webp", "consolas_disponibles": ["69137bdc28c1cdaa2d7cf206"] },
-  { "nom": "Forza Horizon 5", "genero": "Conducción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co3ofx.webp", "consolas_disponibles": ["69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
+  { "nom": "Forza Horizon 5", "genero": "Conducción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co3ofx.webp", "consolas_disponibles": ["pc-id-001", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
   { "nom": "Pokémon Scarlet", "genero": "RPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co5sfi.webp", "consolas_disponibles": ["69137c3c28c1cdaa2d7cf214"] },
-  { "nom": "Hogwarts Legacy", "genero": "RPG de Acción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaav6.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212", "69137c3c28c1cdaa2d7cf214"] },
+  { "nom": "Hogwarts Legacy", "genero": "RPG de Acción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaav6.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212", "69137c3c28c1cdaa2d7cf214"] },
   { "nom": "Metal Gear Solid 3: Snake Eater", "genero": "Sigilo", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co99jz.webp", "consolas_disponibles": ["69137bb328c1cdaa2d7cf200", "69137c1728c1cdaa2d7cf20e", "69137bfc28c1cdaa2d7cf20a", "69137c7828c1cdaa2d7cf218"] },
-  { "nom": "Uncharted 4: A Thief's End", "genero": "Acción / Aventura", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206"] },
-  { "nom": "Halo 3", "genero": "Shooter", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1xhc.webp", "consolas_disponibles": ["69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
-  { "nom": "The Last of Us Part I", "genero": "Aventura / Terror", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coa1gq.webp", "consolas_disponibles": ["69137bdc28c1cdaa2d7cf206"] },
+  { "nom": "Uncharted 4: A Thief's End", "genero": "Acción / Aventura", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206"] },
+  { "nom": "Halo 3", "genero": "Shooter", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1xhc.webp", "consolas_disponibles": ["pc-id-001", "69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
+  { "nom": "The Last of Us Part I", "genero": "Aventura / Terror", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coa1gq.webp", "consolas_disponibles": ["pc-id-001", "69137bdc28c1cdaa2d7cf206"] },
   { "nom": "The Last of Us Remastered", "genero": "Aventura / Terror", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co5zks.webp", "consolas_disponibles": ["69137bc428c1cdaa2d7cf202", "69137bcd28c1cdaa2d7cf204"] },
-  { "nom": "Persona 5 Royal", "genero": "JRPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaasg.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212", "69137c3c28c1cdaa2d7cf214"] },
+  { "nom": "Persona 5 Royal", "genero": "JRPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaasg.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212", "69137c3c28c1cdaa2d7cf214"] },
   { "nom": "Super Smash Bros. Ultimate", "genero": "Lucha", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2255.webp", "consolas_disponibles": ["69137c3c28c1cdaa2d7cf214"] },
   { "nom": "Wii Sports", "genero": "Deportes", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co3vge.webp", "consolas_disponibles": ["69137c8328c1cdaa2d7cf21a"] },
   { "nom": "New Super Mario Bros.", "genero": "Plataformas", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co21rm.webp", "consolas_disponibles": ["69137c7828c1cdaa2d7cf218"] },
-  { "nom": "God of War", "genero": "Hack and Slash", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1tmu.webp", "consolas_disponibles": ["69137bb328c1cdaa2d7cf200", "69137bc428c1cdaa2d7cf202", "69137bfc28c1cdaa2d7cf20a"] },
+  { "nom": "God of War", "genero": "Hack and Slash", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1tmu.webp", "consolas_disponibles": ["pc-id-001", "69137bb328c1cdaa2d7cf200", "69137bc428c1cdaa2d7cf202", "69137bfc28c1cdaa2d7cf20a"] },
   { "nom": "Gran Turismo 7", "genero": "Conducción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2g84.webp", "consolas_disponibles": ["69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206"] },
   { "nom": "Gears of War 3", "genero": "Shooter", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2a21.webp", "consolas_disponibles": ["69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
-  { "nom": "Crash Bandicoot", "genero": "Plataformas", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co555l.webp", "consolas_disponibles": ["69137ba428c1cdaa2d7cf1fe"] },
-  { "nom": "Monster Hunter Rise", "genero": "RPG de Acción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co3uzk.webp", "consolas_disponibles": ["69137c3c28c1cdaa2d7cf214", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
-  { "nom": "Baldur's Gate 3", "genero": "RPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co670h.webp", "consolas_disponibles": ["69137bdc28c1cdaa2d7cf206", "69137c3628c1cdaa2d7cf212"] },
-  { "nom": "Hollow Knight: Silksong", "genero": "Metroidvania", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaend.webp", "consolas_disponibles": ["69137bdc28c1cdaa2d7cf206", "69137c3628c1cdaa2d7cf212", "69137c5628c1cdaa2d7cf216", "69137c3c28c1cdaa2d7cf214", "69137bcd28c1cdaa2d7cf204", "69137c2c28c1cdaa2d7cf210"] }
+  { "nom": "Crash Bandicoot", "genero": "Plataformas", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co555l.webp", "consolas_disponibles": ["pc-id-001", "69137ba428c1cdaa2d7cf1fe"] },
+  { "nom": "Monster Hunter Rise", "genero": "RPG de Acción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co3uzk.webp", "consolas_disponibles": ["pc-id-001", "69137c3c28c1cdaa2d7cf214", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
+  { "nom": "Baldur's Gate 3", "genero": "RPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co670h.webp", "consolas_disponibles": ["pc-id-001", "69137bdc28c1cdaa2d7cf206", "69137c3628c1cdaa2d7cf212"] },
+  { "nom": "Hollow Knight: Silksong", "genero": "Metroidvania", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/coaend.webp", "consolas_disponibles": ["pc-id-001", "69137bdc28c1cdaa2d7cf206", "69137c3628c1cdaa2d7cf212", "69137c5628c1cdaa2d7cf216", "69137c3c28c1cdaa2d7cf214", "69137bcd28c1cdaa2d7cf204", "69137c2c28c1cdaa2d7cf210"] }
 ];
 
 

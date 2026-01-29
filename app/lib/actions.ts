@@ -10,6 +10,10 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { State } from '@/app/lib/definitions';
 
+// =========================================================================== //
+// -- AUTH -- //
+// =========================================================================== //
+
 // --- ESQUEMAS DE VALIDACIÓN ---
 const LoginSchema = z.object({
   email: z.string().email({ message: 'Email inválido.' }),
@@ -106,24 +110,31 @@ export async function logout() {
   await signOut({ redirectTo: '/' });
 }
 
-// --- SCHEMA PARA VALIDAR EL ANUNCIO ---
+// =========================================================================== //
+// --- CRUD DASHBOARD ---- //
+// =========================================================================== //
+
+// --- 1. CREATE ---
 const CreateListingSchema = z.object({
-  // gameId es opcional porque puede que estemos creando uno nuevo
+  // gameId es opcional (puede venir vacío si es un juego nuevo)
   gameId: z.string().optional(),
-  // newGameTitle es opcional porque puede que hayamos elegido uno existente
+  // newGameTitle es opcional (puede venir vacío si seleccionó uno existente)
   newGameTitle: z.string().optional(),
   
+  // 👇 NUEVO: Campo opcional para la imagen (puede ser URL o vacío)
+  coverImage: z.string().optional(),
+
   platformId: z.string().min(1, { message: 'Selecciona una plataforma.' }),
   price: z.coerce.number().gt(0, { message: 'El precio debe ser mayor a 0.' }),
-  condition: z.enum(['Nuevo', 'Seminuevo', 'Usado'] as const)
-    .refine(val => val !== undefined, {
-      message: 'Selecciona un estado válido.',
-    }),
+  // 👇 SOLUCIÓN: Usamos 'message' directamente
+  condition: z.enum(['Nuevo', 'Seminuevo', 'Usado'] as const, {
+    message: 'Selecciona un estado válido.',
+  }),
   description: z.string().optional(),
 }).refine((data) => data.gameId || data.newGameTitle, {
-  // Validación personalizada: O uno u otro debe existir
-  message: "Debes seleccionar un juego o escribir uno nuevo.",
-  path: ["newGameTitle"],
+  // Validación personalizada: O tenemos ID, o tenemos Título nuevo
+  message: "Debes buscar un juego existente o escribir uno nuevo.",
+  path: ["newGameTitle"], // El error saldrá en el campo de texto
 });
 
 // --- ACCIÓN: CREAR ANUNCIO ---
@@ -144,6 +155,7 @@ export async function createListing(prevState: State, formData: FormData) {
   const validatedFields = CreateListingSchema.safeParse({
     gameId: formData.get('gameId'),
     newGameTitle: formData.get('gameSearch'), // El input de texto se llama 'gameSearch'
+    coverImage: formData.get('coverImage'),     // 👇 Recogemos la URL de la imagen
     platformId: formData.get('platformId'),
     price: formData.get('price'),
     condition: formData.get('condition'),
@@ -157,7 +169,7 @@ export async function createListing(prevState: State, formData: FormData) {
     };
   }
 
-  const { gameId, newGameTitle, platformId, price, condition, description } = validatedFields.data;
+  const { gameId, newGameTitle, coverImage, platformId, price, condition, description } = validatedFields.data;
   
   let finalGameId = gameId;
 
@@ -176,7 +188,8 @@ export async function createListing(prevState: State, formData: FormData) {
         const newGame = await prisma.game.create({
           data: {
             title: newGameTitle,
-            coverImage: '/placeholder.png', 
+            // 👇 Si hay URL válida la usamos, si no, ponemos el placeholder
+            coverImage: coverImage && coverImage.trim() !== '' ? coverImage : '/placeholder.png',
             genre: 'Varios',
             description: 'Añadido por la comunidad.',
           },
@@ -224,7 +237,113 @@ export async function createListing(prevState: State, formData: FormData) {
   redirect('/dashboard/ventas');
 }
 
-// --- ACCIÓN: ALTERNAR FAVORITO (TOGGLE LIKE) ---
+// --- 2. UPDATE ---
+export async function updateListing(
+  id: string, 
+  prevState: State, 
+  formData: FormData
+) {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
+
+  // Reutilizamos el mismo esquema de validación
+  const validatedFields = CreateListingSchema.safeParse({
+    gameId: formData.get('gameId'),
+    newGameTitle: formData.get('gameSearch'),
+    coverImage: formData.get('coverImage'),
+    platformId: formData.get('platformId'),
+    price: formData.get('price'),
+    condition: formData.get('condition'),
+    description: formData.get('description'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Faltan campos obligatorios.',
+    };
+  }
+
+  const { gameId, newGameTitle, coverImage, platformId, price, condition, description } = validatedFields.data;
+  let finalGameId = gameId;
+
+  try {
+    // 1. GESTIÓN DEL JUEGO (Igual que en crear)
+    if (!finalGameId && newGameTitle) {
+      const existingGame = await prisma.game.findFirst({ where: { title: newGameTitle } });
+
+      if (existingGame) {
+        finalGameId = existingGame.id;
+        // OPCIONAL: Si editamos y ponemos una foto nueva a un juego existente, actualizamos la foto del juego
+        if (coverImage && coverImage.trim() !== '') {
+            await prisma.game.update({
+                where: { id: finalGameId },
+                data: { coverImage }
+            });
+        }
+      } else {
+        const newGame = await prisma.game.create({
+          data: {
+            title: newGameTitle,
+            coverImage: coverImage && coverImage.trim() !== '' ? coverImage : '/placeholder.png',
+            genre: 'Varios',
+            description: 'Añadido por la comunidad.',
+          },
+        });
+        finalGameId = newGame.id;
+      }
+    } else if (finalGameId && coverImage && coverImage.trim() !== '') {
+        // Si seleccionamos un juego existente pero cambiamos la URL en el form de editar
+        await prisma.game.update({
+            where: { id: finalGameId },
+            data: { coverImage }
+        });
+    }
+
+    if (!finalGameId) return { message: 'Error al identificar el juego.' };
+
+    // 2. ACTUALIZAR EL ANUNCIO
+    await prisma.listing.update({
+      where: { id },
+      data: {
+        gameId: finalGameId,
+        platformId,
+        price,
+        condition,
+        description: description || '',
+      },
+    });
+
+  } catch (error) {
+    console.error('Database Error:', error);
+    return { message: 'Error al actualizar el anuncio.' };
+  }
+
+  revalidatePath('/dashboard/ventas');
+  revalidatePath('/tienda');
+  redirect('/dashboard/ventas');
+}
+
+// --- 3. DELETE ---
+export async function deleteListing(id: string) {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado' };
+
+  try {
+    await prisma.listing.delete({
+      where: { id },
+    });
+    revalidatePath('/dashboard/ventas');
+    revalidatePath('/tienda');
+    return { message: 'Anuncio eliminado.' };
+  } catch (error) {
+    return { message: 'Error al eliminar.' };
+  }
+}
+
+// =========================================================================== //
+// --- TOGGLE LIKE --- //
+// =========================================================================== //
 export async function toggleFavorite(listingId: string) {
   // 1. Autenticación
   const session = await auth();
