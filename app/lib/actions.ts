@@ -555,3 +555,137 @@ export async function updateProfile(prevState: State, formData: FormData) {
     return { message: 'Error al actualizar el perfil.' };
   }
 }
+
+// =========================================================================== //
+// --- CARRITO DE LA COMPRA --- //
+// =========================================================================== //
+
+// 1. AÑADIR AL CARRITO
+export async function addToCart(listingId: string) {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'Inicia sesión para comprar.' };
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { cart: true },
+  });
+
+  if (!user) return { message: 'Usuario no encontrado.' };
+
+  // Verificamos que el producto exista y esté activo
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+  });
+
+  if (!listing || listing.status !== 'active') {
+    return { message: 'Este producto ya no está disponible.' };
+  }
+
+  // 🔒 SEGURIDAD: Aunque el botón esté oculto, bloqueamos la acción aquí también
+  if (listing.sellerId === user.id) {
+    return { message: 'No puedes comprar tu propio producto.' };
+  }
+
+  try {
+    // Si el usuario no tiene carrito, lo creamos al vuelo
+    let cartId = user.cart?.id;
+    if (!cartId) {
+      const newCart = await prisma.cart.create({
+        data: { userId: user.id },
+      });
+      cartId = newCart.id;
+    }
+
+    // Añadimos el item
+    await prisma.cartItem.create({
+      data: {
+        cartId: cartId,
+        listingId: listingId,
+      },
+    });
+
+    revalidatePath('/carrito');
+    revalidatePath(`/tienda/${listingId}`); // Refrescamos la tienda
+    return { message: 'Añadido al carrito', success: true };
+
+  } catch (error) {
+    // Si falla es probable que ya estuviera en el carrito (por el @@unique)
+    return { message: 'Ya tienes este producto en el carrito.', success: true }; 
+  }
+}
+
+// 2. QUITAR DEL CARRITO
+export async function removeFromCart(itemId: string) {
+  try {
+    await prisma.cartItem.delete({
+      where: { id: itemId },
+    });
+    revalidatePath('/carrito');
+    return { message: 'Eliminado.' };
+  } catch (error) {
+    return { message: 'Error al eliminar.' };
+  }
+}
+
+// 3. REALIZAR PEDIDO (CHECKOUT SIMULADO)
+export async function checkout() {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado' };
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { 
+      cart: {
+        include: { items: { include: { listing: true } } }
+      } 
+    },
+  });
+
+  if (!user || !user.cart || user.cart.items.length === 0) {
+    return { message: 'El carrito está vacío.' };
+  }
+
+  // Lógica de Transacción Segura:
+  const itemsToBuy = user.cart.items;
+  
+  // Revisamos si alguien compró algo mientras tú mirabas el carrito
+  const unavailableItems = itemsToBuy.filter(item => item.listing.status !== 'active');
+
+  if (unavailableItems.length > 0) {
+    return { 
+      message: `Algunos productos ya no están disponibles. Revisa tu carrito.`,
+      error: true 
+    };
+  }
+
+  try {
+    // TRANSACCIÓN: O se compra todo y se vacía el carrito, o no se hace nada.
+    await prisma.$transaction(async (tx) => {
+      
+      // A. Marcar cada producto como VENDIDO y asignar COMPRADOR
+      for (const item of itemsToBuy) {
+        await tx.listing.update({
+          where: { id: item.listingId },
+          data: {
+            status: 'sold',
+            buyerId: user.id, // Asignamos el dueño nuevo
+            soldAt: new Date(),
+          },
+        });
+      }
+
+      // B. Vaciar el carrito
+      await tx.cartItem.deleteMany({
+        where: { cartId: user.cart!.id },
+      });
+    });
+
+    revalidatePath('/dashboard/compras'); // Actualizamos historial
+    revalidatePath('/dashboard'); // Actualizamos resumen
+    return { message: '¡Compra realizada con éxito!', success: true };
+
+  } catch (error) {
+    console.error(error);
+    return { message: 'Error al procesar el pedido.' };
+  }
+}

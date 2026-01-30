@@ -2,10 +2,11 @@ import { prisma } from '@/app/lib/db';
 import { Listing as IListing } from '@/app/lib/definitions';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ShoppingCart, Tag, Monitor, Calendar, Globe, Clock, PackageCheck, Ban } from 'lucide-react';
+import { ArrowLeft, Tag, Monitor, Calendar, Globe, Clock, PackageCheck, Ban, Pencil } from 'lucide-react';
 import MapLoader from '@/app/ui/shop/map-loader';
 import { auth } from '@/auth';
 import FavoriteButton from '@/app/ui/favorite-button';
+import AddToCartButton from '@/app/ui/shop/add-to-cart-button'; 
 
 type Params = Promise<{ id: string }>;
 
@@ -29,11 +30,14 @@ export default async function ProductPage({ params }: { params: Params }) {
     notFound(); 
   }
 
-  // 3. Comprobar favorito
+  // 3. Comprobar favorito y obtener usuario actual
   let isFavorite = false;
+  let currentUser = null; 
+
   if (session?.user?.email) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (user) {
+      currentUser = user; 
       const favoriteRecord = await prisma.favorite.findUnique({
         where: {
           userId_listingId: {
@@ -49,7 +53,10 @@ export default async function ProductPage({ params }: { params: Params }) {
   const listing = listingRaw as unknown as IListing;
   const listingsArray = [listing];
 
-  // CALCULAR DÍAS DESDE PUBLICACIÓN
+  // 4. VERIFICAR PROPIEDAD
+  const isOwner = currentUser?.id === listing.sellerId;
+
+  // CALCULAR DÍAS
   const now = new Date();
   const created = new Date(listing.createdAt);
   const diffTime = Math.abs(now.getTime() - created.getTime());
@@ -73,7 +80,7 @@ export default async function ProductPage({ params }: { params: Params }) {
 
         <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden relative">
           
-          {/* 👇 BADGE DE ESTADO VENDIDO (COLOR ACTUALIZADO A PRIMARY) */}
+          {/* BADGE DE ESTADO VENDIDO */}
           {isSold && (
             <div className="absolute top-0 right-0 z-10 bg-primary text-white px-6 py-2 rounded-bl-2xl font-bold uppercase shadow-md flex items-center gap-2">
               <PackageCheck size={20} />
@@ -119,26 +126,35 @@ export default async function ProductPage({ params }: { params: Params }) {
                 
                 <div className="flex gap-3 w-full sm:w-auto mt-4 sm:mt-0">
                   {isSold ? (
-                    // CASO VENDIDO: Botón deshabilitado (Estilo gris neutro de tu paleta)
+                    // CASO VENDIDO
                     <div className="flex-1 sm:flex-none bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 px-6 py-3 rounded-lg font-medium border border-gray-200 dark:border-neutral-700 flex items-center justify-center gap-2 cursor-not-allowed">
                       <Ban size={20} />
                       Producto no disponible
                     </div>
                   ) : (
                     // CASO ACTIVO
-                    <>
-                      <button className="flex-1 sm:flex-none bg-dark dark:bg-white text-white dark:text-dark px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                        <ShoppingCart size={20} />
-                        Añadir
-                      </button>
-                      
-                      <FavoriteButton 
-                        listingId={listing.id} 
-                        initialIsFavorite={isFavorite}
-                        isLoggedIn={!!session?.user}
-                      />
-                    </>
+                    isOwner ? (
+                      // 1. ES EL DUEÑO -> Botón Editar (Ruta corregida)
+                      <Link 
+                        // 👇 CORRECCIÓN AQUÍ: /dashboard/ventas/[id]/editar
+                        href={`/dashboard/ventas/${listing.id}/editar`} 
+                        className="flex-1 sm:flex-none bg-primary text-white px-6 py-3 rounded-lg font-bold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Pencil size={20} />
+                        Editar Anuncio
+                      </Link>
+                    ) : (
+                      // 2. ES UN COMPRADOR -> Botón Añadir al Carrito
+                      <AddToCartButton listingId={listing.id} />
+                    )
                   )}
+
+                  {/* Favoritos */}
+                  <FavoriteButton 
+                    listingId={listing.id} 
+                    initialIsFavorite={isFavorite}
+                    isLoggedIn={!!session?.user}
+                  />
                 </div>
               </div>
 

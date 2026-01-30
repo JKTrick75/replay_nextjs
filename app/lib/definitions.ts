@@ -73,3 +73,17 @@ export type State = {
   };
   message?: string | null;
 };
+
+// --- CARRITO DE LA COMPRA ---
+export interface CartItem {
+  id: string;
+  cartId: string;
+  listingId: string;
+  listing: Listing; // Incluimos el producto completo para poder mostrar foto/precio
+}
+
+export interface Cart {
+  id: string;
+  userId: string;
+  items: CartItem[];
+}

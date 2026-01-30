@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
-import GameCard from '@/app/ui/game-card'; // 👇 Usamos la tarjeta inteligente
+import GameCard from '@/app/ui/game-card'; 
 import { Listing } from '@/app/lib/definitions';
 
 export default async function FavoritesPage() {
@@ -74,7 +74,8 @@ export default async function FavoritesPage() {
               <div key={fav.id} className="h-full">
                 <GameCard 
                   ad={product} 
-                  initialIsFavorite={true} 
+                  initialIsFavorite={true}
+                  isLoggedIn={true}
                 />
               </div>
             );

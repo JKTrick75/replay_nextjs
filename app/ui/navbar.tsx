@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react'; // 👈 Importamos useEffect
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X } from 'lucide-react';
+// 👇 Añadido ShoppingCart
+import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
 
 type UserProps = {
@@ -19,17 +20,27 @@ const navLinks = [
   { name: 'Vender', href: '/dashboard/ventas/crear' },
 ];
 
-export default function Navbar({ user }: { user?: UserProps }) {
+// 👇 Añadimos cartCount a las props
+export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cartCount?: number }) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);        // Dropdown escritorio
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Menú móvil
 
-  // 👇 SOLUCIÓN: Cerrar menús automáticamente al cambiar de ruta
-  // Esto arregla que se quede abierto al hacer login/redirect
+  // Cerrar menús automáticamente al cambiar de ruta
   useEffect(() => {
     setIsMenuOpen(false);
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  // 👇 ANIMACIÓN DEL BADGE: Efecto "pop" cuando cambia el número
+  const [animateBadge, setAnimateBadge] = useState(false);
+  useEffect(() => {
+    if (cartCount > 0) {
+      setAnimateBadge(true);
+      const timer = setTimeout(() => setAnimateBadge(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [cartCount]);
 
   return (
     <nav className="w-full bg-white dark:bg-dark border-b border-gray-light dark:border-gray sticky top-0 z-50 transition-colors duration-300">
@@ -62,6 +73,20 @@ export default function Navbar({ user }: { user?: UserProps }) {
                 </Link>
               );
             })}
+
+            {/* 👇 CARRITO DE COMPRA ESCRITORIO */}
+            <Link 
+              href={user ? "/carrito" : "/login"} 
+              className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 mr-2"
+              title="Ver carrito"
+            >
+              <ShoppingCart size={24} />
+              {cartCount > 0 && (
+                <span className={`absolute -top-1 -right-2 bg-primary text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white dark:border-dark transition-transform ${animateBadge ? 'scale-125' : 'scale-100'}`}>
+                  {cartCount}
+                </span>
+              )}
+            </Link>
              
             <ThemeToggle />
 
@@ -132,6 +157,19 @@ export default function Navbar({ user }: { user?: UserProps }) {
 
           {/* --- BOTÓN MENÚ MÓVIL (Visible solo en móvil) --- */}
           <div className="flex md:hidden items-center gap-4">
+            {/* También mostramos el carrito en móvil fuera del menú */}
+            <Link 
+              href={user ? "/carrito" : "/login"} 
+              className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1"
+            >
+              <ShoppingCart size={24} />
+              {cartCount > 0 && (
+                <span className={`absolute -top-1 -right-2 bg-primary text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white dark:border-dark transition-transform ${animateBadge ? 'scale-125' : 'scale-100'}`}>
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
             <ThemeToggle />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

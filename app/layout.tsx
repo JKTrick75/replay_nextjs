@@ -28,17 +28,23 @@ export default async function RootLayout({
   // 1. Obtenemos la sesión (la cookie)
   const session = await auth();
   
-  // Variable para el usuario que pasaremos al Navbar
+  // Variables para el Navbar
   let user = undefined;
+  let cartCount = 0; // 👇 Contador inicializado a 0
 
-  // 2. TRUCO DE REFRESCO: 
-  // Si hay sesión, buscamos los datos REALES en la base de datos.
-  // Así, si cambias la foto en el perfil, se verá al instante al recargar (router.refresh()), 
-  // ignorando la foto vieja que se quedó guardada en la cookie de sesión.
+  // 2. TRUCO DE REFRESCO + DATOS DEL CARRITO
   if (session?.user?.email) {
     const dbUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { name: true, email: true, image: true } // Solo traemos lo necesario para el Navbar
+      select: { 
+        name: true, 
+        email: true, 
+        image: true,
+        // 👇 Incluimos el carrito para contar los items
+        cart: {
+          include: { items: true }
+        }
+      } 
     });
     
     if (dbUser) {
@@ -48,8 +54,10 @@ export default async function RootLayout({
         email: dbUser.email,
         image: dbUser.image,
       };
+      // 👇 Calculamos cuántos productos hay en el carrito
+      cartCount = dbUser.cart?.items.length || 0;
     } else {
-      // Fallback: si falla la DB, usamos lo que haya en la sesión
+      // Fallback
       user = session.user;
     }
   }
@@ -58,8 +66,8 @@ export default async function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${roboto.className} antialiased bg-white-off dark:bg-neutral-950 text-dark dark:text-white-off flex flex-col min-h-screen transition-colors duration-300`}>
         <Providers>
-          {/* 👇 Pasamos el usuario FRESCO al Navbar */}
-          <Navbar user={user} />
+          {/* 👇 Pasamos usuario y contador al Navbar */}
+          <Navbar user={user} cartCount={cartCount} />
           
           <main className="grow">
             {children}

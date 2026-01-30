@@ -32,6 +32,9 @@ model User {
   // --- FAVORITOS ---
   favorites Favorite[]
 
+  // RELACIÓN CARRITO
+  cart      Cart?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -108,7 +111,10 @@ model Listing {
   platform    Console   @relation(fields: [platformId], references: [id])
   
   photos      ListingPhoto[]
-  favoritedBy Favorite[] 
+  favoritedBy Favorite[]
+
+  // RELACIÓN CARRITO (Para saber en qué carritos está este item)
+  inCarts   CartItem[]
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -137,4 +143,34 @@ model Favorite {
   createdAt DateTime @default(now())
 
   @@unique([userId, listingId]) 
+}
+
+// --------------------------------------------------------
+// 5. CARRITO DE LA COMPRA
+// --------------------------------------------------------
+
+model Cart {
+  id        String     @id @default(uuid()) @db.VarChar(36)
+  
+  userId    String     @unique @db.VarChar(36)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  items     CartItem[]
+
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  
+  cartId    String   @db.VarChar(36)
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  
+  listingId String   @db.VarChar(36)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  addedAt   DateTime @default(now())
+
+  // Un mismo producto solo puede estar una vez en un mismo carrito
+  @@unique([cartId, listingId])
 }
