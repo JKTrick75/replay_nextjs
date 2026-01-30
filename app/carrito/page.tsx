@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
-import { ArrowRight, Trash2, ShoppingBag, ArrowLeft, Package } from 'lucide-react';
+import { ArrowRight, Trash2, ShoppingBag, ArrowLeft, Package, CreditCard } from 'lucide-react';
 import { formatCurrency } from '@/app/lib/utils';
 import RemoveFromCartButton from '@/app/ui/shop/remove-from-cart-button'; // 👇 Crearemos este botón pequeño
 import CheckoutButton from '@/app/ui/shop/checkout-button'; // 👇 Y este para pagar
@@ -137,7 +137,13 @@ export default async function CartPage() {
                 </div>
 
                 {/* Botón de Pagar */}
-                <CheckoutButton />
+                <Link 
+                  href="/checkout"
+                  className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex justify-center items-center gap-2 text-center"
+                >
+                  <CreditCard />
+                  Tramitar Pedido
+                </Link>
                 
                 <p className="text-xs text-gray-400 text-center mt-4 flex items-center justify-center gap-1">
                   <Package size={14} /> Garantía de compra segura Replay

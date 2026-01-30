@@ -1,7 +1,8 @@
 import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
-import Link from 'next/link'; // 👈 Importamos Link
-import { ShoppingBag } from 'lucide-react';
+import Link from 'next/link'; 
+// 👇 AÑADIDO: Nuevos iconos de estado
+import { ShoppingBag, NotebookText, Truck, CheckCircle, Clock, PackageX } from 'lucide-react'; 
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 
 export default async function MyPurchasesPage() {
@@ -57,7 +58,6 @@ export default async function MyPurchasesPage() {
                   <div key={listing.id} className="mb-2 w-full rounded-md bg-white dark:bg-neutral-900 p-4 border border-gray-100 dark:border-neutral-700 hover:shadow-sm transition-all">
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-700 pb-4">
                       
-                      {/* 👇 AHORA ES UN LINK */}
                       <Link href={`/tienda/${listing.id}`} className="flex items-center group">
                         <img 
                           src={listing.game?.coverImage || '/placeholder.png'} 
@@ -72,19 +72,53 @@ export default async function MyPurchasesPage() {
                         </div>
                       </Link>
 
-                      <div className="text-xs px-2 py-1 rounded-full font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                        Comprado
+                      {/* 👇 ESTADO EN MÓVIL (Badge dinámico) */}
+                      <div className="flex flex-col items-end">
+                        {listing.status === 'cancelled' ? (
+                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-red-50 text-red-500 border-red-100 flex items-center gap-1">
+                                <PackageX size={12} /> Cancelado
+                            </span>
+                        ) : (
+                            <>
+                                {listing.deliveryStatus === 'pending' && (
+                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-yellow-50 text-yellow-700 border-yellow-100 flex items-center gap-1">
+                                        <Clock size={12} /> Pendiente
+                                    </span>
+                                )}
+                                {listing.deliveryStatus === 'shipped' && (
+                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-blue-50 text-blue-700 border-blue-100 flex items-center gap-1">
+                                        <Truck size={12} /> Enviado
+                                    </span>
+                                )}
+                                {listing.deliveryStatus === 'delivered' && (
+                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-green-50 text-green-700 border-green-100 flex items-center gap-1">
+                                        <CheckCircle size={12} /> Entregado
+                                    </span>
+                                )}
+                            </>
+                        )}
                       </div>
+
                     </div>
                     <div className="flex w-full items-center justify-between pt-4">
-                      <p className="text-xl font-bold text-dark dark:text-white">
-                        {formatCurrency(listing.price * 100)}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                         {listing.soldAt 
-                            ? formatDateToLocal(listing.soldAt.toString()) 
-                            : formatDateToLocal(listing.updatedAt.toString())}
-                      </p>
+                      <div className="flex flex-col">
+                        <p className="text-xl font-bold text-dark dark:text-white">
+                          {formatCurrency(listing.price * 100)}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                           {listing.soldAt 
+                              ? formatDateToLocal(listing.soldAt.toString()) 
+                              : formatDateToLocal(listing.updatedAt.toString())}
+                        </p>
+                      </div>
+                      
+                      {/* BOTÓN MÓVIL DETALLES */}
+                      <Link 
+                        href={`/dashboard/compras/${listing.id}`}
+                        className="p-2 bg-gray-100 dark:bg-neutral-800 rounded-lg text-gray-600 hover:text-primary transition-colors"
+                      >
+                         <NotebookText size={20} />
+                      </Link>
                     </div>
                   </div>
                 ))}
@@ -96,16 +130,16 @@ export default async function MyPurchasesPage() {
                   <tr>
                     <th className="px-4 py-5 font-medium sm:pl-6">Juego</th>
                     <th className="px-3 py-5 font-medium">Vendedor</th>
+                    <th className="px-3 py-5 font-medium">Estado</th>
                     <th className="px-3 py-5 font-medium">Precio Pagado</th>
                     <th className="px-3 py-5 font-medium">Fecha Compra</th>
+                    <th className="px-3 py-5 font-medium text-right">Detalles</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-neutral-900">
                   {purchases.map((listing) => (
                     <tr key={listing.id} className="w-full border-b border-gray-light dark:border-neutral-800 py-3 text-sm last-of-type:border-none hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors">
                       <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                        
-                        {/* 👇 AHORA ES UN LINK */}
                         <Link href={`/tienda/${listing.id}`} className="flex items-center gap-3 group">
                           <img 
                             src={listing.game?.coverImage || '/placeholder.png'} 
@@ -116,7 +150,6 @@ export default async function MyPurchasesPage() {
                             {listing.game?.title}
                           </p>
                         </Link>
-
                       </td>
                       <td className="whitespace-nowrap px-3 py-3">
                          <div className="flex items-center gap-2">
@@ -126,6 +159,34 @@ export default async function MyPurchasesPage() {
                             <span className="text-gray-600 dark:text-gray-300">{listing.seller.name}</span>
                          </div>
                       </td>
+
+                      {/* 👇 COLUMNA DE ESTADO CON ICONOS */}
+                      <td className="whitespace-nowrap px-3 py-3">
+                        {listing.status === 'cancelled' ? (
+                            <div className="flex items-center gap-2 text-red-500 font-medium">
+                                <PackageX size={16} /> Cancelado
+                            </div>
+                        ) : (
+                            <>
+                                {listing.deliveryStatus === 'pending' && (
+                                    <div className="flex items-center gap-2 text-yellow-600 font-medium">
+                                        <Clock size={16} /> Pendiente
+                                    </div>
+                                )}
+                                {listing.deliveryStatus === 'shipped' && (
+                                    <div className="flex items-center gap-2 text-blue-600 font-medium">
+                                        <Truck size={16} /> Enviado
+                                    </div>
+                                )}
+                                {listing.deliveryStatus === 'delivered' && (
+                                    <div className="flex items-center gap-2 text-green-600 font-medium">
+                                        <CheckCircle size={16} /> Entregado
+                                    </div>
+                                )}
+                            </>
+                        )}
+                      </td>
+
                       <td className="whitespace-nowrap px-3 py-3 font-bold text-dark dark:text-white">
                         {formatCurrency(listing.price * 100)}
                       </td>
@@ -133,6 +194,16 @@ export default async function MyPurchasesPage() {
                          {listing.soldAt 
                             ? formatDateToLocal(listing.soldAt.toString()) 
                             : formatDateToLocal(listing.updatedAt.toString())}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3 text-right pr-6">
+                        <Link 
+                          href={`/dashboard/compras/${listing.id}`} 
+                          className="inline-flex items-center gap-2 text-gray-500 hover:text-primary transition-colors font-medium"
+                          title="Ver detalles del pedido"
+                        >
+                          <NotebookText size={18} />
+                          <span className="hidden lg:inline">Ver Pedido</span>
+                        </Link>
                       </td>
                     </tr>
                   ))}

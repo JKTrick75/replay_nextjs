@@ -116,6 +116,10 @@ model Listing {
   // RELACIÓN CARRITO (Para saber en qué carritos está este item)
   inCarts   CartItem[]
 
+  // NUEVOS CAMPOS PARA LOGÍSTICA
+  shippingAddress String?  @db.Text             // Dirección completa de envío
+  deliveryStatus  String   @default("pending")  // Estados: 'pending', 'shipped', 'delivered'
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
