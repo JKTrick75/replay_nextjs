@@ -71,7 +71,7 @@ model Game {
   title       String
   coverImage  String?   @db.Text
   description String?   @db.Text
-  genre       String?
+  genre       String    @default("Varios")
   releaseYear Int?
   
   platforms   Console[] @relation("GamePlatforms") 

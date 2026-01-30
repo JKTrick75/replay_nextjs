@@ -118,8 +118,8 @@ export async function createListing(prevState: State, formData: FormData) {
   const validatedFields = CreateListingSchema.safeParse({
     gameId: formData.get('gameId'),
     newGameTitle: formData.get('gameSearch'),
-    coverImage: formData.get('coverImage'),
-    genre: formData.get('genre'),
+    coverImage: formData.get('coverImage') || undefined,
+    genre: formData.get('genre') || undefined,
     platformId: formData.get('platformId'),
     price: formData.get('price'),
     condition: formData.get('condition'),
@@ -181,7 +181,8 @@ export async function createListing(prevState: State, formData: FormData) {
 
   revalidatePath('/dashboard/ventas');
   revalidatePath('/tienda');
-  redirect('/dashboard/ventas');
+  // 🟢 CAMBIO: No redirigimos aquí, devolvemos éxito para que el cliente muestre la alerta
+  return { message: 'Producto publicado correctamente' };
 }
 
 export async function updateListing(id: string, prevState: State, formData: FormData) {
@@ -241,7 +242,8 @@ export async function updateListing(id: string, prevState: State, formData: Form
 
   revalidatePath('/dashboard/ventas');
   revalidatePath('/tienda');
-  redirect('/dashboard/ventas');
+  // 🟢 CAMBIO: Devolvemos éxito para la alerta
+  return { message: 'Producto actualizado correctamente' };
 }
 
 export async function deleteListing(id: string) {
@@ -616,4 +618,3 @@ export async function cancelOrder(listingId: string) {
     return { message: 'Error al cancelar.' };
   }
 }
-

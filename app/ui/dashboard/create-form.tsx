@@ -5,6 +5,8 @@ import { createListing, updateListing } from '@/app/lib/actions';
 import { State } from '@/app/lib/definitions';
 import Link from 'next/link';
 import { Save, Monitor, DollarSign, Search, Plus, Image as ImageIcon, Link as LinkIcon, Gamepad2 } from 'lucide-react';
+import { showAlert } from '@/app/lib/swal';
+import { useRouter } from 'next/navigation';
 
 // Tipos básicos
 type SimpleGame = { id: string; title: string; coverImage: string | null };
@@ -33,6 +35,8 @@ export default function CreateListingForm({
   
   const updateListingWithId = listing ? updateListing.bind(null, listing.id) : null;
   const [state, formAction] = useActionState(listing ? updateListingWithId! : createListing, initialState);
+  
+  const router = useRouter(); 
 
   // --- ESTADOS INICIALES ---
   const [query, setQuery] = useState(listing?.game.title || '');
@@ -41,6 +45,32 @@ export default function CreateListingForm({
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // 👇 EFECTO DE ÉXITO CON REDIRECCIÓN (DARK MODE FRIENDLY)
+  useEffect(() => {
+    if (state.message && (!state.errors || Object.keys(state.errors).length === 0)) {
+      
+      showAlert.fire({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        icon: 'success',
+        title: '¡Fantástico!',
+        text: listing ? 'Producto actualizado correctamente' : 'Producto publicado correctamente',
+        confirmButtonText: 'Genial',
+        timer: 3000, 
+        timerProgressBar: true,
+        // ❌ BORRADO: background: '#fff',
+        // ❌ BORRADO: color: '#444',
+        // Ahora usa los estilos de app/lib/swal.ts
+        willClose: () => {
+           router.push('/dashboard/ventas'); 
+           router.refresh(); 
+        }
+      });
+      
+    }
+  }, [state, listing, router]); 
 
   const filteredGames = query === ''
     ? []
@@ -72,11 +102,8 @@ export default function CreateListingForm({
   };
 
   const showImageInput = (query.length > 0 && selectedGameId === '') || !!listing;
-  
-  // 👇 LÓGICA: Solo mostramos género si estamos creando un juego NUEVO (id vacío)
   const isCreatingNewGame = query.length > 0 && selectedGameId === '';
 
-  // Lista de géneros comunes
   const genres = [
     "Acción", "Aventura", "RPG", "Shooter", "Deportes", 
     "Carreras", "Lucha", "Estrategia", "Plataformas", 
@@ -146,7 +173,7 @@ export default function CreateListingForm({
            
            {/* CAMPO 1: IMAGEN */}
            <div className="md:col-span-1">
-             <label htmlFor="coverImage" className="mb-2 block text-sm font-bold text-dark dark:text-white justify-between items-center">
+             <label htmlFor="coverImage" className="mb-2 flex text-sm font-bold text-dark dark:text-white justify-between items-center">
                <span>Carátula (URL)</span>
                {isCreatingNewGame && <span className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Nuevo Juego</span>}
              </label>
@@ -277,8 +304,9 @@ export default function CreateListingForm({
         ></textarea>
       </div>
 
-      {state.message && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-primary border border-primary/20 rounded-lg text-sm text-center font-medium">
+      {/* CARTEL ROJO SOLO SI ES ERROR */}
+      {state.message && !state.message.includes('correctamente') && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-primary border border-primary/20 rounded-lg text-sm text-center font-medium animate-fade-in">
           {state.message}
         </div>
       )}
