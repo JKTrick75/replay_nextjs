@@ -157,7 +157,7 @@ export default function ProfileForm({ user }: { user: UserType }) {
       <div className="flex flex-col md:flex-row gap-10">
         
         {/* --- COLUMNA IZQUIERDA: AVATAR --- */}
-        <div className="flex flex-col items-center gap-4 min-w-[200px]">
+        <div className="flex flex-col items-center gap-4 min-w-50">
           <div className="relative group">
             <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white dark:border-neutral-800 shadow-xl bg-gray-100">
               <img 
@@ -185,7 +185,7 @@ export default function ProfileForm({ user }: { user: UserType }) {
               <LinkIcon size={16} />
             </button>
           </div>
-          <p className="text-sm text-gray-500 text-center max-w-[200px]">
+          <p className="text-sm text-gray-500 text-center max-w-50">
             Personaliza tu avatar o usa una imagen de internet.
           </p>
         </div>
