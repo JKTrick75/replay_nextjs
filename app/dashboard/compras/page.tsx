@@ -1,11 +1,15 @@
 import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link'; 
-// 👇 AÑADIDO: Nuevos iconos de estado
-import { ShoppingBag, NotebookText, Truck, CheckCircle, Clock, PackageX } from 'lucide-react'; 
+import { ShoppingBag, NotebookText, Truck, CheckCircle, Clock, PackageX, Filter } from 'lucide-react'; 
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 
-export default async function MyPurchasesPage() {
+export default async function MyPurchasesPage(props: {
+  searchParams?: Promise<{ filter?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const filter = searchParams?.filter || 'all';
+
   const session = await auth();
   const userEmail = session?.user?.email;
 
@@ -14,11 +18,27 @@ export default async function MyPurchasesPage() {
   const user = await prisma.user.findUnique({ where: { email: userEmail } });
   if (!user) return <div>Usuario no encontrado.</div>;
 
+  // --- LÓGICA DE FILTROS ---
+  const whereCondition: any = {
+    buyerId: user.id, 
+  };
+
+  if (filter === 'pending') {
+    whereCondition.status = 'sold';
+    whereCondition.deliveryStatus = 'pending';
+  } else if (filter === 'shipped') {
+    whereCondition.status = 'sold';
+    whereCondition.deliveryStatus = 'shipped';
+  } else if (filter === 'delivered') {
+    whereCondition.status = 'sold';
+    whereCondition.deliveryStatus = 'delivered';
+  } else if (filter === 'cancelled') {
+    whereCondition.status = 'cancelled';
+  }
+
   // QUERY: Mis compras
   const purchases = await prisma.listing.findMany({
-    where: {
-      buyerId: user.id, 
-    },
+    where: whereCondition,
     include: { 
       game: true, 
       platform: true,
@@ -27,24 +47,47 @@ export default async function MyPurchasesPage() {
     orderBy: { soldAt: 'desc' }, 
   });
 
+  // Estilos de pestañas
+  const activeTabClass = "bg-white text-dark shadow dark:bg-neutral-700 dark:text-white";
+  const inactiveTabClass = "text-gray-500 hover:text-dark dark:text-gray-400 dark:hover:text-white";
+
   return (
     <div className="w-full">
-      <div className="flex w-full items-center justify-between mb-8">
+      <div className="flex w-full items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-dark dark:text-white">
           Mis Compras
         </h1>
       </div>
 
+      {/* --- FILTROS DE ESTADO --- */}
+      <div className="mb-8 flex flex-wrap gap-1 rounded-xl bg-gray-100 p-1 dark:bg-neutral-800 w-fit">
+        {[
+          { key: 'all', label: 'Todos' },
+          { key: 'pending', label: 'Pendientes' },
+          { key: 'shipped', label: 'En Camino' },
+          { key: 'delivered', label: 'Entregados' },
+          { key: 'cancelled', label: 'Cancelados' }
+        ].map((tab) => (
+          <Link
+            key={tab.key}
+            href={`/dashboard/compras?filter=${tab.key}`}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${filter === tab.key ? activeTabClass : inactiveTabClass}`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </div>
+
       {purchases.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800/50 p-12 text-center animate-fade-in">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-700 mb-4">
-            <ShoppingBag className="text-gray-400" size={24} />
+            {filter === 'all' ? <ShoppingBag className="text-gray-400" size={24} /> : <Filter className="text-gray-400" size={24} />}
           </div>
           <h3 className="text-lg font-medium text-dark dark:text-white">
-            Aún no has comprado nada
+            No se encontraron pedidos
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            ¡Explora la tienda y encuentra tu próximo juego!
+            {filter === 'all' ? 'Aún no has comprado nada.' : 'No tienes pedidos en este estado.'}
           </p>
         </div>
       ) : (
@@ -72,7 +115,7 @@ export default async function MyPurchasesPage() {
                         </div>
                       </Link>
 
-                      {/* 👇 ESTADO EN MÓVIL (Badge dinámico) */}
+                      {/* BADGE MÓVIL */}
                       <div className="flex flex-col items-end">
                         {listing.status === 'cancelled' ? (
                             <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-red-50 text-red-500 border-red-100 flex items-center gap-1">
@@ -112,7 +155,6 @@ export default async function MyPurchasesPage() {
                         </p>
                       </div>
                       
-                      {/* BOTÓN MÓVIL DETALLES */}
                       <Link 
                         href={`/dashboard/compras/${listing.id}`}
                         className="p-2 bg-gray-100 dark:bg-neutral-800 rounded-lg text-gray-600 hover:text-primary transition-colors"
@@ -160,7 +202,6 @@ export default async function MyPurchasesPage() {
                          </div>
                       </td>
 
-                      {/* 👇 COLUMNA DE ESTADO CON ICONOS */}
                       <td className="whitespace-nowrap px-3 py-3">
                         {listing.status === 'cancelled' ? (
                             <div className="flex items-center gap-2 text-red-500 font-medium">

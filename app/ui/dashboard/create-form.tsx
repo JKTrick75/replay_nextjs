@@ -4,18 +4,17 @@ import { useActionState, useState, useEffect, useRef } from 'react';
 import { createListing, updateListing } from '@/app/lib/actions';
 import { State } from '@/app/lib/definitions';
 import Link from 'next/link';
-import { Save, Monitor, DollarSign, Search, Plus, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { Save, Monitor, DollarSign, Search, Plus, Image as ImageIcon, Link as LinkIcon, Gamepad2 } from 'lucide-react';
 
 // Tipos básicos
 type SimpleGame = { id: string; title: string; coverImage: string | null };
 type SimpleConsole = { id: string; name: string };
 
-// 👇 CORRECCIÓN AQUÍ: Permitimos que description sea string | null
 type ListingToEdit = {
   id: string;
   price: number;
   condition: string;
-  description: string | null; // <--- ANTES: string, AHORA: string | null
+  description: string | null;
   gameId: string;
   platformId: string;
   game: { title: string; coverImage: string | null };
@@ -28,7 +27,7 @@ export default function CreateListingForm({
 }: { 
   games: SimpleGame[], 
   consoles: SimpleConsole[],
-  listing?: ListingToEdit | null // Permitimos null también aquí
+  listing?: ListingToEdit | null 
 }) {
   const initialState: State = { message: null, errors: {} };
   
@@ -73,6 +72,16 @@ export default function CreateListingForm({
   };
 
   const showImageInput = (query.length > 0 && selectedGameId === '') || !!listing;
+  
+  // 👇 LÓGICA: Solo mostramos género si estamos creando un juego NUEVO (id vacío)
+  const isCreatingNewGame = query.length > 0 && selectedGameId === '';
+
+  // Lista de géneros comunes
+  const genres = [
+    "Acción", "Aventura", "RPG", "Shooter", "Deportes", 
+    "Carreras", "Lucha", "Estrategia", "Plataformas", 
+    "Terror", "Simulación", "Puzzle", "Musical", "Varios"
+  ];
 
   return (
     <form action={formAction} className="rounded-xl bg-white-off dark:bg-neutral-800 p-6 md:p-8 border border-gray-light dark:border-neutral-700 shadow-sm transition-all duration-300">
@@ -131,36 +140,61 @@ export default function CreateListingForm({
         )}
       </div>
 
-      {/* CAMPO IMAGEN */}
+      {/* BLOQUE DE DETALLES DEL JUEGO (Imagen y Género) */}
       {showImageInput && (
-        <div className="mb-6 animate-fade-in-down">
-           <label htmlFor="coverImage" className="mb-2 block text-sm font-bold text-dark dark:text-white justify-between items-center">
-             <span>URL de la Carátula (Opcional)</span>
-             <span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-neutral-700 px-2 py-0.5 rounded-full">
-                {listing ? 'Editar Imagen' : 'Juego Nuevo'}
-             </span>
-           </label>
-           <div className="flex gap-4 items-start">
-             <div className="relative flex-1">
-                <input
-                  id="coverImage"
-                  name="coverImage"
-                  type="url"
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  value={customImageUrl}
-                  onChange={(e) => setCustomImageUrl(e.target.value)}
-                  className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-3 pl-10 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white"
-                />
-                <LinkIcon className="pointer-events-none absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray" />
-             </div>
-             <div className="w-11 h-11 rounded-lg border border-gray-light dark:border-neutral-600 bg-gray-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden shrink-0">
-                {customImageUrl ? (
-                  <img src={customImageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => e.currentTarget.style.display = 'none'} />
-                ) : (
-                  <ImageIcon size={20} className="text-gray-400" />
-                )}
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-down p-4 rounded-xl bg-gray-50 dark:bg-neutral-900/50 border border-gray-100 dark:border-neutral-700/50">
+           
+           {/* CAMPO 1: IMAGEN */}
+           <div className="md:col-span-1">
+             <label htmlFor="coverImage" className="mb-2 block text-sm font-bold text-dark dark:text-white justify-between items-center">
+               <span>Carátula (URL)</span>
+               {isCreatingNewGame && <span className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Nuevo Juego</span>}
+             </label>
+             <div className="flex gap-3 items-start">
+               <div className="relative flex-1">
+                  <input
+                    id="coverImage"
+                    name="coverImage"
+                    type="url"
+                    placeholder="https://..."
+                    value={customImageUrl}
+                    onChange={(e) => setCustomImageUrl(e.target.value)}
+                    className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-3 pl-10 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white"
+                  />
+                  <LinkIcon className="pointer-events-none absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray" />
+               </div>
+               <div className="w-11 h-11 rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 flex items-center justify-center overflow-hidden shrink-0">
+                  {customImageUrl ? (
+                    <img src={customImageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => e.currentTarget.style.display = 'none'} />
+                  ) : (
+                    <ImageIcon size={20} className="text-gray-400" />
+                  )}
+               </div>
              </div>
            </div>
+
+           {/* CAMPO 2: GÉNERO (Solo si es juego nuevo) */}
+           {isCreatingNewGame && (
+             <div className="md:col-span-1 animate-fade-in">
+               <label htmlFor="genre" className="mb-2 block text-sm font-bold text-dark dark:text-white">
+                 Género
+               </label>
+               <div className="relative">
+                 <select
+                   id="genre"
+                   name="genre"
+                   className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-3 pl-10 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white appearance-none cursor-pointer"
+                   defaultValue="Varios"
+                 >
+                   {genres.map((g) => (
+                     <option key={g} value={g}>{g}</option>
+                   ))}
+                 </select>
+                 <Gamepad2 className="pointer-events-none absolute left-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray" />
+               </div>
+             </div>
+           )}
+
         </div>
       )}
 
@@ -237,7 +271,6 @@ export default function CreateListingForm({
           id="description"
           name="description"
           rows={4}
-          // 👇 Aquí el cambio permite que si es null, se use ""
           defaultValue={listing?.description || ""} 
           className="peer block w-full rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 py-2 px-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark dark:text-white resize-none"
           placeholder="Ej: Solo cartucho, caja un poco dañada..."

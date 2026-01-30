@@ -96,6 +96,7 @@ const CreateListingSchema = z.object({
   gameId: z.string().optional(),
   newGameTitle: z.string().optional(),
   coverImage: z.string().optional(),
+  genre: z.string().optional(),
   platformId: z.string().min(1, { message: 'Selecciona una plataforma.' }),
   price: z.coerce.number().gt(0, { message: 'El precio debe ser mayor a 0.' }),
   condition: z.enum(['Nuevo', 'Seminuevo', 'Usado'] as const, {
@@ -118,6 +119,7 @@ export async function createListing(prevState: State, formData: FormData) {
     gameId: formData.get('gameId'),
     newGameTitle: formData.get('gameSearch'),
     coverImage: formData.get('coverImage'),
+    genre: formData.get('genre'),
     platformId: formData.get('platformId'),
     price: formData.get('price'),
     condition: formData.get('condition'),
@@ -131,7 +133,7 @@ export async function createListing(prevState: State, formData: FormData) {
     };
   }
 
-  const { gameId, newGameTitle, coverImage, platformId, price, condition, description } = validatedFields.data;
+  const { gameId, newGameTitle, coverImage, genre, platformId, price, condition, description } = validatedFields.data;
   let finalGameId = gameId;
 
   try {
@@ -144,7 +146,7 @@ export async function createListing(prevState: State, formData: FormData) {
           data: {
             title: newGameTitle,
             coverImage: coverImage && coverImage.trim() !== '' ? coverImage : '/placeholder.png',
-            genre: 'Varios',
+            genre: genre || 'Varios',
             description: 'Añadido por la comunidad.',
           },
         });
@@ -401,15 +403,60 @@ export async function removeFromCart(itemId: string) {
   }
 }
 
-// 3. Procesar pedido
-export async function processCheckout(shippingAddress: string) {
+// TOGGLE CHECKBOX
+export async function toggleCartItemSelection(itemId: string, isSelected: boolean) {
+  try {
+    await prisma.cartItem.update({
+      where: { id: itemId },
+      data: { selected: isSelected },
+    });
+    revalidatePath('/carrito'); // Recargamos para actualizar el precio total
+    revalidatePath('/checkout');
+    return { success: true };
+  } catch (error) {
+    return { message: 'Error al actualizar selección.' };
+  }
+}
+
+// SELECCIONAR/DESELECCIONAR TODO
+export async function toggleAllCartItems(isSelected: boolean) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'No autenticado' };
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
+    include: { cart: true },
+  });
+
+  if (!user || !user.cart) return;
+
+  try {
+    await prisma.cartItem.updateMany({
+      where: { cartId: user.cart.id },
+      data: { selected: isSelected },
+    });
+    
+    revalidatePath('/carrito');
+    revalidatePath('/checkout');
+    return { success: true };
+  } catch (error) {
+    return { message: 'Error al actualizar.' };
+  }
+}
+
+// 2. MODIFICAR: processCheckout (Para que SOLO compre lo seleccionado)
+
+export async function processCheckout(shippingAddress: string) {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado' };
+
+  // 1. Obtenemos el usuario y su carrito completo
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
     include: { 
-      cart: { include: { items: { include: { listing: true } } } } 
+      cart: {
+        include: { items: { include: { listing: true } } }
+      } 
     },
   });
 
@@ -417,13 +464,24 @@ export async function processCheckout(shippingAddress: string) {
     return { message: 'El carrito está vacío.' };
   }
 
-  const itemsToBuy = user.cart.items;
+  // 2. FILTRO CLAVE: Solo procesamos los items que el usuario ha marcado con el checkbox
+  const itemsToBuy = user.cart.items.filter(item => item.selected);
+
+  if (itemsToBuy.length === 0) {
+    return { message: 'No has seleccionado ningún producto para comprar.' };
+  }
+
+  // 3. Verificamos disponibilidad solo de los seleccionados
   const unavailableItems = itemsToBuy.filter(item => item.listing.status !== 'active');
 
-  if (unavailableItems.length > 0) return { message: `Productos no disponibles.`, error: true };
+  if (unavailableItems.length > 0) {
+    return { message: `Algunos productos seleccionados ya no están disponibles.`, error: true };
+  }
 
   try {
+    // 4. Transacción: Actualizar listings y borrar del carrito SOLO lo comprado
     await prisma.$transaction(async (tx) => {
+      
       for (const item of itemsToBuy) {
         await tx.listing.update({
           where: { id: item.listingId },
@@ -431,17 +489,29 @@ export async function processCheckout(shippingAddress: string) {
             status: 'sold',
             buyerId: user.id,
             soldAt: new Date(),
-            shippingAddress: shippingAddress, // 👈 Guardamos dirección
-            deliveryStatus: 'pending',        // 👈 Estado inicial
+            shippingAddress: shippingAddress, // 📍 Guardamos la dirección
+            deliveryStatus: 'pending',        // 🕒 Estado inicial
           },
         });
       }
-      await tx.cartItem.deleteMany({ where: { cartId: user.cart!.id } });
+
+      // Borramos del carrito SOLO los items que acabamos de comprar (selected: true)
+      // Los que no estaban marcados se quedan en el carrito para la próxima.
+      await tx.cartItem.deleteMany({
+        where: { 
+          cartId: user.cart!.id,
+          selected: true 
+        },
+      });
     });
 
+    // 5. Actualizamos las vistas
     revalidatePath('/dashboard/compras');
     revalidatePath('/dashboard');
+    revalidatePath('/carrito'); // Importante para que desaparezcan del carrito visualmente
+    
     return { message: '¡Pedido confirmado!', success: true };
+
   } catch (error) {
     console.error(error);
     return { message: 'Error al procesar el pedido.' };

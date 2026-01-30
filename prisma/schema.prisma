@@ -175,6 +175,8 @@ model CartItem {
 
   addedAt   DateTime @default(now())
 
+  selected  Boolean  @default(true)
+
   // Un mismo producto solo puede estar una vez en un mismo carrito
   @@unique([cartId, listingId])
 }
