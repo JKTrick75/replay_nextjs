@@ -9,10 +9,9 @@ export default function ShipButton({ id }: { id: string }) {
   const [isPending, startTransition] = useTransition();
 
   const handleShip = async () => {
-    // 1. Confirmación
     const result = await confirmAction(
       '¿Confirmar envío?', 
-      'Esto avisará al comprador de que el paquete está en camino.',
+      'Avisaremos al comprador de que su paquete está en camino.',
       'Sí, enviado'
     );
 
@@ -33,11 +32,20 @@ export default function ShipButton({ id }: { id: string }) {
     <button
       onClick={handleShip}
       disabled={isPending}
-      className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-md text-xs font-bold transition-colors disabled:opacity-50"
+      // 👇 ESTILO SIDENAV "ACTIVO": bg-primary text-white shadow-md
+      className={`
+        flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors
+        bg-primary text-white shadow-md hover:bg-primary-hover
+        disabled:opacity-50 disabled:cursor-not-allowed
+      `}
       title="Marcar como enviado"
     >
-      {isPending ? <Loader2 size={14} className="animate-spin" /> : <Truck size={14} />}
-      Enviar
+      {isPending ? (
+        <Loader2 size={16} className="animate-spin" />
+      ) : (
+        <Truck size={16} />
+      )}
+      <span>Confirmar Envío</span>
     </button>
   );
 }
