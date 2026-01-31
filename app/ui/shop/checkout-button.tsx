@@ -1,6 +1,7 @@
 'use client';
 
-import { checkout } from '@/app/lib/actions';
+// 👇 CAMBIO: Usamos la función nueva que sí existe
+import { processCheckout } from '@/app/lib/actions';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Loader2 } from 'lucide-react';
@@ -14,11 +15,13 @@ export default function CheckoutButton() {
     if (!confirmed) return;
 
     setIsPending(true);
-    const result = await checkout();
+    
+    // 👇 CAMBIO: Le pasamos una dirección por defecto al llamar a la acción
+    const result = await processCheckout("Dirección rápida (Botón directo)");
     
     if (result.success) {
       alert("¡Compra realizada con éxito! 🎮");
-      router.push('/dashboard/compras'); // Redirigimos a mis compras
+      router.push('/dashboard/compras'); 
     } else {
       alert(result.message || "Hubo un error");
       setIsPending(false);
