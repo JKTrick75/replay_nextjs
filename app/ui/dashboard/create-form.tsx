@@ -5,7 +5,8 @@ import { createListing, updateListing } from '@/app/lib/actions';
 import { State } from '@/app/lib/definitions';
 import Link from 'next/link';
 import { Save, Monitor, DollarSign, Search, Plus, Image as ImageIcon, Link as LinkIcon, Gamepad2 } from 'lucide-react';
-import { showAlert } from '@/app/lib/swal';
+// 👇 Importamos solo showToast
+import { showToast } from '@/app/lib/swal';
 import { useRouter } from 'next/navigation';
 
 // Tipos básicos
@@ -46,28 +47,20 @@ export default function CreateListingForm({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // 👇 EFECTO DE ÉXITO CON REDIRECCIÓN (DARK MODE FRIENDLY)
+  // 👇 EFECTO SIMPLIFICADO CON 'showToast'
   useEffect(() => {
     if (state.message && (!state.errors || Object.keys(state.errors).length === 0)) {
       
-      showAlert.fire({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        icon: 'success',
-        title: '¡Fantástico!',
-        text: listing ? 'Producto actualizado correctamente' : 'Producto publicado correctamente',
-        confirmButtonText: 'Genial',
-        timer: 3000, 
-        timerProgressBar: true,
-        // ❌ BORRADO: background: '#fff',
-        // ❌ BORRADO: color: '#444',
-        // Ahora usa los estilos de app/lib/swal.ts
-        willClose: () => {
+      showToast(
+        'success', 
+        listing ? '¡Actualizado!' : '¡Fantástico!', 
+        state.message, 
+        () => {
+           // Callback: Se ejecuta cuando la alerta se cierra
            router.push('/dashboard/ventas'); 
            router.refresh(); 
         }
-      });
+      );
       
     }
   }, [state, listing, router]); 
