@@ -93,53 +93,57 @@ export default async function CartPage() {
               {cartItems.map((item) => (
                 <div 
                   key={item.id} 
-                  // 👇 Añadido 'relative' y 'overflow-hidden' para contener el botón absoluto
-                  // 👇 Añadido 'pb-10' extra para dejar sitio al botón abajo
-                  className={`relative p-4 pb-10 rounded-xl border shadow-sm flex gap-4 transition-all duration-200 items-start overflow-hidden
+                  className={`relative p-4 pb-10 rounded-xl border shadow-sm flex gap-4 transition-all duration-200 items-start overflow-hidden group
                     ${item.selected 
                         ? 'bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700' 
                         : 'bg-gray-50 dark:bg-neutral-900/50 border-gray-100 dark:border-neutral-800 opacity-75'
                     }`}
                 >
-                  <div className="flex items-center justify-center pl-1 pt-2 shrink-0">
+                  <div className="flex items-center justify-center pl-1 pt-2 shrink-0 z-20">
                     <CartCheckbox id={item.id} isSelected={item.selected} />
                   </div>
 
-                  <div className="w-24 h-24 shrink-0 bg-gray-100 rounded-lg overflow-hidden relative">
-                     {!item.selected && <div className="absolute inset-0 bg-white/50 dark:bg-black/50 z-10" />}
-                     <img 
-                       src={item.listing.game?.coverImage || '/placeholder.png'} 
-                       alt="Juego" 
-                       className="w-full h-full object-cover"
-                     />
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col justify-between self-stretch py-1">
-                    <div>
-                      <div className="flex justify-between items-start gap-4">
-                        <h3 className={`font-bold text-lg line-clamp-1 ${!item.selected ? 'text-gray-500' : 'text-dark dark:text-white'}`}>
-                            {item.listing.game?.title}
-                        </h3>
-                        <p className={`font-bold text-lg shrink-0 ${item.selected ? 'text-primary' : 'text-gray-400'}`}>
-                          {formatCurrency(item.listing.price * 100)}
-                        </p>
+                  {/* 👇 ENVOLVEMOS IMAGEN Y TEXTO EN UN LINK */}
+                  <Link 
+                    href={`/tienda/${item.listing.id}`} 
+                    className="flex flex-1 gap-4 min-w-0 hover:opacity-80 transition-opacity"
+                  >
+                      <div className="w-24 h-24 shrink-0 bg-gray-100 rounded-lg overflow-hidden relative">
+                        {!item.selected && <div className="absolute inset-0 bg-white/50 dark:bg-black/50 z-10" />}
+                        <img 
+                          src={item.listing.game?.coverImage || '/placeholder.png'} 
+                          alt="Juego" 
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {item.listing.platform?.name} • {item.listing.condition}
-                      </p>
-                       <p className="text-xs text-gray-400 mt-2">
-                        Vendido por: {item.listing.seller?.name}
-                       </p>
-                    </div>
+                      
+                      <div className="flex-1 flex flex-col justify-between self-stretch py-1">
+                        <div>
+                          <div className="flex justify-between items-start gap-4">
+                            <h3 className={`font-bold text-lg line-clamp-1 ${!item.selected ? 'text-gray-500' : 'text-dark dark:text-white'}`}>
+                                {item.listing.game?.title}
+                            </h3>
+                            <p className={`font-bold text-lg shrink-0 ${item.selected ? 'text-primary' : 'text-gray-400'}`}>
+                              {formatCurrency(item.listing.price * 100)}
+                            </p>
+                          </div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {item.listing.platform?.name} • {item.listing.condition}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            Vendido por: {item.listing.seller?.name}
+                          </p>
+                        </div>
+                      </div>
+                  </Link>
 
-                    {/* El botón ahora se inyecta de forma absoluta en la esquina (dentro del componente) */}
-                    <RemoveFromCartButton itemId={item.id} />
-                  </div>
+                  {/* 👇 EL BOTÓN SE QUEDA FUERA DEL LINK, ABSOLUTO AL PADRE */}
+                  <RemoveFromCartButton itemId={item.id} />
                 </div>
               ))}
             </div>
 
-            {/* COLUMNA DERECHA: RESUMEN DE PAGO */}
+            {/* COLUMNA DERECHA: RESUMEN (Sin cambios) */}
             <div className="lg:w-96">
               <div className="bg-white dark:bg-neutral-800 p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 shadow-lg sticky top-24">
                 <h3 className="text-xl font-bold text-dark dark:text-white mb-6">Resumen del Pedido</h3>

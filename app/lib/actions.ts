@@ -577,12 +577,26 @@ export async function cancelOrder(listingId: string) {
   if (!user) return { message: 'Usuario no encontrado' };
 
   const listing = await prisma.listing.findUnique({ where: { id: listingId } });
-  
-  if (!listing || listing.sellerId !== user.id) return { message: 'No tienes permiso.' };
+  if (!listing) return { message: 'Pedido no encontrado' };
+
+  // --- 👮‍♂️ LÓGICA DE PERMISOS ---
+  const isSeller = listing.sellerId === user.id;
+  const isBuyer = listing.buyerId === user.id;
+
+  // 1. Si no eres ni el vendedor ni el comprador -> Fuera
+  if (!isSeller && !isBuyer) return { message: 'No tienes permiso.' };
+
+  // 2. Nadie puede cancelar si ya se entregó
   if (listing.deliveryStatus === 'delivered') return { message: 'No puedes cancelar un pedido ya entregado.' };
+  
+  // 3. RESTRICCIÓN COMPRADOR: Solo si está "Pendiente"
+  if (isBuyer && listing.deliveryStatus !== 'pending') {
+      return { message: 'El pedido ya ha sido enviado, no puedes cancelarlo automáticamente.' };
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
+      // A. Cancelamos el pedido actual
       await tx.listing.update({
         where: { id: listingId },
         data: { 
@@ -591,6 +605,7 @@ export async function cancelOrder(listingId: string) {
         }
       });
 
+      // B. Clonamos el producto para que vuelva a la tienda (disponible para otros)
       await tx.listing.create({
         data: {
           sellerId: listing.sellerId,
@@ -606,8 +621,12 @@ export async function cancelOrder(listingId: string) {
       });
     });
 
+    // Revalidamos todas las rutas afectadas
     revalidatePath('/dashboard/ventas');
-    return { message: 'Pedido cancelado y producto republicado.', success: true };
+    revalidatePath('/dashboard/compras');
+    revalidatePath(`/dashboard/compras/${listingId}`);
+    
+    return { message: 'Pedido cancelado y reembolsado correctamente.', success: true };
 
   } catch (error) {
     console.error(error);

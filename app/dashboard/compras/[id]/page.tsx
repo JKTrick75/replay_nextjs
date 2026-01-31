@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import DeliveryStatusButton from '@/app/ui/dashboard/delivery-status-button';
+import BuyerCancelButton from '@/app/ui/dashboard/buyer-cancel-button';
 
 export default async function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,7 +20,6 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
     notFound(); 
   }
 
-  // Mapa de estados (Idéntico al del vendedor)
   const statusMap: any = {
     'pending': { label: 'Pendiente de Envío', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
     'shipped': { label: 'Enviado', color: 'bg-blue-100 text-blue-700', icon: Truck },
@@ -27,7 +27,6 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
     'cancelled': { label: 'Pedido Cancelado', color: 'bg-red-100 text-red-700', icon: PackageX },
   };
 
-  // Lógica de estado unificada
   const currentStatus = listing.status === 'cancelled' 
       ? statusMap['cancelled'] 
       : statusMap[listing.deliveryStatus || 'pending'];
@@ -42,7 +41,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
 
       <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-100 dark:border-neutral-700 overflow-hidden">
         
-        {/* CABECERA (Idéntica al Vendedor) */}
+        {/* CABECERA */}
         <div className="p-8 border-b border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-dark dark:text-white">Detalles del Pedido</h1>
@@ -73,7 +72,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                 </div>
              </div>
 
-             {/* Tarjeta del Vendedor (Simétrica a la de Comprador del otro panel) */}
+             {/* Tarjeta del Vendedor */}
              <div>
                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white flex items-center gap-2">
                     <User size={20} className="text-primary"/> Datos del Vendedor
@@ -102,11 +101,10 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                     <MapPin size={20} className="text-primary"/> Envío y Seguimiento
                 </h3>
 
-                {/* Aviso si está cancelado */}
                 {listing.status === 'cancelled' ? (
                   <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
                     <p className="font-bold mb-1 flex items-center gap-2"><PackageX size={16}/> Pedido Cancelado</p>
-                    El vendedor ha cancelado este pedido. El importe ha sido reembolsado a tu método de pago original.
+                    El vendedor ha cancelado este pedido. El importe ha sido reembolsado.
                   </div>
                 ) : (
                   <div className="p-4 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 space-y-4">
@@ -136,12 +134,18 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
             {/* PANEL DE ACCIONES DEL COMPRADOR */}
             {listing.status === 'sold' && listing.deliveryStatus !== 'delivered' && (
               <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-                <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-2">Acciones Disponibles</h4>
+                <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-4">Acciones Disponibles</h4>
                 
                 {listing.deliveryStatus === 'pending' && (
-                    <div className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                        <Clock size={16}/>
-                        <span>Esperando a que el vendedor envíe el paquete...</span>
+                    <div className="space-y-4">
+                        <div className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                            <Clock size={16}/>
+                            <span>Esperando a que el vendedor envíe el paquete...</span>
+                        </div>
+                        {/* 👇 AQUI AÑADIMOS EL BOTÓN DE CANCELAR */}
+                        <div className="pt-2">
+                           <BuyerCancelButton id={listing.id} />
+                        </div>
                     </div>
                 )}
 
