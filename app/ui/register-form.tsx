@@ -5,19 +5,30 @@ import { register } from '@/app/lib/actions';
 import { State } from '@/app/lib/definitions';
 import { User, Mail, Lock, MapPin, Loader2, AlertCircle, UserPlus, Check, X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { showToast } from '@/app/lib/swal';
 
 export default function RegisterForm() {
-  const initialState: State = { message: null, errors: {} };
+  const initialState: State & { success?: boolean } = { message: null, errors: {} };
   const [state, formAction] = useActionState(register, initialState);
   const [isPending, setIsPending] = useState(false);
+  const router = useRouter();
 
-  // --- 🚑 FIX 1: DESBLOQUEAR BOTÓN AL RECIBIR RESPUESTA ---
-  // Si el servidor responde (state cambia), quitamos el estado de carga
+  // 👇 2. EFECTO ACTUALIZADO (RÁPIDO)
   useEffect(() => {
     setIsPending(false);
-  }, [state]);
 
-  // --- ESTADO PARA LAS CONTRASEÑAS ---
+    if (state.success) {
+      // A. Toast
+      showToast('success', '¡Bienvenido!', 'Tu cuenta ha sido creada. Ahora inicia sesión.');
+      // B. Redirección inmediata
+      router.push('/login');
+    } else if (state.message) {
+      showToast('error', 'Error', state.message);
+    }
+  }, [state, router]);
+
+  // ... (Resto del componente: estados de password, ciudad, renderizado... MANTENER IGUAL) ...
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -74,7 +85,6 @@ export default function RegisterForm() {
     setShowCityDropdown(false);
   };
 
-  // --- CLASES VISUALES ---
   const inputClasses = `
     peer block w-full rounded-lg px-4 py-3 pl-11 text-base outline-none transition-all duration-200
     border border-gray-300 dark:border-neutral-600 
@@ -109,12 +119,7 @@ export default function RegisterForm() {
             Nombre completo
           </label>
           <div className="relative group">
-            <input
-              name="name"
-              type="text"
-              placeholder="Tu nombre"
-              className={inputClasses}
-            />
+            <input name="name" type="text" placeholder="Tu nombre" className={inputClasses} />
             <User className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 peer-focus:text-primary peer-[:not(:placeholder-shown)]:text-primary transition-colors" />
           </div>
           {state.errors?.name && <p className="mt-1 text-xs text-primary font-medium">{state.errors.name[0]}</p>}
@@ -126,12 +131,7 @@ export default function RegisterForm() {
             Correo electrónico
           </label>
           <div className="relative group">
-            <input
-              name="email"
-              type="email"
-              placeholder="ejemplo@correo.com"
-              className={inputClasses}
-            />
+            <input name="email" type="email" placeholder="ejemplo@correo.com" className={inputClasses} />
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 peer-focus:text-primary peer-[:not(:placeholder-shown)]:text-primary transition-colors" />
           </div>
           {state.errors?.email && <p className="mt-1 text-xs text-primary font-medium">{state.errors.email[0]}</p>}
@@ -187,14 +187,7 @@ export default function RegisterForm() {
               Contraseña
             </label>
             <div className="relative group">
-              <input
-                name="password"
-                type="password"
-                placeholder="******"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputClasses}
-              />
+              <input name="password" type="password" placeholder="******" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClasses} />
               <Lock className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 peer-focus:text-primary peer-[:not(:placeholder-shown)]:text-primary transition-colors" />
             </div>
           </div>
@@ -204,14 +197,7 @@ export default function RegisterForm() {
               Repetir Contraseña
             </label>
             <div className="relative group">
-              <input
-                name="confirmPassword"
-                type="password"
-                placeholder="******"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={inputClasses}
-              />
+              <input name="confirmPassword" type="password" placeholder="******" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClasses} />
               <Lock className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 peer-focus:text-primary peer-[:not(:placeholder-shown)]:text-primary transition-colors" />
             </div>
           </div>
@@ -238,7 +224,7 @@ export default function RegisterForm() {
           )}
         </div>
 
-        {/* 🚑 FIX 2: MENSAJE GENERAL ERROR EN MODO OSCURO */}
+        {/* 🚑 MENSAJE GENERAL ERROR EN MODO OSCURO */}
         {state.message && (
              <div className="flex items-center gap-2 text-primary bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-primary/20">
                <AlertCircle className="h-5 w-5 shrink-0" />

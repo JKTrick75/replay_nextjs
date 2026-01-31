@@ -38,23 +38,37 @@ const RegisterSchema = z.object({
 });
 
 export async function authenticate(
-  prevState: string | undefined,
+  prevState: any,
   formData: FormData,
 ) {
   try {
     await signIn('credentials', formData);
   } catch (error) {
+    // 1. Si es un error de Auth (credenciales mal), devolvemos el error
     if (error instanceof AuthError) {
+      const timestamp = Date.now();
       switch (error.type) {
         case 'CredentialsSignin':
-          return 'Credenciales incorrectas.';
+          return { message: 'Credenciales incorrectas, inténtalo de nuevo.', timestamp };
         default:
-          return 'Algo salió mal.';
+          return { message: 'Algo salió mal.', timestamp };
       }
     }
-    // Ignoramos NEXT_REDIRECT
+
+    // 2. IMPORTANTE: Si llegamos aquí, es que NO fue un AuthError.
+    // En Next.js, el "éxito" de signIn lanza un error de tipo "NEXT_REDIRECT".
+    // Lo detectamos así:
+    if ((error as Error).message === 'NEXT_REDIRECT' || (error as any).digest?.includes('NEXT_REDIRECT')) {
+        // Frenamos la redirección del servidor y le decimos al cliente "Todo OK"
+        return { success: true, message: '¡Hola de nuevo!' };
+    }
+
+    // Si es otro tipo de error real (base de datos caída, etc), lo lanzamos
+    throw error;
   }
-  redirect('/dashboard');
+  
+  // (Este return es por si acaso signIn no lanzara nada, aunque siempre lo hace)
+  return { success: true, message: '¡Hola de nuevo!' };
 }
 
 export async function register(prevState: State, formData: FormData) {
@@ -77,15 +91,21 @@ export async function register(prevState: State, formData: FormData) {
         name, email, password: hashedPassword, city, lat, lng, image: profileImage,
       },
     });
+    
+    // 🟢 CAMBIO: Retornamos éxito para que el cliente muestre la alerta
+    return { success: true, message: 'Cuenta creada correctamente.' };
+
   } catch (error) {
     console.error(error);
-    return { message: 'Error: El usuario ya existe o falló la base de datos.' };
+    return { message: 'El correo ya está registrado.' };
   }
-  redirect('/login');
 }
 
 export async function logout() {
-  await signOut({ redirectTo: '/' });
+  // 🟢 CAMBIO: redirect: false para permitir Toast en el cliente
+  await signOut({ redirect: false });
+  revalidatePath('/');
+  return { message: 'Has cerrado sesión' };
 }
 
 // =========================================================================== //
@@ -181,7 +201,6 @@ export async function createListing(prevState: State, formData: FormData) {
 
   revalidatePath('/dashboard/ventas');
   revalidatePath('/tienda');
-  // 🟢 CAMBIO: No redirigimos aquí, devolvemos éxito para que el cliente muestre la alerta
   return { message: 'Producto publicado correctamente' };
 }
 
@@ -242,7 +261,6 @@ export async function updateListing(id: string, prevState: State, formData: Form
 
   revalidatePath('/dashboard/ventas');
   revalidatePath('/tienda');
-  // 🟢 CAMBIO: Devolvemos éxito para la alerta
   return { message: 'Producto actualizado correctamente' };
 }
 
@@ -361,7 +379,6 @@ export async function updateProfile(prevState: State, formData: FormData) {
 // --- CARRITO Y LOGÍSTICA --- //
 // =========================================================================== //
 
-// 1. Añadir al carrito
 export async function addToCart(listingId: string) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Inicia sesión para comprar.' };
@@ -394,7 +411,6 @@ export async function addToCart(listingId: string) {
   }
 }
 
-// 2. Quitar del carrito
 export async function removeFromCart(itemId: string) {
   try {
     await prisma.cartItem.delete({ where: { id: itemId } });
@@ -405,14 +421,13 @@ export async function removeFromCart(itemId: string) {
   }
 }
 
-// TOGGLE CHECKBOX
 export async function toggleCartItemSelection(itemId: string, isSelected: boolean) {
   try {
     await prisma.cartItem.update({
       where: { id: itemId },
       data: { selected: isSelected },
     });
-    revalidatePath('/carrito'); // Recargamos para actualizar el precio total
+    revalidatePath('/carrito');
     revalidatePath('/checkout');
     return { success: true };
   } catch (error) {
@@ -420,7 +435,6 @@ export async function toggleCartItemSelection(itemId: string, isSelected: boolea
   }
 }
 
-// SELECCIONAR/DESELECCIONAR TODO
 export async function toggleAllCartItems(isSelected: boolean) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'No autenticado' };
@@ -446,13 +460,10 @@ export async function toggleAllCartItems(isSelected: boolean) {
   }
 }
 
-// 2. MODIFICAR: processCheckout (Para que SOLO compre lo seleccionado)
-
 export async function processCheckout(shippingAddress: string) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'No autenticado' };
 
-  // 1. Obtenemos el usuario y su carrito completo
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: { 
@@ -466,14 +477,12 @@ export async function processCheckout(shippingAddress: string) {
     return { message: 'El carrito está vacío.' };
   }
 
-  // 2. FILTRO CLAVE: Solo procesamos los items que el usuario ha marcado con el checkbox
   const itemsToBuy = user.cart.items.filter(item => item.selected);
 
   if (itemsToBuy.length === 0) {
     return { message: 'No has seleccionado ningún producto para comprar.' };
   }
 
-  // 3. Verificamos disponibilidad solo de los seleccionados
   const unavailableItems = itemsToBuy.filter(item => item.listing.status !== 'active');
 
   if (unavailableItems.length > 0) {
@@ -481,7 +490,6 @@ export async function processCheckout(shippingAddress: string) {
   }
 
   try {
-    // 4. Transacción: Actualizar listings y borrar del carrito SOLO lo comprado
     await prisma.$transaction(async (tx) => {
       
       for (const item of itemsToBuy) {
@@ -491,14 +499,12 @@ export async function processCheckout(shippingAddress: string) {
             status: 'sold',
             buyerId: user.id,
             soldAt: new Date(),
-            shippingAddress: shippingAddress, // 📍 Guardamos la dirección
-            deliveryStatus: 'pending',        // 🕒 Estado inicial
+            shippingAddress: shippingAddress,
+            deliveryStatus: 'pending',
           },
         });
       }
 
-      // Borramos del carrito SOLO los items que acabamos de comprar (selected: true)
-      // Los que no estaban marcados se quedan en el carrito para la próxima.
       await tx.cartItem.deleteMany({
         where: { 
           cartId: user.cart!.id,
@@ -507,10 +513,9 @@ export async function processCheckout(shippingAddress: string) {
       });
     });
 
-    // 5. Actualizamos las vistas
     revalidatePath('/dashboard/compras');
     revalidatePath('/dashboard');
-    revalidatePath('/carrito'); // Importante para que desaparezcan del carrito visualmente
+    revalidatePath('/carrito');
     
     return { message: '¡Pedido confirmado!', success: true };
 
@@ -520,13 +525,11 @@ export async function processCheckout(shippingAddress: string) {
   }
 }
 
-// 4. Confirmar pedido recibido/entregado
 export async function confirmDelivery(listingId: string) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'No autenticado' };
 
   try {
-    // Verificamos que sea el comprador quien confirma
     const listing = await prisma.listing.findUnique({ where: { id: listingId } });
     if (!listing) return { message: 'Pedido no encontrado' };
 
@@ -542,7 +545,6 @@ export async function confirmDelivery(listingId: string) {
   }
 }
 
-// 5. Confirmar envio del pedido
 export async function markAsShipped(listingId: string) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'No autenticado' };
@@ -550,7 +552,6 @@ export async function markAsShipped(listingId: string) {
   try {
     const listing = await prisma.listing.findUnique({ where: { id: listingId } });
     
-    // Seguridad: Solo el vendedor puede marcarlo
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!listing || listing.sellerId !== user?.id) {
       return { message: 'No tienes permiso.' };
@@ -558,7 +559,7 @@ export async function markAsShipped(listingId: string) {
 
     await prisma.listing.update({
       where: { id: listingId },
-      data: { deliveryStatus: 'shipped' } // 🚚 ¡En camino!
+      data: { deliveryStatus: 'shipped' }
     });
 
     revalidatePath('/dashboard/ventas');
@@ -568,7 +569,6 @@ export async function markAsShipped(listingId: string) {
   }
 }
 
-// 6. Cancelar pedido (cancelar + clonar producto)
 export async function cancelOrder(listingId: string) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'No autenticado' };
@@ -578,13 +578,11 @@ export async function cancelOrder(listingId: string) {
 
   const listing = await prisma.listing.findUnique({ where: { id: listingId } });
   
-  // Seguridad: Solo el vendedor puede cancelar y solo si NO está entregado
   if (!listing || listing.sellerId !== user.id) return { message: 'No tienes permiso.' };
   if (listing.deliveryStatus === 'delivered') return { message: 'No puedes cancelar un pedido ya entregado.' };
 
   try {
     await prisma.$transaction(async (tx) => {
-      // A. Marcar el original como CANCELADO (Para el historial del comprador)
       await tx.listing.update({
         where: { id: listingId },
         data: { 
@@ -593,7 +591,6 @@ export async function cancelOrder(listingId: string) {
         }
       });
 
-      // B. Clonar el producto para que vuelva a la tienda (Nuevo ID)
       await tx.listing.create({
         data: {
           sellerId: listing.sellerId,
@@ -602,10 +599,9 @@ export async function cancelOrder(listingId: string) {
           price: listing.price,
           condition: listing.condition,
           description: listing.description,
-          status: 'active', // 🟢 ¡De vuelta a la tienda!
+          status: 'active',
           lat: listing.lat,
           lng: listing.lng,
-          // No copiamos buyerId, shippingAddress, etc.
         }
       });
     });

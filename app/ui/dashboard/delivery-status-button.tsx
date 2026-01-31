@@ -4,33 +4,39 @@ import { useState, useTransition } from 'react';
 import { confirmDelivery } from '@/app/lib/actions';
 import { PackageCheck, Loader2, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { confirmAction, showToast } from '@/app/lib/swal';
 
 export default function DeliveryStatusButton({ listingId }: { listingId: string }) {
   const [isPending, startTransition] = useTransition();
   const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
 
-  const handleConfirm = () => {
-    // Confirmación nativa del navegador por seguridad
-    const confirmed = window.confirm("¿Confirmas que has recibido el paquete y todo está correcto?");
-    if (!confirmed) return;
+  const handleConfirm = async () => {
+    // 1. Pregunta de seguridad
+    const result = await confirmAction(
+        '¿Todo correcto?', 
+        'Confirma solo si tienes el producto en tus manos y funciona correctamente.',
+        'Sí, confirmar recepción'
+    );
+
+    if (!result.isConfirmed) return;
 
     startTransition(async () => {
-      const result = await confirmDelivery(listingId);
+      const response = await confirmDelivery(listingId);
       
-      if (result.success) {
+      if (response.success) {
         setIsSuccess(true);
-        // El revalidatePath del servidor recargará la página y este botón desaparecerá
-        // porque el estado ya será 'delivered'
+        showToast('success', '¡Disfruta tu juego!', 'Has confirmado la recepción del pedido.');
+        router.refresh();
       } else {
-        alert("Hubo un error al confirmar.");
+        showToast('error', 'Error', response.message || "Hubo un error al confirmar.");
       }
     });
   };
 
   if (isSuccess) {
     return (
-      <div className="flex items-center gap-2 text-green-600 font-bold bg-green-50 p-4 rounded-xl animate-in fade-in">
+      <div className="flex items-center gap-2 text-green-600 font-bold bg-green-50 dark:bg-green-900/20 dark:text-green-400 p-4 rounded-xl animate-in fade-in">
         <CheckCircle2 size={24} />
         <span>¡Entrega confirmada con éxito!</span>
       </div>

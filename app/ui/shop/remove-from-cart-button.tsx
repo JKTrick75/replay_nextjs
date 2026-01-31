@@ -3,6 +3,8 @@
 import { removeFromCart } from '@/app/lib/actions';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useTransition } from 'react';
+// 👇 Importamos el Toast
+import { showToast } from '@/app/lib/swal';
 
 export default function RemoveFromCartButton({ itemId }: { itemId: string }) {
   const [isPending, startTransition] = useTransition();
@@ -10,13 +12,20 @@ export default function RemoveFromCartButton({ itemId }: { itemId: string }) {
   return (
     <button
       onClick={() => {
-        // 👇 CORRECCIÓN: Envolvemos en async void para evitar el error de TS
         startTransition(async () => {
+          // 1. Acción del servidor
           await removeFromCart(itemId);
+          
+          // 2. Feedback visual MEJORADO
+          // Ignoramos el mensaje del servidor y ponemos uno bonito
+          showToast(
+            'success', 
+            '¡Listo!', 
+            'Producto eliminado del carrito correctamente.'
+          );
         });
       }}
       disabled={isPending}
-      // 👇 ESTILO ETIQUETA: Posición absoluta, color corporativo y forma específica
       className="absolute bottom-0 right-0 flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white px-3 py-1.5 rounded-tl-xl rounded-br-xl text-[10px] font-bold uppercase transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed z-10"
       title="Eliminar del carrito"
     >

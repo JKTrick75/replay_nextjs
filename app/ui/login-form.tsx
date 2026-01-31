@@ -1,12 +1,32 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { authenticate } from '@/app/lib/actions';
-import { AtSign, Key, LogIn, AlertCircle } from 'lucide-react';
+import { AtSign, Key, LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { showToast } from '@/app/lib/swal';
+import { useRouter } from 'next/navigation';
 
 export default function LoginForm() {
-  const [errorMessage, formAction, isPending] = useActionState(authenticate, undefined);
+  const [state, formAction, isPending] = useActionState(authenticate, undefined);
+  const router = useRouter();
+
+  // 👇 LÓGICA DE ALERTAS RÁPIDA
+  useEffect(() => {
+    // CASO 1: ÉXITO
+    if (state?.success) {
+      // 1. Lanzamos el Toast (se quedará flotando mientras carga la página)
+      showToast('success', '¡Sesión iniciada!', 'Bienvenido de nuevo');
+      
+      // 2. Redirigimos INMEDIATAMENTE sin esperar
+      router.push('/dashboard');
+      router.refresh();
+    } 
+    // CASO 2: ERROR
+    else if (state?.message) {
+      showToast('error', 'Error de acceso', state.message);
+    }
+  }, [state, router]);
 
   return (
     <form action={formAction} className="bg-white dark:bg-neutral-800 shadow-xl rounded-2xl border border-gray-200 dark:border-neutral-700 overflow-hidden transition-colors duration-300">
@@ -59,24 +79,14 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* Mensaje de Error */}
-        <div className="flex items-center space-x-2 min-h-5" aria-live="polite" aria-atomic="true">
-          {errorMessage && (
-            <>
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              <p className="text-sm text-red-500 font-medium">{errorMessage}</p>
-            </>
-          )}
-        </div>
-
-        {/* Botón con el COLOR CORRECTO (#ee8b7a) */}
+        {/* Botón */}
         <button
             type="submit" 
             className="w-full bg-primary text-white text-lg font-bold py-3 px-4 rounded-xl hover:bg-primary-hover transition-all transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isPending}
+            disabled={isPending || state?.success} 
         >
-          {isPending ? 'Entrando...' : 'Entrar'} 
-          {!isPending && <LogIn size={20} />}
+          {isPending || state?.success ? 'Entrando...' : 'Entrar'} 
+          {!isPending && !state?.success && <LogIn size={20} />}
         </button>
         
         {/* Footer */}

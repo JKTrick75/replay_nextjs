@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-// 👇 Añadido ShoppingCart
 import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
+import { confirmAction, showToast } from '@/app/lib/swal';
 
 type UserProps = {
   name?: string | null;
@@ -20,19 +20,17 @@ const navLinks = [
   { name: 'Vender', href: '/dashboard/ventas/crear' },
 ];
 
-// 👇 Añadimos cartCount a las props
 export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cartCount?: number }) {
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);        // Dropdown escritorio
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Menú móvil
+  const router = useRouter(); 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Cerrar menús automáticamente al cambiar de ruta
   useEffect(() => {
     setIsMenuOpen(false);
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // 👇 ANIMACIÓN DEL BADGE: Efecto "pop" cuando cambia el número
   const [animateBadge, setAnimateBadge] = useState(false);
   useEffect(() => {
     if (cartCount > 0) {
@@ -42,19 +40,41 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
     }
   }, [cartCount]);
 
+  // 👇 LÓGICA DE LOGOUT RÁPIDA
+  const handleLogout = async () => {
+    setIsMenuOpen(false);
+    setIsMobileMenuOpen(false);
+
+    const confirm = await confirmAction(
+      '¿Cerrar sesión?',
+      'Volverás a la pantalla de inicio.',
+      'Sí, salir'
+    );
+
+    if (confirm.isConfirmed) {
+      await logout();
+      
+      // 1. Mostramos la alerta (sin esperar callback)
+      showToast('info', 'Has cerrado sesión', '¡Hasta pronto!');
+      
+      // 2. Redirigimos INMEDIATAMENTE
+      router.push('/');
+      router.refresh();
+    }
+  };
+
   return (
     <nav className="w-full bg-white dark:bg-dark border-b border-gray-light dark:border-gray sticky top-0 z-50 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
-          {/* LOGO */}
           <Link href="/" className="flex items-center gap-2 group">
             <div className="text-2xl font-bold text-primary group-hover:opacity-80 transition-opacity">
               R<span className="text-dark dark:text-white">eplay</span>
             </div> 
           </Link>
 
-          {/* --- MENÚ ESCRITORIO (Hidden en móvil) --- */}
+          {/* --- MENÚ ESCRITORIO --- */}
           <div className="hidden md:flex items-center space-x-6 font-medium">
             
             {navLinks.map((link) => {
@@ -74,7 +94,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
               );
             })}
 
-            {/* 👇 CARRITO DE COMPRA ESCRITORIO */}
             <Link 
               href={user ? "/carrito" : "/login"} 
               className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 mr-2"
@@ -90,7 +109,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
              
             <ThemeToggle />
 
-            {/* Lógica de Usuario Escritorio */}
             {user ? (
               <div className="relative">
                 <button 
@@ -108,10 +126,8 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                   <ChevronDown size={16} className={`text-gray-500 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Dropdown Menu */}
                 {isMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-gray-light dark:border-gray py-2 animate-in fade-in slide-in-from-top-2">
-                    
                     <div className="px-4 py-3 border-b border-gray-light dark:border-gray mb-2">
                       <p className="text-xs text-gray-500 dark:text-gray-400">Conectado como</p>
                       <p className="text-sm font-bold text-dark dark:text-white truncate">{user.email}</p>
@@ -127,10 +143,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                     </Link>
 
                     <button
-                      onClick={async () => {
-                         await logout();
-                         setIsMenuOpen(false);
-                      }}
+                      onClick={handleLogout} 
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-red-50 dark:hover:bg-primary-hover/20 transition-colors text-left"
                     >
                       <LogOut size={16} />
@@ -155,9 +168,8 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
             )}
           </div>
 
-          {/* --- BOTÓN MENÚ MÓVIL (Visible solo en móvil) --- */}
+          {/* --- BOTÓN MENÚ MÓVIL --- */}
           <div className="flex md:hidden items-center gap-4">
-            {/* También mostramos el carrito en móvil fuera del menú */}
             <Link 
               href={user ? "/carrito" : "/login"} 
               className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1"
@@ -230,10 +242,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                 </Link>
 
                 <button
-                   onClick={async () => {
-                      await logout();
-                      setIsMobileMenuOpen(false);
-                   }}
+                   onClick={handleLogout} 
                    className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-primary bg-red-50 dark:bg-primary-hover/10 rounded-lg hover:bg-red-100 dark:hover:bg-primary-hover/20"
                 >
                   <LogOut size={18} /> Cerrar Sesión

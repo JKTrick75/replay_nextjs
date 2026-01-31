@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { processCheckout } from '@/app/lib/actions'; // Nueva acción que crearemos
+import { processCheckout } from '@/app/lib/actions';
 import { Loader2, CreditCard, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { showToast, confirmAction } from '@/app/lib/swal';
 
 export default function CheckoutForm({ userCity, userAddressDefault }: { userCity: string | null, userAddressDefault: string }) {
   const [useCustomAddress, setUseCustomAddress] = useState(false);
@@ -13,23 +14,38 @@ export default function CheckoutForm({ userCity, userAddressDefault }: { userCit
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsPending(true);
-
-    // Decidimos qué dirección enviar
-    const finalAddress = useCustomAddress ? customAddress : (userAddressDefault || "Dirección desconocida");
 
     if (useCustomAddress && customAddress.trim().length < 5) {
-      alert("Por favor, escribe una dirección válida.");
-      setIsPending(false);
+      showToast('error', 'Dirección incompleta', 'Por favor, escribe una dirección válida.');
       return;
     }
+
+    const confirm = await confirmAction(
+        '¿Confirmar pedido?',
+        'Al continuar, se procesará la compra de los artículos seleccionados.',
+        'Sí, pagar ahora'
+    );
+
+    if (!confirm.isConfirmed) return;
+
+    setIsPending(true);
+    const finalAddress = useCustomAddress ? customAddress : (userAddressDefault || "Dirección desconocida");
 
     const result = await processCheckout(finalAddress);
 
     if (result.success) {
+      // 1. Toast
+      showToast(
+        'success', 
+        '¡Pedido Confirmado!', 
+        'Gracias por tu compra. Preparando envío...'
+      );
+      
+      // 2. Redirección inmediata
       router.push('/dashboard/compras');
+      router.refresh();
     } else {
-      alert(result.message);
+      showToast('error', 'Ups', result.message || 'Ha ocurrido un error al procesar el pedido.');
       setIsPending(false);
     }
   };
@@ -71,7 +87,6 @@ export default function CheckoutForm({ userCity, userAddressDefault }: { userCit
           <p className="font-bold text-dark dark:text-white">Enviar a otra dirección</p>
         </div>
 
-        {/* Input condicional */}
         {useCustomAddress && (
           <textarea
             required
