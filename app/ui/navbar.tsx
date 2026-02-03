@@ -54,7 +54,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
     if (confirm.isConfirmed) {
       await logout();
       
-      // 1. Mostramos la alerta (sin esperar callback)
+      // 1. Mostramos la alerta
       showToast('info', 'Has cerrado sesión', '¡Hasta pronto!');
       
       // 2. Redirigimos INMEDIATAMENTE
@@ -127,7 +127,8 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-gray-light dark:border-gray py-2 animate-in fade-in slide-in-from-top-2">
+                  // 👇 CAMBIO AQUÍ: '-right-2' para moverlo un pelín a la derecha y 'z-50'
+                  <div className="absolute -right-2 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-gray-light dark:border-gray py-2 animate-in fade-in slide-in-from-top-2 z-50 origin-top-right">
                     <div className="px-4 py-3 border-b border-gray-light dark:border-gray mb-2">
                       <p className="text-xs text-gray-500 dark:text-gray-400">Conectado como</p>
                       <p className="text-sm font-bold text-dark dark:text-white truncate">{user.email}</p>
@@ -153,7 +154,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                 )}
                 
                 {isMenuOpen && (
-                  <div className="fixed inset-0 z-[-1]" onClick={() => setIsMenuOpen(false)} />
+                  <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
                 )}
               </div>
 

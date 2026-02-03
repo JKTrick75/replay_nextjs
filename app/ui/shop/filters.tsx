@@ -9,7 +9,15 @@ export default function ShopFilters({ platforms }: { platforms: Console[] }) {
   const pathname = usePathname();
   const { replace } = useRouter();
 
-  const handleFilterChange = (term: string, type: 'query' | 'platform' | 'condition' | 'sort') => {
+  // Lista de géneros consistente con el Home
+  const genres = [
+    'Acción', 'Aventura', 'RPG', 'Shooter', 'Deportes', 'Carreras', 
+    'Lucha', 'Estrategia', 'Plataformas', 'Terror', 'Simulación', 
+    'Puzzle', 'Musical', 'Varios'
+  ];
+
+  // 👇 AÑADIDO: 'genre' al tipo de filtro
+  const handleFilterChange = (term: string, type: 'query' | 'platform' | 'condition' | 'sort' | 'genre') => {
     const params = new URLSearchParams(searchParams);
     
     if (term) {
@@ -18,6 +26,7 @@ export default function ShopFilters({ platforms }: { platforms: Console[] }) {
       params.delete(type);
     }
     
+    // Al filtrar, siempre volvemos a la página 1
     params.set('page', '1');
     replace(`${pathname}?${params.toString()}`);
   };
@@ -47,17 +56,29 @@ export default function ShopFilters({ platforms }: { platforms: Console[] }) {
         >
           <option value="">Todas las Consolas</option>
           {platforms.map((p) => (
-            // 🔴 CAMBIO: Usamos p.id en lugar de p._id
-            // También aseguramos que el value no sea null/undefined
             <option key={p.id} value={p.shortName || p.name}>
               {p.name}
             </option>
           ))}
         </select>
 
+        {/* 👇 NUEVO: Filtro Género */}
+        <select
+          className="flex-1 min-w-35 p-2 border border-gray-light dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-dark dark:text-white focus:ring-2 focus:ring-primary outline-none"
+          onChange={(e) => handleFilterChange(e.target.value, 'genre')}
+          defaultValue={searchParams.get('genre')?.toString()}
+        >
+          <option value="">Todos los Géneros</option>
+          {genres.map((genre) => (
+            <option key={genre} value={genre}>
+              {genre}
+            </option>
+          ))}
+        </select>
+
         {/* Filtro Condición */}
         <select
-          className="flex-1 min-w-30 p-2 border border-gray-light dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-dark dark:text-white focus:ring-2 focus:ring-primary outline-none"
+          className="flex-1 min-w-35 p-2 border border-gray-light dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-dark dark:text-white focus:ring-2 focus:ring-primary outline-none"
           onChange={(e) => handleFilterChange(e.target.value, 'condition')}
           defaultValue={searchParams.get('condition')?.toString()}
         >
@@ -68,16 +89,16 @@ export default function ShopFilters({ platforms }: { platforms: Console[] }) {
         </select>
 
         {/* Ordenar por Precio */}
-        <div className="flex items-center gap-2">
-            <SlidersHorizontal size={18} className="text-gray-400" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+            <SlidersHorizontal size={18} className="text-gray-400 hidden sm:block" />
             <select
-            className="p-2 border border-gray-light dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-dark dark:text-white focus:ring-2 focus:ring-primary outline-none"
-            onChange={(e) => handleFilterChange(e.target.value, 'sort')}
-            defaultValue={searchParams.get('sort')?.toString()}
+              className="w-full sm:w-auto p-2 border border-gray-light dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-dark dark:text-white focus:ring-2 focus:ring-primary outline-none"
+              onChange={(e) => handleFilterChange(e.target.value, 'sort')}
+              defaultValue={searchParams.get('sort')?.toString()}
             >
-            <option value="">Relevancia</option>
-            <option value="asc">Precio: Menor a Mayor</option>
-            <option value="desc">Precio: Mayor a Menor</option>
+              <option value="">Relevancia</option>
+              <option value="asc">Precio: Menor a Mayor</option>
+              <option value="desc">Precio: Mayor a Menor</option>
             </select>
         </div>
       </div>
