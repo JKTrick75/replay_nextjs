@@ -1,4 +1,3 @@
-```markdown
 # Replay Next.js Project 🚀
 
 Este es un proyecto desarrollado con **Next.js 16** y **TypeScript**, totalmente dockerizado para garantizar un entorno de desarrollo consistente, portátil y aislado.
