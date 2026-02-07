@@ -144,7 +144,3 @@ docker compose exec app npx prisma generate
 
 
 * **`.env`**: Contiene secretos y configuración de entorno (no se sube al repositorio).
-
-```
-
-```
