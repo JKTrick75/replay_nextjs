@@ -1,20 +1,18 @@
 services:
-  # --- TU APP NEXT.JS ---
   app:
     build: .
     container_name: nextjs_app
     ports:
       - "3000:3000"
     volumes:
-      - .:/app                 # Sincroniza tu código (Hot Reload)
-      - /app/node_modules      # Evita mezclar node_modules de Linux con Windows
-      - /app/.next             # Evita mezclar builds
+      - .:/app
+      - /app/node_modules
+      - /app/.next
     environment:
-      # Conexión a la DB interna de Docker
-      DATABASE_URL: "mysql://root:root@db:3306/replay_next_db"
-      # Variables de NextAuth (Necesarias en Next 15/16)
-      AUTH_SECRET: "tu_clave_secreta_super_segura" 
-      AUTH_URL: "http://localhost:3000" # OJO: Si usas puerto 3000, pon 3000
+      # LEEMOS LA VARIABLE DEL ARCHIVO .ENV
+      DATABASE_URL: ${DOCKER_DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: "http://localhost:3000"
     depends_on:
       - db
     # Comando para regenerar prisma si cambias el schema durante el desarrollo
@@ -26,12 +24,13 @@ services:
     container_name: mysql_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: replay_next_db
+      # AQUÍ TAMBIÉN USAMOS LAS VARIABLES DEL .ENV
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql # Persistencia de datos
+      - mysql_data:/var/lib/mysql
 
   # --- PHPMYADMIN (Gestor Visual) ---
   phpmyadmin:
@@ -39,8 +38,8 @@ services:
     container_name: pma
     environment:
       PMA_HOST: db
-      PMA_USER: root
-      PMA_PASSWORD: root
+      PMA_USER: ${MYSQL_USER}
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "8080:80"
     depends_on:
