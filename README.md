@@ -2,7 +2,7 @@
 
 Este es un proyecto desarrollado con **Next.js 16** y **TypeScript**, totalmente dockerizado para garantizar un entorno de desarrollo consistente, portátil y aislado.
 
-Utiliza una arquitectura de contenedores orquestada con **Docker Compose**, integrando la aplicación, la base de datos y herramientas de gestión sin necesidad de instalar dependencias complejas en tu máquina local.
+Utiliza una arquitectura de contenedores orquestada con **Docker Compose**, integrando la aplicación, la base de datos y herramientas de gestión.
 
 ## 🛠️ Stack Tecnológico
 
@@ -21,8 +21,7 @@ Asegúrate de tener instalado:
 
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/) (con integración WSL 2 si usas Windows).
 * Git.
-
-> **Nota:** No es necesario tener Node.js ni MySQL instalados en tu máquina local. Docker se encarga de todo.
+* (Opcional) Node.js en local (solo para soporte de Intellisense en VS Code).
 
 ---
 
@@ -49,11 +48,11 @@ cp .env.example .env
 
 ```
 
-> **Nota:** El archivo `.env.example` ya viene con valores por defecto compatibles con la configuración de `docker-compose.yml`. Si necesitas cambiar contraseñas, hazlo en el archivo `.env` recién creado.
+> **Nota:** El archivo `.env.example` ya viene con valores por defecto compatibles con Docker. Si necesitas cambiar contraseñas, hazlo en el archivo `.env`.
 
 ### 3. Levantar los Contenedores
 
-Este comando descargará las imágenes, instalará las dependencias (`node_modules`) dentro del contenedor y levantará los servicios:
+Este comando descargará las imágenes e instalará las dependencias dentro del contenedor:
 
 ```bash
 docker compose up -d --build
@@ -64,18 +63,25 @@ docker compose up -d --build
 
 ### 4. Sincronizar la Base de Datos
 
-Al iniciar por primera vez, la base de datos estará vacía. Ejecuta este comando para crear las tablas definidas en el esquema de Prisma:
+Al iniciar por primera vez, ejecuta este comando para crear las tablas:
 
 ```bash
 docker compose exec app npx prisma db push
 
 ```
 
-*(Opcional) Si dispones de un script de seed, puedes poblar la base de datos:*
+---
+
+## 💻 Configuración para VS Code (Recomendado)
+
+Para que VS Code tenga autocompletado y no muestre errores de TypeScript, instala las dependencias localmente (esto no afecta al contenedor de Docker):
 
 ```bash
-# Ejemplo:
-# docker compose exec app npm run seed
+# Instalar dependencias para el editor
+pnpm install
+
+# Generar los tipos de la base de datos
+npx prisma generate
 
 ```
 
@@ -88,7 +94,9 @@ Una vez levantado el entorno, tendrás acceso a:
 | Servicio | URL | Credenciales (Por defecto) |
 | --- | --- | --- |
 | **Aplicación Web** | [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) | - |
-| **PhpMyAdmin** | [http://localhost:8080](https://www.google.com/search?q=http://localhost:8080) | **User:** root / **Pass:** root |
+| **PhpMyAdmin** | [http://localhost:8080](https://www.google.com/search?q=http://localhost:8080) | **User:** `root` <br>
+
+<br> **Pass:** `root` |
 | **MySQL (Interno)** | `db:3306` | Accesible solo desde la red de Docker |
 
 ---
@@ -136,11 +144,6 @@ docker compose exec app npx prisma generate
 
 ## 📂 Estructura del Entorno
 
-* **`Dockerfile`**: Define la imagen de la aplicación (Node 22 Alpine + OpenSSL + pnpm/npm).
-* **`docker-compose.yml`**: Orquesta los 3 servicios:
-* `app`: Next.js (con Hot Reload configurado mediante volúmenes).
-* `db`: MySQL 8.0 con volumen persistente (`mysql_data`).
-* `phpmyadmin`: Interfaz visual para gestionar la BD.
-
-
-* **`.env`**: Contiene secretos y configuración de entorno (no se sube al repositorio).
+* **`Dockerfile`**: Define la imagen de la aplicación (Node 22 Alpine + OpenSSL + pnpm).
+* **`docker-compose.yml`**: Orquesta la App, MySQL y PhpMyAdmin.
+* **`.env`**: Contiene secretos (no se sube al repositorio).
