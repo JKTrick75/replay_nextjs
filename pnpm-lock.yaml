@@ -44,6 +44,12 @@ importers:
       react-leaflet:
         specifier: ^5.0.0
         version: 5.0.0(leaflet@1.9.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      sweetalert2:
+        specifier: ^11.26.17
+        version: 11.26.18
+      sweetalert2-react-content:
+        specifier: ^5.1.1
+        version: 5.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sweetalert2@11.26.18)
       zod:
         specifier: ^4.3.5
         version: 4.3.5
@@ -1940,6 +1946,16 @@ packages:
   supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
+
+  sweetalert2-react-content@5.1.1:
+    resolution: {integrity: sha512-JR1DWKQVCSy87q2gNGv5pZgG4TK/x1X61N/HbvDdKmnkCWCSSulG7JfFR8qSB32+H+6nvonsIcevZD7mzRpF0A==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+      sweetalert2: ^11.0.0
+
+  sweetalert2@11.26.18:
+    resolution: {integrity: sha512-3O5feBqV+hTIOwCRKGuZGHosjiuBAKP/vpBl6vKFZeVYfCUGdXqXuuidn6YXHan3f6e62UdmnjwJBt8UtDVBhg==}
 
   tailwindcss@4.1.18:
     resolution: {integrity: sha512-4+Z+0yiYyEtUVCScyfHCxOYP06L5Ne+JiHhY2IjR2KWMIWhJOYZKLSGZaP5HkZ8+bY0cxfzwDE5uOmzFXyIwxw==}
@@ -4080,6 +4096,14 @@ snapshots:
       has-flag: 4.0.0
 
   supports-preserve-symlinks-flag@1.0.0: {}
+
+  sweetalert2-react-content@5.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sweetalert2@11.26.18):
+    dependencies:
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+      sweetalert2: 11.26.18
+
+  sweetalert2@11.26.18: {}
 
   tailwindcss@4.1.18: {}
 
