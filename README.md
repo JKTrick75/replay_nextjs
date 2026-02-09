@@ -147,3 +147,30 @@ docker compose exec app npx prisma generate
 * **`Dockerfile`**: Define la imagen de la aplicación (Node 22 Alpine + OpenSSL + pnpm).
 * **`docker-compose.yml`**: Orquesta la App, MySQL y PhpMyAdmin.
 * **`.env`**: Contiene secretos (no se sube al repositorio).
+
+---
+
+## 🚀 Despliegue en Producción (CI/CD)
+
+El proyecto cuenta con un pipeline de **Integración y Despliegue Continuo (CI/CD)** totalmente automatizado utilizando **GitHub Actions** y **Azure**.
+
+### Arquitectura de Despliegue
+1.  **Push a Main:** Cada vez que se hace un `git push` a la rama `master/main`.
+2.  **GitHub Actions:** Se dispara un workflow que:
+    * Compila la aplicación Next.js optimizada para producción.
+    * Construye la imagen Docker.
+    * Sube la imagen al **Azure Container Registry (ACR)**.
+3.  **Azure App Service:** Detecta la nueva imagen vía Webhook y actualiza el contenedor automáticamente.
+
+### URLs de Producción
+* **Web Pública:** [https://replay-david-web-axawbxenhxc5hhep.francecentral-01.azurewebsites.net/](https://replay-david-web-axawbxenhxc5hhep.francecentral-01.azurewebsites.net/)
+* **Monitorización:** Azure Portal
+
+---
+
+## ☁️ Arquitectura Cloud (Azure for Students)
+
+Debido a las limitaciones de créditos educativos, se ha optado por una arquitectura eficiente de costes:
+* **App Service (Linux Plan B1):** Ejecución de contenedores Docker.
+* **Azure Database for MySQL (Flexible Server):** Base de datos gestionada con backups automáticos.
+* **Azure Container Registry:** Almacenamiento seguro de imágenes privadas.
