@@ -4,7 +4,6 @@ FROM node:22-alpine
 # Instalamos pnpm globalmente
 RUN npm install -g pnpm
 
-# --- LÍNEA NUEVA AÑADIDA ---
 # Instalamos OpenSSL y compatibilidad necesaria para Prisma en Alpine
 RUN apk add --no-cache openssl libc6-compat
 # ---------------------------
@@ -28,8 +27,14 @@ RUN npx prisma generate
 # 5. Copiamos el resto del código fuente
 COPY . .
 
+# --- CONSTRUIMOS LA APP PARA PRODUCCIÓN ---
+# Esto crea la versión optimizada y super rápida de Next.js
+RUN pnpm run build
+
 # Exponemos el puerto
 EXPOSE 3000
 
-# Comando para desarrollo con TurboPack (por defecto en Next 16 si usas --turbo, o normal)
-CMD ["pnpm", "dev"]
+# --- COMANDO POR DEFECTO ---
+# En Azure arrancará en modo producción.
+# En local, tu docker-compose ignorará esto y usará "dev" (gracias a tu override).
+CMD ["pnpm", "start"]
