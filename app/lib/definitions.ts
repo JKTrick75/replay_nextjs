@@ -25,7 +25,6 @@ export interface Console {
   brandId: string;
   releaseYear?: number | null;
   image?: string | null;
-  // Relación opcional para la UI
   brand?: Brand;
 }
 
@@ -36,7 +35,6 @@ export interface Game {
   genre?: string | null;
   releaseYear?: number | null;
   description?: string | null;
-  // Relación opcional
   platforms?: Console[]; 
 }
 
@@ -46,40 +44,64 @@ export interface Listing {
   condition: 'Nuevo' | 'Seminuevo' | 'Usado' | string;
   description?: string | null;
   status: 'active' | 'sold' | 'reserved' | string;
-  
   sellerId: string;
   gameId: string;
   platformId: string;
-  
   createdAt: Date;
-  
-  // Ubicación aplanada
   lat?: number | null;
   lng?: number | null;
-
-  // Relaciones completas (se rellenan con 'include' en Prisma)
   seller?: User; 
   game?: Game;      
   platform?: Console;
-  
-  // Para el frontend lo mantenemos simple: solo una lista de URLs
   photos?: string[];
 }
 
-// --- TIPO GLOBAL PARA EL ESTADO DE LOS FORMULARIOS (SERVER ACTIONS) ---
+// --- TIPOS FORMULARIOS ---
+export type SimpleGame = { id: string; title: string; coverImage: string | null; genre: string };
+export type SimpleConsole = { id: string; name: string };
+
+export type ListingToEdit = {
+  id: string;
+  price: number;
+  condition: string;
+  description: string | null;
+  gameId: string;
+  platformId: string;
+  game: { title: string; coverImage: string | null; genre?: string };
+};
+
+// 🟢 TIPO STATE DEFINITIVO
 export type State = {
   errors?: {
+    newGameTitle?: string[];
+    coverImage?: string[];
+    genre?: string[];
+    platformId?: string[];
+    price?: string[];
+    condition?: string[];
+    description?: string[];
     [key: string]: string[] | undefined;
   };
   message?: string | null;
+  timestamp?: number; // Clave para forzar el repintado del formulario
+  values?: {
+    gameId?: string;
+    gameSearch?: string;
+    coverImage?: string;
+    genre?: string;
+    platformId?: string;
+    price?: string;
+    condition?: string;
+    description?: string;
+  };
 };
 
-// --- CARRITO DE LA COMPRA ---
+// --- CARRITO ---
 export interface CartItem {
   id: string;
   cartId: string;
   listingId: string;
-  listing: Listing; // Incluimos el producto completo para poder mostrar foto/precio
+  listing: Listing;
 }
 
 export interface Cart {

@@ -2,9 +2,9 @@ import { prisma } from '@/app/lib/db';
 import CreateListingForm from '@/app/ui/dashboard/create-form';
 
 export default async function CreatePage() {
-  // 1. Obtenemos TODOS los juegos (solo necesitamos id y titulo para el buscador)
+  // 1. Obtenemos TODOS los juegos
   const games = await prisma.game.findMany({
-    select: { id: true, title: true, coverImage: true },
+    select: { id: true, title: true, coverImage: true, genre: true },
     orderBy: { title: 'asc' },
   });
 

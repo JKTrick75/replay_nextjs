@@ -5,7 +5,6 @@ import { AuthError } from 'next-auth';
 import { z } from 'zod';
 import { prisma } from '@/app/lib/db';
 import bcrypt from 'bcryptjs';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { State } from '@/app/lib/definitions';
@@ -44,7 +43,6 @@ export async function authenticate(
   try {
     await signIn('credentials', formData);
   } catch (error) {
-    // 1. Si es un error de Auth (credenciales mal), devolvemos el error
     if (error instanceof AuthError) {
       const timestamp = Date.now();
       switch (error.type) {
@@ -54,20 +52,11 @@ export async function authenticate(
           return { message: 'Algo salió mal.', timestamp };
       }
     }
-
-    // 2. IMPORTANTE: Si llegamos aquí, es que NO fue un AuthError.
-    // En Next.js, el "éxito" de signIn lanza un error de tipo "NEXT_REDIRECT".
-    // Lo detectamos así:
     if ((error as Error).message === 'NEXT_REDIRECT' || (error as any).digest?.includes('NEXT_REDIRECT')) {
-        // Frenamos la redirección del servidor y le decimos al cliente "Todo OK"
         return { success: true, message: '¡Hola de nuevo!' };
     }
-
-    // Si es otro tipo de error real (base de datos caída, etc), lo lanzamos
     throw error;
   }
-  
-  // (Este return es por si acaso signIn no lanzara nada, aunque siempre lo hace)
   return { success: true, message: '¡Hola de nuevo!' };
 }
 
@@ -91,10 +80,7 @@ export async function register(prevState: State, formData: FormData) {
         name, email, password: hashedPassword, city, lat, lng, image: profileImage,
       },
     });
-    
-    // 🟢 CAMBIO: Retornamos éxito para que el cliente muestre la alerta
     return { success: true, message: 'Cuenta creada correctamente.' };
-
   } catch (error) {
     console.error(error);
     return { message: 'El correo ya está registrado.' };
@@ -102,7 +88,6 @@ export async function register(prevState: State, formData: FormData) {
 }
 
 export async function logout() {
-  // 🟢 CAMBIO: redirect: false para permitir Toast en el cliente
   await signOut({ redirect: false });
   revalidatePath('/');
   return { message: 'Has cerrado sesión' };
@@ -123,37 +108,51 @@ const CreateListingSchema = z.object({
     message: 'Selecciona un estado válido.',
   }),
   description: z.string().optional(),
-}).refine((data) => data.gameId || data.newGameTitle, {
-  message: "Debes buscar un juego existente o escribir uno nuevo.",
-  path: ["newGameTitle"],
 });
 
-export async function createListing(prevState: State, formData: FormData) {
+export async function createListing(prevState: State, formData: FormData): Promise<State> {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return { message: 'Usuario no encontrado.' };
 
+  const rawValues = {
+    gameId: formData.get('gameId')?.toString() || '',
+    gameSearch: formData.get('gameSearch')?.toString() || '',
+    coverImage: formData.get('coverImage')?.toString() || '',
+    genre: formData.get('genre')?.toString() || '',
+    platformId: formData.get('platformId')?.toString() || '',
+    price: formData.get('price')?.toString() || '',
+    condition: formData.get('condition')?.toString() || '',
+    description: formData.get('description')?.toString() || '',
+  };
+
   const validatedFields = CreateListingSchema.safeParse({
-    gameId: formData.get('gameId'),
-    newGameTitle: formData.get('gameSearch'),
-    coverImage: formData.get('coverImage') || undefined,
-    genre: formData.get('genre') || undefined,
-    platformId: formData.get('platformId'),
-    price: formData.get('price'),
-    condition: formData.get('condition'),
-    description: formData.get('description'),
+    ...rawValues,
+    newGameTitle: rawValues.gameSearch,
   });
 
+  let errors: NonNullable<State['errors']> = {};
+
   if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Faltan campos obligatorios.',
-    };
+    errors = validatedFields.error.flatten().fieldErrors;
   }
 
-  const { gameId, newGameTitle, coverImage, genre, platformId, price, condition, description } = validatedFields.data;
+  const rawTitle = rawValues.gameSearch.trim();
+  const rawImage = rawValues.coverImage.trim();
+  const rawGenre = rawValues.genre;
+
+  if (!rawValues.gameId && !rawTitle) errors.newGameTitle = ["El nombre del juego es obligatorio."];
+  if (!rawImage) errors.coverImage = ["La URL de la carátula es obligatoria."];
+  if (!rawGenre) errors.genre = ["Debes seleccionar un género."];
+
+  if (Object.keys(errors).length > 0) {
+    // 🟢 Devolvemos timestamp para forzar la recarga del formulario
+    return { errors, message: 'Faltan campos obligatorios.', values: rawValues, timestamp: Date.now() };
+  }
+
+  const { gameId, newGameTitle, coverImage, genre, platformId, price, condition, description } = validatedFields.data!;
   let finalGameId = gameId;
 
   try {
@@ -161,19 +160,25 @@ export async function createListing(prevState: State, formData: FormData) {
       const existingGame = await prisma.game.findFirst({ where: { title: newGameTitle } });
       if (existingGame) {
         finalGameId = existingGame.id;
+        if (coverImage && coverImage.trim() !== '') {
+            await prisma.game.update({ where: { id: finalGameId }, data: { coverImage } });
+        }
       } else {
         const newGame = await prisma.game.create({
           data: {
             title: newGameTitle,
-            coverImage: coverImage && coverImage.trim() !== '' ? coverImage : '/placeholder.png',
-            genre: genre || 'Varios',
+            coverImage: coverImage!,
+            genre: genre!,
             description: 'Añadido por la comunidad.',
           },
         });
         finalGameId = newGame.id;
       }
+    } else if (finalGameId && coverImage && coverImage.trim() !== '') {
+        await prisma.game.update({ where: { id: finalGameId }, data: { coverImage } });
     }
-    if (!finalGameId) return { message: 'Error: No se pudo identificar el juego.' };
+
+    if (!finalGameId) return { message: 'Error: No se pudo identificar el juego.', values: rawValues, timestamp: Date.now() };
 
     const userLat = user.lat ?? 40.416775; 
     const userLng = user.lng ?? -3.703790;
@@ -196,33 +201,53 @@ export async function createListing(prevState: State, formData: FormData) {
 
   } catch (error) {
     console.error('Database Error:', error);
-    return { message: 'Error al guardar en base de datos.' };
+    return { message: 'Error al guardar en base de datos.', values: rawValues, timestamp: Date.now() };
   }
 
   revalidatePath('/dashboard/ventas');
   revalidatePath('/tienda');
-  return { message: 'Producto publicado correctamente' };
+  return { message: 'Producto publicado correctamente', timestamp: Date.now() };
 }
 
-export async function updateListing(id: string, prevState: State, formData: FormData) {
+export async function updateListing(id: string, prevState: State, formData: FormData): Promise<State> {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
 
+  const rawValues = {
+    gameId: formData.get('gameId')?.toString() || '',
+    gameSearch: formData.get('gameSearch')?.toString() || '',
+    coverImage: formData.get('coverImage')?.toString() || '',
+    genre: formData.get('genre')?.toString() || '',
+    platformId: formData.get('platformId')?.toString() || '',
+    price: formData.get('price')?.toString() || '',
+    condition: formData.get('condition')?.toString() || '',
+    description: formData.get('description')?.toString() || '',
+  };
+
   const validatedFields = CreateListingSchema.safeParse({
-    gameId: formData.get('gameId'),
-    newGameTitle: formData.get('gameSearch'),
-    coverImage: formData.get('coverImage'),
-    platformId: formData.get('platformId'),
-    price: formData.get('price'),
-    condition: formData.get('condition'),
-    description: formData.get('description'),
+    ...rawValues,
+    newGameTitle: rawValues.gameSearch,
   });
 
+  let errors: NonNullable<State['errors']> = {};
+
   if (!validatedFields.success) {
-    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Faltan campos obligatorios.' };
+    errors = validatedFields.error.flatten().fieldErrors;
   }
 
-  const { gameId, newGameTitle, coverImage, platformId, price, condition, description } = validatedFields.data;
+  const rawTitle = rawValues.gameSearch.trim();
+  const rawImage = rawValues.coverImage.trim();
+  const rawGenre = rawValues.genre;
+
+  if (!rawValues.gameId && !rawTitle) errors.newGameTitle = ["El nombre del juego es obligatorio."];
+  if (!rawImage) errors.coverImage = ["La URL de la carátula es obligatoria."];
+  if (!rawGenre) errors.genre = ["Debes seleccionar un género."];
+
+  if (Object.keys(errors).length > 0) {
+    return { errors, message: 'Faltan campos obligatorios.', values: rawValues, timestamp: Date.now() };
+  }
+
+  const { gameId, newGameTitle, coverImage, platformId, price, condition, description } = validatedFields.data!;
   let finalGameId = gameId;
 
   try {
@@ -237,7 +262,7 @@ export async function updateListing(id: string, prevState: State, formData: Form
         const newGame = await prisma.game.create({
           data: {
             title: newGameTitle,
-            coverImage: coverImage && coverImage.trim() !== '' ? coverImage : '/placeholder.png',
+            coverImage: coverImage!,
             genre: 'Varios',
             description: 'Añadido por la comunidad.',
           },
@@ -248,7 +273,7 @@ export async function updateListing(id: string, prevState: State, formData: Form
         await prisma.game.update({ where: { id: finalGameId }, data: { coverImage } });
     }
 
-    if (!finalGameId) return { message: 'Error al identificar el juego.' };
+    if (!finalGameId) return { message: 'Error al identificar el juego.', values: rawValues, timestamp: Date.now() };
 
     await prisma.listing.update({
       where: { id },
@@ -256,12 +281,12 @@ export async function updateListing(id: string, prevState: State, formData: Form
     });
   } catch (error) {
     console.error('Database Error:', error);
-    return { message: 'Error al actualizar el anuncio.' };
+    return { message: 'Error al actualizar el anuncio.', values: rawValues, timestamp: Date.now() };
   }
 
   revalidatePath('/dashboard/ventas');
   revalidatePath('/tienda');
-  return { message: 'Producto actualizado correctamente' };
+  return { message: 'Producto actualizado correctamente', timestamp: Date.now() };
 }
 
 export async function deleteListing(id: string) {
@@ -579,24 +604,17 @@ export async function cancelOrder(listingId: string) {
   const listing = await prisma.listing.findUnique({ where: { id: listingId } });
   if (!listing) return { message: 'Pedido no encontrado' };
 
-  // --- 👮‍♂️ LÓGICA DE PERMISOS ---
   const isSeller = listing.sellerId === user.id;
   const isBuyer = listing.buyerId === user.id;
 
-  // 1. Si no eres ni el vendedor ni el comprador -> Fuera
   if (!isSeller && !isBuyer) return { message: 'No tienes permiso.' };
-
-  // 2. Nadie puede cancelar si ya se entregó
   if (listing.deliveryStatus === 'delivered') return { message: 'No puedes cancelar un pedido ya entregado.' };
-  
-  // 3. RESTRICCIÓN COMPRADOR: Solo si está "Pendiente"
   if (isBuyer && listing.deliveryStatus !== 'pending') {
       return { message: 'El pedido ya ha sido enviado, no puedes cancelarlo automáticamente.' };
   }
 
   try {
     await prisma.$transaction(async (tx) => {
-      // A. Cancelamos el pedido actual
       await tx.listing.update({
         where: { id: listingId },
         data: { 
@@ -605,7 +623,6 @@ export async function cancelOrder(listingId: string) {
         }
       });
 
-      // B. Clonamos el producto para que vuelva a la tienda (disponible para otros)
       await tx.listing.create({
         data: {
           sellerId: listing.sellerId,
@@ -621,7 +638,6 @@ export async function cancelOrder(listingId: string) {
       });
     });
 
-    // Revalidamos todas las rutas afectadas
     revalidatePath('/dashboard/ventas');
     revalidatePath('/dashboard/compras');
     revalidatePath(`/dashboard/compras/${listingId}`);
