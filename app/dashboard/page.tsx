@@ -26,8 +26,10 @@ export default async function DashboardPage() {
     recentActivity,
     recentPurchases
   ] = await Promise.all([
-    // Stats Ventas
+    // Stats Ventas: Productos actualmente listados
     prisma.listing.count({ where: { sellerId: user.id, status: 'active' } }),
+    
+    // Stats Ventas: Pedidos vendidos pero aún en camino o pendientes
     prisma.listing.count({ 
       where: { 
         sellerId: user.id, 
@@ -35,6 +37,8 @@ export default async function DashboardPage() {
         deliveryStatus: { in: ['pending', 'shipped'] } 
       } 
     }),
+    
+    // Stats Ventas: Pedidos que ya han sido entregados con éxito
     prisma.listing.count({ 
       where: { 
         sellerId: user.id, 
@@ -43,12 +47,16 @@ export default async function DashboardPage() {
       } 
     }),
 
-    // Stats Compras
+    // Stats Compras: Total de productos comprados por el usuario
     prisma.listing.count({ where: { buyerId: user.id } }),
 
-    // Ganancias
+    // 🟢 GANANCIAS ACTUALIZADAS: Ahora solo suma el precio de los pedidos 'Entregados'
     prisma.listing.aggregate({
-      where: { sellerId: user.id, status: 'sold' },
+      where: { 
+        sellerId: user.id, 
+        status: 'sold',
+        deliveryStatus: 'delivered' // Solo cuenta lo que ya ha llegado al comprador
+      },
       _sum: { price: true },
     }),
 
@@ -221,7 +229,6 @@ export default async function DashboardPage() {
             <table className="min-w-full text-gray-900 dark:text-gray-200 text-left">
               <thead className="rounded-lg text-left text-sm font-normal bg-gray-50 dark:bg-neutral-900/50 text-gray-500 dark:text-gray-400">
                 <tr>
-                  {/* 👇 REDUCIMOS AL 35% PARA MOVER EL RESTO A LA IZQUIERDA */}
                   <th className="py-3 pl-6 pr-3 font-medium sm:pl-6 w-[35%]">Juego</th>
                   <th className="px-3 py-3 font-medium w-[25%]">Estado</th>
                   <th className="px-3 py-3 font-medium w-[15%]">Precio</th>
@@ -268,7 +275,6 @@ export default async function DashboardPage() {
             <table className="min-w-full text-gray-900 dark:text-gray-200 text-left">
               <thead className="rounded-lg text-left text-sm font-normal bg-gray-50 dark:bg-neutral-900/50 text-gray-500 dark:text-gray-400">
                 <tr>
-                  {/* 👇 MISMOS ANCHOS EXACTOS PARA ALINEACIÓN PERFECTA */}
                   <th className="py-3 pl-6 pr-3 font-medium sm:pl-6 w-[35%]">Juego</th>
                   <th className="px-3 py-3 font-medium w-[25%]">Estado</th>
                   <th className="px-3 py-3 font-medium w-[15%]">Precio</th>
