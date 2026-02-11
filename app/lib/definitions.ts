@@ -96,12 +96,14 @@ export type State = {
   };
 };
 
-// --- CARRITO ---
+// --- CARRITO CORREGIDO ---
 export interface CartItem {
   id: string;
   cartId: string;
   listingId: string;
   listing: Listing;
+  addedAt: Date;    // 🟢 Coincide con schema.prisma
+  selected: boolean; // 🟢 Coincide con schema.prisma
 }
 
 export interface Cart {

@@ -33,6 +33,7 @@ export default async function CartPage() {
                 include: { game: true, platform: true, seller: true }
               }
             },
+            // 🟢 CORREGIDO: Usamos 'addedAt' según el schema.prisma
             orderBy: { addedAt: 'desc' }
           }
         }
@@ -40,139 +41,149 @@ export default async function CartPage() {
     }
   });
 
-  const cartItems = user?.cart?.items || [];
-  const areAllSelected = cartItems.length > 0 && cartItems.every(item => item.selected);
+  if (!user || !user.cart || user.cart.items.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+        <div className="bg-white dark:bg-neutral-800 rounded-3xl p-12 shadow-sm inline-block">
+          <ShoppingBag size={64} className="mx-auto text-gray-300 mb-6" />
+          <h1 className="text-3xl font-bold text-dark dark:text-white mb-4">Tu carrito está vacío</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
+            ¡Parece que aún no has añadido nada! Explora nuestra tienda y encuentra las mejores ofertas en juegos retro.
+          </p>
+          <Link 
+            href="/tienda" 
+            className="bg-primary hover:bg-primary-hover text-white font-bold py-4 px-8 rounded-xl transition-all inline-flex items-center gap-2"
+          >
+            Ir a la tienda <ArrowRight size={20} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-  // --- 💰 LÓGICA DE PRECIOS Y ENVÍO ---
-  const selectedItems = cartItems.filter(item => item.selected);
-  const subtotal = selectedItems.reduce((sum, item) => sum + item.listing.price, 0);
-  const SHIPPING_COST = 4.99;
-  const FREE_SHIPPING_THRESHOLD = 50.00;
-  const shippingPrice = (subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD) ? SHIPPING_COST : 0;
-  const finalTotal = subtotal + shippingPrice;
+  // --- LÓGICA DE CÁLCULOS ACTUALIZADA ---
+  const allItems = user.cart.items;
+  // 🟢 CORREGIDO: Usamos 'selected' en lugar de 'isSelected'
+  const selectedItems = allItems.filter(item => item.selected);
+  const allSelected = allItems.length > 0 && allItems.every(item => item.selected);
+
+  const subtotal = selectedItems.reduce((acc, item) => acc + item.listing.price, 0);
+  
+  // Configuración de envío
+  const FREE_SHIPPING_THRESHOLD = 50;
+  const shippingCost = 4.90;
+  
+  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  // Si no hay nada seleccionado, no cobramos envío en el visual (Total 0), pero si hay algo y no llega a 50, cobramos 4.90
+  const shipping = (subtotal > 0 && isFreeShipping) ? 0 : (subtotal > 0 ? shippingCost : 0);
+  
+  const finalTotal = subtotal + shipping;
+
+  // Progreso de la barra (0 si subtotal es 0, máximo 100)
+  const diff = FREE_SHIPPING_THRESHOLD - subtotal;
+  const progressPercentage = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
   return (
-    <div className="min-h-screen bg-white-off dark:bg-neutral-900 py-10 px-4 transition-colors duration-300">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-white-off dark:bg-neutral-900 pb-20">
+      <div className="max-w-7xl mx-auto px-4 pt-8">
         <h1 className="text-3xl font-bold text-dark dark:text-white mb-8 flex items-center gap-3">
-          <ShoppingBag className="text-primary" />
-          Tu Carrito
+          Mi Carrito <span className="text-sm font-normal text-gray-400 bg-gray-100 dark:bg-neutral-800 px-3 py-1 rounded-full">{allItems.length}</span>
         </h1>
 
-        {cartItems.length === 0 ? (
-          <div className="bg-white dark:bg-neutral-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-neutral-700 shadow-sm">
-            <div className="w-20 h-20 bg-gray-100 dark:bg-neutral-700 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ShoppingBag size={40} className="text-gray-400" />
-            </div>
-            <h2 className="text-xl font-bold text-dark dark:text-white mb-2">Tu carrito está vacío</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-8">Parece que aún no has encontrado tu próximo juego.</p>
-            <Link 
-              href="/tienda" 
-              className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-xl font-bold transition-transform hover:scale-105"
-            >
-              Explorar la Tienda <ArrowRight size={20} />
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
-            
-            {/* COLUMNA IZQUIERDA: ITEMS */}
-            <div className="flex-1 space-y-4">
-              
-              {/* SELECCIONAR TODOS */}
-              <div className="p-3 pl-4 rounded-xl bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 shadow-sm flex items-center gap-3 mb-2">
-                 <div className="flex items-center justify-center pl-1">
-                    <SelectAllCheckbox allSelected={areAllSelected} />
-                 </div>
-                 <span className="font-bold text-dark dark:text-white text-sm select-none cursor-pointer">
-                    Seleccionar todos ({cartItems.length} artículos)
-                 </span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Columna Izquierda: Productos */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow-sm flex items-center justify-between border border-gray-100 dark:border-neutral-700">
+              <div className="flex items-center gap-3">
+                <SelectAllCheckbox allSelected={allSelected} />
+                <span className="text-sm font-bold dark:text-white">Seleccionar todo</span>
               </div>
+              <span className="text-xs text-gray-400">{selectedItems.length} seleccionados</span>
+            </div>
 
-              {/* LISTA DE ITEMS */}
-              {cartItems.map((item) => (
-                <div 
-                  key={item.id} 
-                  className={`relative p-4 pb-10 rounded-xl border shadow-sm flex gap-4 transition-all duration-200 items-start overflow-hidden group
-                    ${item.selected 
-                        ? 'bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700' 
-                        : 'bg-gray-50 dark:bg-neutral-900/50 border-gray-100 dark:border-neutral-800 opacity-75'
-                    }`}
-                >
-                  <div className="flex items-center justify-center pl-1 pt-2 shrink-0 z-20">
-                    <CartCheckbox id={item.id} isSelected={item.selected} />
+            <div className="space-y-3">
+              {allItems.map((item) => (
+                <div key={item.id} className={`bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow-sm border transition-all flex gap-4 relative group ${item.selected ? 'border-primary/30 ring-1 ring-primary/10' : 'border-gray-100 dark:border-neutral-700'}`}>
+                  <div className="flex items-center">
+                      {/* Pasamos 'selected' correctamente al componente hijo */}
+                      <CartCheckbox id={item.id} isSelected={item.selected} />
                   </div>
 
-                  {/* 👇 ENVOLVEMOS IMAGEN Y TEXTO EN UN LINK */}
-                  <Link 
-                    href={`/tienda/${item.listing.id}`} 
-                    className="flex flex-1 gap-4 min-w-0 hover:opacity-80 transition-opacity"
-                  >
-                      <div className="w-24 h-24 shrink-0 bg-gray-100 rounded-lg overflow-hidden relative">
-                        {!item.selected && <div className="absolute inset-0 bg-white/50 dark:bg-black/50 z-10" />}
-                        <img 
-                          src={item.listing.game?.coverImage || '/placeholder.png'} 
-                          alt="Juego" 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      
-                      <div className="flex-1 flex flex-col justify-between self-stretch py-1">
-                        <div>
-                          <div className="flex justify-between items-start gap-4">
-                            <h3 className={`font-bold text-lg line-clamp-1 ${!item.selected ? 'text-gray-500' : 'text-dark dark:text-white'}`}>
-                                {item.listing.game?.title}
-                            </h3>
-                            <p className={`font-bold text-lg shrink-0 ${item.selected ? 'text-primary' : 'text-gray-400'}`}>
-                              {formatCurrency(item.listing.price * 100)}
-                            </p>
-                          </div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {item.listing.platform?.name} • {item.listing.condition}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-2">
-                            Vendido por: {item.listing.seller?.name}
-                          </p>
-                        </div>
-                      </div>
-                  </Link>
+                  <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 dark:border-neutral-700">
+                    <img 
+                      src={item.listing.game.coverImage || '/placeholder-game.png'} 
+                      alt={item.listing.game.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
-                  {/* 👇 EL BOTÓN SE QUEDA FUERA DEL LINK, ABSOLUTO AL PADRE */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-dark dark:text-white truncate pr-8">{item.listing.game.title}</h3>
+                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                          {item.listing.platform.name} • <span className="text-primary font-medium">{item.listing.condition}</span>
+                        </p>
+                      </div>
+                      <p className="font-black text-lg text-primary">{formatCurrency(item.listing.price * 100)}</p>
+                    </div>
+                    
+                    <div className="mt-4 flex items-center gap-2">
+                       <img src={item.listing.seller.image || `https://ui-avatars.com/api/?name=${item.listing.seller.name}`} className="w-5 h-5 rounded-full" alt="" />
+                       <span className="text-[10px] text-gray-400">Vendido por <span className="font-bold">{item.listing.seller.name}</span></span>
+                    </div>
+                  </div>
+
                   <RemoveFromCartButton itemId={item.id} />
                 </div>
               ))}
             </div>
+          </div>
 
-            {/* COLUMNA DERECHA: RESUMEN (Sin cambios) */}
-            <div className="lg:w-96">
-              <div className="bg-white dark:bg-neutral-800 p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 shadow-lg sticky top-24">
-                <h3 className="text-xl font-bold text-dark dark:text-white mb-6">Resumen del Pedido</h3>
+          {/* Columna Derecha: Resumen */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              
+              {/* Barra de envío gratis */}
+              <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-neutral-700 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Truck className={subtotal >= 50 ? "text-green-500" : "text-primary"} size={20} />
+                    <span className="font-bold text-sm dark:text-white">
+                      {subtotal <= 0 
+                        ? `¡Añade ${formatCurrency(50 * 100)} más para envío gratis!` 
+                        : subtotal >= 50 
+                          ? '¡Tienes envío gratis!' 
+                          : `Te faltan ${formatCurrency(diff * 100)} para el envío gratis`
+                      }
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium text-gray-400">{Math.round(progressPercentage)}%</span>
+                </div>
+                <div className="h-2 w-full bg-gray-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-500 ${subtotal >= 50 ? 'bg-green-500' : 'bg-primary'}`}
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-neutral-700">
+                <h2 className="text-xl font-bold text-dark dark:text-white mb-6 pb-4 border-b border-gray-50 dark:border-neutral-700">Resumen</h2>
                 
-                <div className="space-y-3 text-sm mb-6">
-                  <div className="flex justify-between items-center text-gray-600 dark:text-gray-300">
-                    <span>Productos ({selectedItems.length}):</span>
+                <div className="space-y-4 mb-8">
+                  <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                    <span>Subtotal ({selectedItems.length} art.)</span>
                     <span>{formatCurrency(subtotal * 100)}</span>
                   </div>
-
-                  <div className="flex justify-between items-center text-gray-600 dark:text-gray-300">
-                    <span className="flex items-center gap-1">
-                        Envío estimado 
-                        {shippingPrice === 0 && subtotal > 0 && <Truck size={14} className="text-green-500"/>}
-                    </span>
-                    <span className={`font-medium ${shippingPrice === 0 ? 'text-green-500' : ''}`}>
-                        {shippingPrice === 0 ? 'Gratis' : formatCurrency(shippingPrice * 100)}
+                  <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                    <span>Envío</span>
+                    <span className={subtotal >= 50 ? "text-green-500 font-bold" : ""}>
+                      {subtotal <= 0 ? formatCurrency(0) : (subtotal >= 50 ? 'Gratis' : formatCurrency(shippingCost * 100))}
                     </span>
                   </div>
-
-                  {shippingPrice > 0 && (
-                      <div className="text-xs text-primary bg-primary/5 p-2 rounded-md w-fit ml-auto border border-primary/10">
-                        ¡Añade <b>{formatCurrency((FREE_SHIPPING_THRESHOLD - subtotal) * 100)}</b> más para envío gratis!
-                      </div>
-                  )}
-                </div>
-
-                <div className="border-t border-gray-200 dark:border-neutral-700 pt-4 mb-6">
-                  <div className="flex justify-between items-center">
+                  <div className="pt-4 border-t border-gray-50 dark:border-neutral-700 flex justify-between items-end">
                     <span className="font-bold text-lg text-dark dark:text-white">Total</span>
                     <span className="font-bold text-2xl text-primary">{formatCurrency(finalTotal * 100)}</span>
                   </div>
@@ -201,9 +212,9 @@ export default async function CartPage() {
                 </p>
               </div>
             </div>
-
           </div>
-        )}
+
+        </div>
       </div>
     </div>
   );

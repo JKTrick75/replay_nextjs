@@ -40,7 +40,25 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
     }
   }, [cartCount]);
 
-  // 👇 LÓGICA DE LOGOUT RÁPIDA
+  // 🟢 NUEVA FUNCIÓN: Manejar clic en el carrito
+  const handleCartClick = async () => {
+    if (user) {
+      // Si está logueado, vamos al carrito normal
+      router.push('/carrito');
+    } else {
+      // Si NO está logueado, preguntamos antes
+      const confirm = await confirmAction(
+        '¿Quieres iniciar sesión?',
+        'Necesitas tu cuenta para ver el carrito.',
+        'Sí, ir al login'
+      );
+
+      if (confirm.isConfirmed) {
+        router.push('/login');
+      }
+    }
+  };
+
   const handleLogout = async () => {
     setIsMenuOpen(false);
     setIsMobileMenuOpen(false);
@@ -53,11 +71,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
 
     if (confirm.isConfirmed) {
       await logout();
-      
-      // 1. Mostramos la alerta
       showToast('info', 'Has cerrado sesión', '¡Hasta pronto!');
-      
-      // 2. Redirigimos INMEDIATAMENTE
       router.push('/');
       router.refresh();
     }
@@ -94,9 +108,10 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
               );
             })}
 
-            <Link 
-              href={user ? "/carrito" : "/login"} 
-              className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 mr-2"
+            {/* 🟢 CAMBIO: Usamos <button> en vez de <Link> para interceptar el clic */}
+            <button
+              onClick={handleCartClick}
+              className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 mr-2 focus:outline-none"
               title="Ver carrito"
             >
               <ShoppingCart size={24} />
@@ -105,7 +120,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                   {cartCount}
                 </span>
               )}
-            </Link>
+            </button>
              
             <ThemeToggle />
 
@@ -127,7 +142,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                 </button>
 
                 {isMenuOpen && (
-                  // 👇 CAMBIO AQUÍ: '-right-2' para moverlo un pelín a la derecha y 'z-50'
                   <div className="absolute -right-2 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-gray-light dark:border-gray py-2 animate-in fade-in slide-in-from-top-2 z-50 origin-top-right">
                     <div className="px-4 py-3 border-b border-gray-light dark:border-gray mb-2">
                       <p className="text-xs text-gray-500 dark:text-gray-400">Conectado como</p>
@@ -171,9 +185,10 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
 
           {/* --- BOTÓN MENÚ MÓVIL --- */}
           <div className="flex md:hidden items-center gap-4">
-            <Link 
-              href={user ? "/carrito" : "/login"} 
-              className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1"
+            {/* 🟢 CAMBIO TAMBIÉN EN MÓVIL */}
+            <button
+              onClick={handleCartClick}
+              className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 focus:outline-none"
             >
               <ShoppingCart size={24} />
               {cartCount > 0 && (
@@ -181,7 +196,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                   {cartCount}
                 </span>
               )}
-            </Link>
+            </button>
 
             <ThemeToggle />
             <button

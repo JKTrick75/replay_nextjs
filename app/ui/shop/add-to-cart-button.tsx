@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ShoppingCart, Check, Loader2, XCircle } from 'lucide-react';
 import { addToCart } from '@/app/lib/actions';
 import { useRouter } from 'next/navigation';
+import { confirmAction } from '@/app/lib/swal';
 
 export default function AddToCartButton({ listingId }: { listingId: string }) {
   const [isPending, setIsPending] = useState(false);
@@ -21,22 +22,32 @@ export default function AddToCartButton({ listingId }: { listingId: string }) {
 
     if (result.success) {
       setFeedback('success');
-      router.refresh(); // Actualiza el Navbar para que aparezca el numerito
-      // Volver al estado normal después de 2 segundos
+      router.refresh(); 
       setTimeout(() => setFeedback('idle'), 2000);
     } else {
-      // 👇 MEJORA: Si el error es de sesión, redirigimos
+      // 🟢 MEJORA UX: Preguntar antes de redirigir al login
       if (result.message && result.message.includes('Inicia sesión')) {
-         router.push('/login');
+         
+         const userWantsToLogin = await confirmAction(
+            '¿Quieres iniciar sesión?',
+            'Necesitas tu cuenta para añadir productos al carrito.',
+            'Sí, vamos al login'
+         );
+
+         if (userWantsToLogin.isConfirmed) {
+             router.push('/login');
+         }
+         // Si cancela, simplemente nos quedamos aquí y no pasa nada
          return;
       }
+
+      // Si es otro tipo de error, lo mostramos en el botón
       setFeedback('error');
       setErrorMessage(result.message || 'Error al añadir');
       setTimeout(() => setFeedback('idle'), 3000);
     }
   };
 
-  // Clases base del botón
   const baseClasses = "flex-1 sm:flex-none px-6 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 min-w-[140px]";
 
   if (feedback === 'success') {
