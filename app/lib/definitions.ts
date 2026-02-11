@@ -83,7 +83,8 @@ export type State = {
     [key: string]: string[] | undefined;
   };
   message?: string | null;
-  timestamp?: number; // Clave para forzar el repintado del formulario
+  timestamp?: number;
+  success?: boolean; // 👈 AÑADIDO: Para manejar el éxito en registro/login
   values?: {
     gameId?: string;
     gameSearch?: string;
@@ -93,17 +94,19 @@ export type State = {
     price?: string;
     condition?: string;
     description?: string;
+    // Permitimos más valores si es necesario
+    [key: string]: string | undefined;
   };
 };
 
-// --- CARRITO CORREGIDO ---
+// --- CARRITO ---
 export interface CartItem {
   id: string;
   cartId: string;
   listingId: string;
   listing: Listing;
-  addedAt: Date;    // 🟢 Coincide con schema.prisma
-  selected: boolean; // 🟢 Coincide con schema.prisma
+  addedAt: Date;
+  selected: boolean;
 }
 
 export interface Cart {

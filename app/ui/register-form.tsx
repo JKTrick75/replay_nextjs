@@ -2,33 +2,31 @@
 
 import { useActionState, useState, useEffect, useRef } from 'react';
 import { register } from '@/app/lib/actions';
-import { State } from '@/app/lib/definitions';
+import { State } from '@/app/lib/definitions'; // Importamos State corregido
 import { User, Mail, Lock, MapPin, Loader2, AlertCircle, UserPlus, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { showToast } from '@/app/lib/swal';
 
 export default function RegisterForm() {
-  const initialState: State & { success?: boolean } = { message: null, errors: {} };
+  // 🟢 CORRECCIÓN: Ya no hace falta el '& { success?: boolean }'
+  const initialState: State = { message: null, errors: {} };
   const [state, formAction] = useActionState(register, initialState);
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
-  // 👇 2. EFECTO ACTUALIZADO (RÁPIDO)
   useEffect(() => {
     setIsPending(false);
 
     if (state.success) {
-      // A. Toast
       showToast('success', '¡Bienvenido!', 'Tu cuenta ha sido creada. Ahora inicia sesión.');
-      // B. Redirección inmediata
       router.push('/login');
     } else if (state.message) {
       showToast('error', 'Error', state.message);
     }
   }, [state, router]);
 
-  // ... (Resto del componente: estados de password, ciudad, renderizado... MANTENER IGUAL) ...
+  // ... (Resto del componente IGUAL) ...
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -224,7 +222,7 @@ export default function RegisterForm() {
           )}
         </div>
 
-        {/* 🚑 MENSAJE GENERAL ERROR EN MODO OSCURO */}
+        {/* 🚑 MENSAJE GENERAL ERROR */}
         {state.message && (
              <div className="flex items-center gap-2 text-primary bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-primary/20">
                <AlertCircle className="h-5 w-5 shrink-0" />

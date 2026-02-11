@@ -7,6 +7,7 @@ import { prisma } from '@/app/lib/db';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
+// 🟢 Importamos State desde definitions
 import { State } from '@/app/lib/definitions';
 
 // =========================================================================== //
@@ -60,7 +61,8 @@ export async function authenticate(
   return { success: true, message: '¡Hola de nuevo!' };
 }
 
-export async function register(prevState: State, formData: FormData) {
+// 🟢 CORRECCIÓN CLAVE: Tipado explícito del retorno Promise<State>
+export async function register(prevState: State, formData: FormData): Promise<State> {
   const validatedFields = RegisterSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validatedFields.success) {
@@ -80,6 +82,7 @@ export async function register(prevState: State, formData: FormData) {
         name, email, password: hashedPassword, city, lat, lng, image: profileImage,
       },
     });
+    // Ahora 'success' es parte válida de 'State'
     return { success: true, message: 'Cuenta creada correctamente.' };
   } catch (error) {
     console.error(error);
@@ -110,6 +113,7 @@ const CreateListingSchema = z.object({
   description: z.string().optional(),
 });
 
+// 🟢 CORRECCIÓN CLAVE: Tipado explícito del retorno Promise<State>
 export async function createListing(prevState: State, formData: FormData): Promise<State> {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
@@ -148,7 +152,7 @@ export async function createListing(prevState: State, formData: FormData): Promi
   if (!rawGenre) errors.genre = ["Debes seleccionar un género."];
 
   if (Object.keys(errors).length > 0) {
-    // 🟢 Devolvemos timestamp para forzar la recarga del formulario
+    // Devolvemos timestamp para forzar la recarga del formulario
     return { errors, message: 'Faltan campos obligatorios.', values: rawValues, timestamp: Date.now() };
   }
 
@@ -209,6 +213,7 @@ export async function createListing(prevState: State, formData: FormData): Promi
   return { message: 'Producto publicado correctamente', timestamp: Date.now() };
 }
 
+// 🟢 CORRECCIÓN CLAVE: Tipado explícito del retorno Promise<State>
 export async function updateListing(id: string, prevState: State, formData: FormData): Promise<State> {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };

@@ -10,7 +10,7 @@ export default async function EditPage({ params }: { params: Params }) {
   // 1. Buscamos el anuncio a editar
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { game: true } // Necesitamos datos del juego para rellenar
+    include: { game: true } 
   });
 
   if (!listing) {
@@ -19,7 +19,8 @@ export default async function EditPage({ params }: { params: Params }) {
 
   // 2. Obtenemos datos auxiliares para los desplegables
   const games = await prisma.game.findMany({
-    select: { id: true, title: true, coverImage: true },
+    // 🟢 CORRECCIÓN: Añadido 'genre: true' para cumplir con el tipo SimpleGame
+    select: { id: true, title: true, coverImage: true, genre: true },
     orderBy: { title: 'asc' },
   });
 
@@ -32,7 +33,6 @@ export default async function EditPage({ params }: { params: Params }) {
       <h1 className="mb-8 text-2xl font-bold text-dark dark:text-white">
         Editar Anuncio
       </h1>
-      {/* Pasamos 'listing' para activar el modo edición */}
       <CreateListingForm games={games} consoles={consoles} listing={listing} />
     </main>
   );
