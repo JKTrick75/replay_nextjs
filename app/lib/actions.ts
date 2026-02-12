@@ -654,3 +654,76 @@ export async function cancelOrder(listingId: string) {
     return { message: 'Error al cancelar.' };
   }
 }
+
+// =========================================================================== //
+// --- ADMIN: GESTIÓN DE USUARIOS --- //
+// =========================================================================== //
+
+const AdminUpdateUserSchema = z.object({
+  userId: z.string(),
+  name: z.string().min(2, { message: 'El nombre es muy corto.' }),
+  email: z.string().email({ message: 'Email inválido.' }),
+  role: z.enum(['user', 'admin'], { message: 'Rol inválido.' }),
+  city: z.string().optional(),
+  lat: z.coerce.number().optional(), // 🟢 Añadido
+  lng: z.coerce.number().optional(), // 🟢 Añadido
+});
+
+export async function updateUserByAdmin(prevState: State, formData: FormData): Promise<State> {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado.' };
+
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (currentUser?.role !== 'admin') {
+    return { message: 'No tienes permisos de administrador.' };
+  }
+
+  const rawValues = {
+    userId: formData.get('userId')?.toString() || '',
+    name: formData.get('name')?.toString() || '',
+    email: formData.get('email')?.toString() || '',
+    role: formData.get('role')?.toString() || 'user',
+    city: formData.get('city')?.toString() || '',
+    lat: formData.get('lat')?.toString() || '', // 🟢 Recogemos lat
+    lng: formData.get('lng')?.toString() || '', // 🟢 Recogemos lng
+  };
+
+  const validatedFields = AdminUpdateUserSchema.safeParse(rawValues);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Revisa los campos.',
+    };
+  }
+
+  const { userId, name, email, role, city, lat, lng } = validatedFields.data;
+
+  const userToUpdate = await prisma.user.findUnique({ where: { id: userId } });
+  if (!userToUpdate) return { message: 'Usuario no encontrado.' };
+
+  if (email !== userToUpdate.email) {
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) return { message: 'Ese correo ya está en uso por otro usuario.' };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        name, 
+        email, 
+        role, 
+        city, 
+        lat, // 🟢 Guardamos
+        lng  // 🟢 Guardamos
+      },
+    });
+
+    revalidatePath('/admin/usuarios');
+    return { success: true, message: 'Usuario actualizado correctamente.' };
+  } catch (error) {
+    console.error(error);
+    return { message: 'Error al actualizar base de datos.' };
+  }
+}

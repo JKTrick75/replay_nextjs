@@ -4,7 +4,6 @@ import "./globals.css";
 import Navbar from "@/app/ui/navbar";
 import Footer from "@/app/ui/footer";
 import { Providers } from "@/app/ui/providers";
-// 👇 Importamos la autenticación y la base de datos
 import { auth } from "@/auth";
 import { prisma } from '@/app/lib/db'; 
 
@@ -25,14 +24,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   
-  // 1. Obtenemos la sesión (la cookie)
   const session = await auth();
   
-  // Variables para el Navbar
   let user = undefined;
-  let cartCount = 0; // 👇 Contador inicializado a 0
+  let cartCount = 0; 
 
-  // 2. TRUCO DE REFRESCO + DATOS DEL CARRITO
   if (session?.user?.email) {
     const dbUser = await prisma.user.findUnique({
       where: { email: session.user.email },
@@ -40,7 +36,7 @@ export default async function RootLayout({
         name: true, 
         email: true, 
         image: true,
-        // 👇 Incluimos el carrito para contar los items
+        role: true, // 🟢 1. Aquí lo pedimos (esto ya lo tenías bien)
         cart: {
           include: { items: true }
         }
@@ -48,17 +44,19 @@ export default async function RootLayout({
     });
     
     if (dbUser) {
-      // Usamos los datos frescos de la DB
       user = {
         name: dbUser.name,
         email: dbUser.email,
         image: dbUser.image,
+        role: dbUser.role, // 🟢 2. ¡AQUÍ ES DONDE FALTABA!
       };
-      // 👇 Calculamos cuántos productos hay en el carrito
       cartCount = dbUser.cart?.items.length || 0;
     } else {
-      // Fallback
-      user = session.user;
+      // Fallback por si acaso
+      user = {
+        ...session.user,
+        role: 'user' // Valor por defecto si falla la DB
+      };
     }
   }
 
@@ -66,7 +64,6 @@ export default async function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${roboto.className} antialiased bg-white-off dark:bg-neutral-950 text-dark dark:text-white-off flex flex-col min-h-screen transition-colors duration-300`}>
         <Providers>
-          {/* 👇 Pasamos usuario y contador al Navbar */}
           <Navbar user={user} cartCount={cartCount} />
           
           <main className="grow">

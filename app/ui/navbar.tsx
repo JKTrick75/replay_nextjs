@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart } from 'lucide-react';
+// 🟢 Importamos Shield para el icono de admin
+import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shield } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
 import { confirmAction, showToast } from '@/app/lib/swal';
 
@@ -12,6 +13,7 @@ type UserProps = {
   name?: string | null;
   email?: string | null;
   image?: string | null;
+  role?: string; // 🟢 Añadimos el rol para poder comprobarlo
 };
 
 const navLinks = [
@@ -40,13 +42,10 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
     }
   }, [cartCount]);
 
-  // 🟢 NUEVA FUNCIÓN: Manejar clic en el carrito
   const handleCartClick = async () => {
     if (user) {
-      // Si está logueado, vamos al carrito normal
       router.push('/carrito');
     } else {
-      // Si NO está logueado, preguntamos antes
       const confirm = await confirmAction(
         '¿Quieres iniciar sesión?',
         'Necesitas tu cuenta para ver el carrito.',
@@ -108,7 +107,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
               );
             })}
 
-            {/* 🟢 CAMBIO: Usamos <button> en vez de <Link> para interceptar el clic */}
             <button
               onClick={handleCartClick}
               className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 mr-2 focus:outline-none"
@@ -157,6 +155,18 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                       Mi Panel
                     </Link>
 
+                    {/* 🟢 ENLACE ADMIN ESCRITORIO */}
+                    {user.role === 'admin' && (
+                      <Link 
+                        href="/admin" 
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-dark dark:text-white hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
+                      >
+                        <Shield size={16} className="text-primary" />
+                        Panel Admin
+                      </Link>
+                    )}
+
                     <button
                       onClick={handleLogout} 
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-red-50 dark:hover:bg-primary-hover/20 transition-colors text-left"
@@ -185,7 +195,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
 
           {/* --- BOTÓN MENÚ MÓVIL --- */}
           <div className="flex md:hidden items-center gap-4">
-            {/* 🟢 CAMBIO TAMBIÉN EN MÓVIL */}
             <button
               onClick={handleCartClick}
               className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 focus:outline-none"
@@ -256,6 +265,17 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                 >
                    <LayoutDashboard size={18} /> Mi Panel
                 </Link>
+
+                {/* 🟢 ENLACE ADMIN MÓVIL */}
+                {user.role === 'admin' && (
+                  <Link 
+                    href="/admin"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-white bg-neutral-800 rounded-lg hover:bg-neutral-700"
+                  >
+                     <Shield size={18} /> Panel Admin
+                  </Link>
+                )}
 
                 <button
                    onClick={handleLogout} 
