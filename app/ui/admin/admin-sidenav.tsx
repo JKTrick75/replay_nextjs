@@ -8,7 +8,7 @@ import { logout } from '@/app/lib/actions';
 const links = [
   { name: 'Resumen', href: '/admin', icon: BarChart3 },
   { name: 'Usuarios', href: '/admin/usuarios', icon: Users },
-  { name: 'Artículos', href: '/admin/productos', icon: Package },
+  { name: 'Productos', href: '/admin/productos', icon: Package },
   { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingCart },
 ];
 
@@ -18,10 +18,6 @@ export default function AdminSideNav() {
   return (
     <div className="flex h-full flex-col px-3 py-4 md:px-2">
       
-      {/* 🟢 CAMBIO DE COLORES:
-          - bg-neutral-500: Gris medio para el modo claro (más clarito).
-          - dark:bg-neutral-700: El gris oscuro que te gustaba, ahora para el modo oscuro.
-      */}
       <div className="mb-2 flex h-20 items-end justify-start rounded-xl p-4 md:h-40 cursor-default shadow-md transition-colors duration-300 bg-neutral-500 dark:bg-neutral-700 text-white">
         <div className="w-full">
            <div className="flex items-center gap-2 font-bold text-2xl">

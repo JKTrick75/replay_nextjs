@@ -213,11 +213,25 @@ export async function createListing(prevState: State, formData: FormData): Promi
   return { message: 'Producto publicado correctamente', timestamp: Date.now() };
 }
 
-// 🟢 CORRECCIÓN CLAVE: Tipado explícito del retorno Promise<State>
+// 🟢 FUNCIÓN MEJORADA: updateListing
 export async function updateListing(id: string, prevState: State, formData: FormData): Promise<State> {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
 
+  // 1. Obtenemos al usuario completo para ver su ID y ROL
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user) return { message: 'Usuario no encontrado.' };
+
+  // 2. Buscamos el anuncio original para verificar el dueño
+  const existingListing = await prisma.listing.findUnique({ where: { id } });
+  if (!existingListing) return { message: 'Anuncio no encontrado.' };
+
+  // 3. 🔒 SEGURIDAD CRÍTICA: Solo el dueño O un admin pueden editar
+  if (existingListing.sellerId !== user.id && user.role !== 'admin') {
+    return { message: '⛔ No tienes permiso para editar este anuncio.' };
+  }
+
+  // --- RECOGIDA DE DATOS (Igual que tenías) ---
   const rawValues = {
     gameId: formData.get('gameId')?.toString() || '',
     gameSearch: formData.get('gameSearch')?.toString() || '',
@@ -256,6 +270,7 @@ export async function updateListing(id: string, prevState: State, formData: Form
   let finalGameId = gameId;
 
   try {
+    // Lógica de juego nuevo/existente (Igual que tenías)
     if (!finalGameId && newGameTitle) {
       const existingGame = await prisma.game.findFirst({ where: { title: newGameTitle } });
       if (existingGame) {
@@ -280,6 +295,7 @@ export async function updateListing(id: string, prevState: State, formData: Form
 
     if (!finalGameId) return { message: 'Error al identificar el juego.', values: rawValues, timestamp: Date.now() };
 
+    // Actualización final
     await prisma.listing.update({
       where: { id },
       data: { gameId: finalGameId, platformId, price, condition, description: description || '' },
@@ -289,18 +305,41 @@ export async function updateListing(id: string, prevState: State, formData: Form
     return { message: 'Error al actualizar el anuncio.', values: rawValues, timestamp: Date.now() };
   }
 
-  revalidatePath('/dashboard/ventas');
-  revalidatePath('/tienda');
+  // 4. REDIRECCIÓN INTELIGENTE (Admin vs Usuario)
+  if (user.role === 'admin') {
+      revalidatePath('/admin/productos');
+  } else {
+      revalidatePath('/dashboard/ventas');
+  }
+  revalidatePath('/tienda'); // Siempre refrescar la tienda pública
+  
   return { message: 'Producto actualizado correctamente', timestamp: Date.now() };
 }
 
+// 🟢 FUNCIÓN MEJORADA: deleteListing
 export async function deleteListing(id: string) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'No autenticado' };
+  
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user) return { message: 'Usuario no encontrado' };
+
+  const listing = await prisma.listing.findUnique({ where: { id } });
+  if (!listing) return { message: 'Anuncio no encontrado' };
+
+  // 🔒 SEGURIDAD: Dueño o Admin
+  if (listing.sellerId !== user.id && user.role !== 'admin') {
+      return { message: '⛔ No tienes permiso para eliminar este anuncio.' };
+  }
+
   try {
     await prisma.listing.delete({ where: { id } });
+    
+    // Refrescamos todas las rutas posibles
     revalidatePath('/dashboard/ventas');
+    revalidatePath('/admin/productos');
     revalidatePath('/tienda');
+    
     return { message: 'Anuncio eliminado.' };
   } catch (error) {
     return { message: 'Error al eliminar.' };
@@ -725,5 +764,57 @@ export async function updateUserByAdmin(prevState: State, formData: FormData): P
   } catch (error) {
     console.error(error);
     return { message: 'Error al actualizar base de datos.' };
+  }
+}
+
+// =========================================================================== //
+// --- ADMIN: GESTIÓN DE PEDIDOS --- //
+// =========================================================================== //
+
+const UpdateOrderSchema = z.object({
+  listingId: z.string(),
+  shippingAddress: z.string().min(5, { message: 'La dirección es demasiado corta.' }),
+});
+
+export async function updateOrderAddress(prevState: State, formData: FormData): Promise<State> {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado.' };
+
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (currentUser?.role !== 'admin') {
+    return { message: 'No tienes permisos de administrador.' };
+  }
+
+  const listingId = formData.get('listingId')?.toString();
+  const shippingAddress = formData.get('shippingAddress')?.toString();
+
+  const validatedFields = UpdateOrderSchema.safeParse({ listingId, shippingAddress });
+
+  if (!validatedFields.success) {
+    return { message: 'Datos inválidos.' };
+  }
+
+  // Verificar estado antes de guardar
+  const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+  
+  if (!listing) return { message: 'Pedido no encontrado.' };
+  
+  if (listing.deliveryStatus !== 'pending') {
+    return { message: 'No se puede editar la dirección de un pedido que ya ha sido enviado o entregado.' };
+  }
+
+  try {
+    await prisma.listing.update({
+      where: { id: listingId },
+      data: { shippingAddress: validatedFields.data.shippingAddress },
+    });
+
+    revalidatePath('/admin/pedidos');
+    // Revalidamos también la vista de detalle por si el admin sigue ahí
+    revalidatePath(`/admin/pedidos/${listingId}`);
+    
+    return { success: true, message: 'Dirección de envío actualizada.' };
+  } catch (error) {
+    return { message: 'Error al actualizar.' };
   }
 }

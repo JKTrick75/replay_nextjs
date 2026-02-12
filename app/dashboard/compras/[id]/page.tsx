@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail } from 'lucide-react';
+import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail, Settings } from 'lucide-react'; // 🟢 Añadido Settings
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import DeliveryStatusButton from '@/app/ui/dashboard/delivery-status-button';
 import BuyerCancelButton from '@/app/ui/dashboard/buyer-cancel-button';
@@ -20,9 +20,10 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
     notFound(); 
   }
 
+  // Mapa de estados (Badges de la cabecera)
   const statusMap: any = {
     'pending': { label: 'Pendiente de Envío', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-    'shipped': { label: 'Enviado', color: 'bg-blue-100 text-blue-700', icon: Truck },
+    'shipped': { label: 'Enviado', color: 'bg-primary/10 text-primary', icon: Truck }, // 🟢 Cambiado a Primary
     'delivered': { label: 'Entregado', color: 'bg-green-100 text-green-700', icon: CheckCircle },
     'cancelled': { label: 'Pedido Cancelado', color: 'bg-red-100 text-red-700', icon: PackageX },
   };
@@ -64,9 +65,10 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                     <img 
                       src={listing.game?.coverImage || '/placeholder.png'} 
                       className="w-16 h-20 object-cover rounded-lg"
+                      alt={listing.game?.title}
                     />
                     <div>
-                        <p className="font-bold">{listing.game?.title}</p>
+                        <p className="font-bold text-dark dark:text-white">{listing.game?.title}</p>
                         <p className="text-primary font-bold text-xl">{formatCurrency(listing.price * 100)}</p>
                     </div>
                 </div>
@@ -82,9 +84,10 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                         <img 
                            src={listing.seller.image || '/placeholder-user.png'} 
                            className="w-10 h-10 rounded-full bg-gray-200 object-cover"
+                           alt="Vendedor"
                         />
                         <div>
-                            <p className="font-bold">{listing.seller.name}</p>
+                            <p className="font-bold text-dark dark:text-white">{listing.seller.name}</p>
                             <p className="text-sm text-gray-500 flex items-center gap-1">
                                 <Mail size={12}/> {listing.seller.email}
                             </p>
@@ -102,7 +105,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                 </h3>
 
                 {listing.status === 'cancelled' ? (
-                  <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+                  <div className="p-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-xl text-sm border border-red-100 dark:border-red-900/30">
                     <p className="font-bold mb-1 flex items-center gap-2"><PackageX size={16}/> Pedido Cancelado</p>
                     El vendedor ha cancelado este pedido. El importe ha sido reembolsado.
                   </div>
@@ -111,7 +114,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                       <div className="flex items-start gap-3">
                         <Clock className="text-gray-400 mt-1" size={18} />
                         <div>
-                          <p className="font-bold text-sm">Fecha de Compra</p>
+                          <p className="font-bold text-sm text-dark dark:text-white">Fecha de Compra</p>
                           <p className="text-gray-600 dark:text-gray-300">
                             {listing.soldAt ? formatDateToLocal(listing.soldAt.toString()) : 'N/A'}
                           </p>
@@ -121,7 +124,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                       <div className="flex items-start gap-3">
                         <MapPin className="text-gray-400 mt-1" size={18} />
                         <div>
-                          <p className="font-bold text-sm">Dirección de Entrega</p>
+                          <p className="font-bold text-sm text-dark dark:text-white">Dirección de Entrega</p>
                           <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line text-sm">
                             {listing.shippingAddress || 'Dirección no registrada'}
                           </p>
@@ -131,18 +134,19 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                 )}
             </div>
 
-            {/* PANEL DE ACCIONES DEL COMPRADOR */}
+            {/* 🟢 PANEL DE ACCIONES DEL COMPRADOR (Estilo actualizado) */}
             {listing.status === 'sold' && listing.deliveryStatus !== 'delivered' && (
-              <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-                <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-4">Acciones Disponibles</h4>
+              <div className="bg-gray-light/30 dark:bg-neutral-800/50 p-6 rounded-xl border border-gray-light dark:border-neutral-700">
+                <h4 className="font-bold text-dark dark:text-white mb-4 flex items-center gap-2">
+                    <Settings size={18} className="text-gray" /> Acciones Disponibles
+                </h4>
                 
                 {listing.deliveryStatus === 'pending' && (
                     <div className="space-y-4">
-                        <div className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                        <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
                             <Clock size={16}/>
                             <span>Esperando a que el vendedor envíe el paquete...</span>
                         </div>
-                        {/* 👇 AQUI AÑADIMOS EL BOTÓN DE CANCELAR */}
                         <div className="pt-2">
                            <BuyerCancelButton id={listing.id} />
                         </div>
@@ -151,7 +155,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
 
                 {listing.deliveryStatus === 'shipped' && (
                      <div className="space-y-4">
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
                             El vendedor ha marcado el pedido como enviado. Cuando lo recibas, confírmalo abajo.
                         </p>
                         <DeliveryStatusButton listingId={listing.id} />

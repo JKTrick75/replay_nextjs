@@ -47,7 +47,7 @@ export default async function AdminUsersPage() {
                   </td>
                   <td className="px-6 py-4">
                     {user.role === 'admin' ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-primary border border-purple-200">
                             <Shield size={12} /> Admin
                         </span>
                     ) : (

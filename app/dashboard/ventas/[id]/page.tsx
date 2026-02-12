@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail } from 'lucide-react';
+import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail, Settings } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import ShipButton from '@/app/ui/dashboard/ship-button';
 import CancelOrderButton from '@/app/ui/dashboard/cancel-order-button';
@@ -13,7 +13,7 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
   
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { game: true, buyer: true } // Traemos al COMPRADOR
+    include: { game: true, buyer: true } 
   });
 
   // Seguridad: Solo el vendedor (dueño) puede ver esto
@@ -24,7 +24,7 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
   // Mapa de estados
   const statusMap: any = {
     'pending': { label: 'Pendiente de Envío', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-    'shipped': { label: 'Enviado', color: 'bg-blue-100 text-blue-700', icon: Truck },
+    'shipped': { label: 'Enviado', color: 'bg-primary/10 text-primary', icon: Truck },
     'delivered': { label: 'Entregado', color: 'bg-green-100 text-green-700', icon: CheckCircle },
     'cancelled': { label: 'Cancelado', color: 'bg-red-100 text-red-700', icon: PackageX },
   };
@@ -64,7 +64,7 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
                     <User size={20} className="text-primary"/> Datos del Comprador
                 </h3>
                 <div className="p-4 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 space-y-2">
-                    <p className="font-bold">{listing.buyer?.name || 'Usuario desconocido'}</p>
+                    <p className="font-bold text-dark dark:text-white">{listing.buyer?.name || 'Usuario desconocido'}</p>
                     <p className="text-sm text-gray-500 flex items-center gap-2"><Mail size={14}/> {listing.buyer?.email}</p>
                 </div>
             </div>
@@ -74,7 +74,7 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
                     <MapPin size={20} className="text-primary"/> Dirección de Envío
                 </h3>
                 <div className="p-4 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30">
-                    <p className="whitespace-pre-line text-gray-700 dark:text-gray-300 text-sm">
+                    <p className="whitespace-pre-line text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
                         {listing.shippingAddress || 'No especificada'}
                     </p>
                 </div>
@@ -86,34 +86,37 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
              <div>
                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white">Producto Vendido</h3>
                 <div className="flex gap-4 p-4 rounded-xl border border-gray-100 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                    <img src={listing.game?.coverImage || '/placeholder.png'} className="w-16 h-20 object-cover rounded-lg" />
+                    <img src={listing.game?.coverImage || '/placeholder.png'} className="w-16 h-20 object-cover rounded-lg" alt="" />
                     <div>
-                        <p className="font-bold">{listing.game?.title}</p>
+                        <p className="font-bold text-dark dark:text-white">{listing.game?.title}</p>
                         <p className="text-primary font-bold text-xl">{formatCurrency(listing.price * 100)}</p>
                         <p className="text-xs text-gray-400 mt-1">Vendido el {listing.soldAt ? formatDateToLocal(listing.soldAt.toString()) : '-'}</p>
                     </div>
                 </div>
              </div>
 
-             {/* 1. CASO CANCELADO */}
+             {/* CASO CANCELADO */}
              {listing.status === 'cancelled' && (
-                <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+                <div className="p-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-xl text-sm border border-red-100 dark:border-red-900/30">
                   <p className="font-bold mb-1 flex items-center gap-2"><PackageX size={16}/> Pedido Cancelado</p>
                   Has cancelado este pedido. El producto ha sido republicado automáticamente y el dinero reembolsado al comprador.
                 </div>
              )}
 
-             {/* 2. CASO ACTIVO: PANEL DE ACCIONES */}
+             {/* 🟢 PANEL DE ACCIONES (Botones en fila) */}
              {listing.status === 'sold' && listing.deliveryStatus !== 'delivered' && (
-                 <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-                    <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-4">Acciones Disponibles</h4>
+                 <div className="bg-gray-50 dark:bg-neutral-800/50 p-6 rounded-xl border border-gray-200 dark:border-neutral-700">
+                    <h4 className="font-bold text-dark dark:text-white mb-4 flex items-center gap-2">
+                        <Settings size={18} className="text-gray-500" /> Acciones Disponibles
+                    </h4>
                     
                     {listing.deliveryStatus === 'pending' && (
-                        <div className="space-y-3">
-                            <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 leading-relaxed">
                                 ¿Ya has enviado el paquete? Confírmalo aquí para avisar al comprador.
                             </p>
-                            <div className="flex flex-wrap gap-3">
+                            {/* 🟢 FLEX ROW PARA QUE ESTÉN EN LA MISMA FILA */}
+                            <div className="flex flex-wrap items-center gap-3">
                                 <ShipButton id={listing.id} />
                                 <CancelOrderButton id={listing.id} />
                             </div>
@@ -121,15 +124,17 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
                     )}
 
                     {listing.deliveryStatus === 'shipped' && (
-                        <div className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                            <Truck size={16}/>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2 p-3 bg-white dark:bg-neutral-900 rounded-lg border border-gray-100 dark:border-neutral-700">
+                            <div className="p-1.5 bg-primary/10 rounded-md text-primary">
+                                <Truck size={16}/>
+                            </div>
                             <span>El paquete está en camino. Esperando confirmación del comprador.</span>
                         </div>
                     )}
                  </div>
              )}
 
-             {/* 3. CASO ENTREGADO (Caja Verde) */}
+             {/* CASO ENTREGADO */}
              {listing.deliveryStatus === 'delivered' && (
                 <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-xl border border-green-100 dark:border-green-800 text-green-700 dark:text-green-300 flex items-center gap-2 font-bold text-sm">
                     <CheckCircle size={20} /> Pedido completado y cerrado.

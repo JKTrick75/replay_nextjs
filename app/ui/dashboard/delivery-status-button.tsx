@@ -12,7 +12,6 @@ export default function DeliveryStatusButton({ listingId }: { listingId: string 
   const router = useRouter();
 
   const handleConfirm = async () => {
-    // 1. Pregunta de seguridad
     const result = await confirmAction(
         '¿Todo correcto?', 
         'Confirma solo si tienes el producto en tus manos y funciona correctamente.',
@@ -36,7 +35,7 @@ export default function DeliveryStatusButton({ listingId }: { listingId: string 
 
   if (isSuccess) {
     return (
-      <div className="flex items-center gap-2 text-green-600 font-bold bg-green-50 dark:bg-green-900/20 dark:text-green-400 p-4 rounded-xl animate-in fade-in">
+      <div className="flex items-center gap-2 text-green-600 font-bold bg-green-50 dark:bg-green-900/20 dark:text-green-400 p-4 rounded-xl animate-in fade-in border border-green-100 dark:border-green-800">
         <CheckCircle2 size={24} />
         <span>¡Entrega confirmada con éxito!</span>
       </div>
@@ -44,20 +43,23 @@ export default function DeliveryStatusButton({ listingId }: { listingId: string 
   }
 
   return (
-    <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
+    // 🟢 CAMBIO: Fondo blanco/neutro con borde Primary sutil
+    <div className="bg-white dark:bg-neutral-900 p-5 rounded-xl border border-primary/20 shadow-sm mt-3">
       <h4 className="font-bold text-dark dark:text-white mb-2 flex items-center gap-2">
-        <PackageCheck className="text-primary" />
+        <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
+            <PackageCheck size={20} />
+        </div>
         Confirmar Recepción
       </h4>
-      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
         Solo pulsa este botón cuando tengas el juego en tus manos y hayas verificado que funciona.
-        Esto cerrará el pedido definitivamente.
+        Esto liberará el pago al vendedor.
       </p>
       
       <button
         onClick={handleConfirm}
         disabled={isPending}
-        className="w-full sm:w-auto bg-dark dark:bg-white text-white dark:text-dark px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isPending ? (
           <>
@@ -66,7 +68,7 @@ export default function DeliveryStatusButton({ listingId }: { listingId: string 
           </>
         ) : (
           <>
-            <PackageCheck size={20} />
+            <CheckCircle2 size={20} />
             Confirmar que lo he recibido
           </>
         )}

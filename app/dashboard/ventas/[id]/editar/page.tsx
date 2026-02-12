@@ -1,6 +1,9 @@
 import { prisma } from '@/app/lib/db';
 import CreateListingForm from '@/app/ui/dashboard/create-form';
 import { notFound } from 'next/navigation';
+// 🟢 1. Importamos Link e Icono
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 type Params = Promise<{ id: string }>;
 
@@ -17,9 +20,8 @@ export default async function EditPage({ params }: { params: Params }) {
     notFound();
   }
 
-  // 2. Obtenemos datos auxiliares para los desplegables
+  // 2. Obtenemos datos auxiliares
   const games = await prisma.game.findMany({
-    // 🟢 CORRECCIÓN: Añadido 'genre: true' para cumplir con el tipo SimpleGame
     select: { id: true, title: true, coverImage: true, genre: true },
     orderBy: { title: 'asc' },
   });
@@ -30,9 +32,19 @@ export default async function EditPage({ params }: { params: Params }) {
 
   return (
     <main className="max-w-2xl mx-auto">
+      
+      {/* 🟢 2. Enlace de Volver (Estilo consistente) */}
+      <Link 
+        href="/dashboard/ventas" 
+        className="inline-flex items-center text-gray-500 hover:text-primary mb-6 transition-colors"
+      >
+        <ArrowLeft size={20} className="mr-2" /> Volver a mis ventas
+      </Link>
+
       <h1 className="mb-8 text-2xl font-bold text-dark dark:text-white">
         Editar Anuncio
       </h1>
+      
       <CreateListingForm games={games} consoles={consoles} listing={listing} />
     </main>
   );

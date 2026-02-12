@@ -44,16 +44,31 @@ export interface Listing {
   condition: 'Nuevo' | 'Seminuevo' | 'Usado' | string;
   description?: string | null;
   status: 'active' | 'sold' | 'reserved' | string;
+  
+  // IDs de relación
   sellerId: string;
+  buyerId?: string | null; // 🟢 [Nuevo] Coincide con schema.prisma
   gameId: string;
   platformId: string;
+  
+  // Datos temporales
   createdAt: Date;
+  soldAt?: Date | null;    // 🟢 [Nuevo] Coincide con schema.prisma
+  
+  // Ubicación
   lat?: number | null;
   lng?: number | null;
+  
+  // Logística 🟢 [Nuevo] (Soluciona los errores del formulario)
+  shippingAddress?: string | null;
+  deliveryStatus?: string; // 'pending', 'shipped', 'delivered'
+
+  // Relaciones completas
   seller?: User; 
+  buyer?: User | null;     // 🟢 [Nuevo] Coincide con schema.prisma
   game?: Game;      
   platform?: Console;
-  photos?: string[];
+  photos?: string[];       // Lo mantenemos opcional por si decides usarlo
 }
 
 // --- TIPOS FORMULARIOS ---
@@ -84,7 +99,7 @@ export type State = {
   };
   message?: string | null;
   timestamp?: number;
-  success?: boolean; // 👈 AÑADIDO: Para manejar el éxito en registro/login
+  success?: boolean; 
   values?: {
     gameId?: string;
     gameSearch?: string;
@@ -94,7 +109,6 @@ export type State = {
     price?: string;
     condition?: string;
     description?: string;
-    // Permitimos más valores si es necesario
     [key: string]: string | undefined;
   };
 };
