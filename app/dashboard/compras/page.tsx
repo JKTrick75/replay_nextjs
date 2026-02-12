@@ -3,12 +3,16 @@ import { prisma } from '@/app/lib/db';
 import Link from 'next/link'; 
 import { ShoppingBag, NotebookText, Truck, CheckCircle, Clock, PackageX, Filter } from 'lucide-react'; 
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
+// 🟢 Importamos paginación
+import Pagination from '@/app/ui/pagination';
 
 export default async function MyPurchasesPage(props: {
-  searchParams?: Promise<{ filter?: string }>;
+  searchParams?: Promise<{ filter?: string; page?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const filter = searchParams?.filter || 'all';
+  const currentPage = Number(searchParams?.page) || 1;
+  const ITEMS_PER_PAGE = 6;
 
   const session = await auth();
   const userEmail = session?.user?.email;
@@ -36,7 +40,13 @@ export default async function MyPurchasesPage(props: {
     whereCondition.status = 'cancelled';
   }
 
-  // QUERY: Mis compras
+  // 1. Contar total para paginación
+  const totalItems = await prisma.listing.count({
+    where: whereCondition,
+  });
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  // 2. Obtener compras de la página actual
   const purchases = await prisma.listing.findMany({
     where: whereCondition,
     include: { 
@@ -45,9 +55,10 @@ export default async function MyPurchasesPage(props: {
       seller: true 
     },
     orderBy: { soldAt: 'desc' }, 
+    take: ITEMS_PER_PAGE,
+    skip: (currentPage - 1) * ITEMS_PER_PAGE,
   });
 
-  // Estilos de pestañas
   const activeTabClass = "bg-white text-dark shadow dark:bg-neutral-700 dark:text-white";
   const inactiveTabClass = "text-gray-500 hover:text-dark dark:text-gray-400 dark:hover:text-white";
 
@@ -91,8 +102,8 @@ export default async function MyPurchasesPage(props: {
           </p>
         </div>
       ) : (
-        <div className="mt-6 flow-root animate-fade-in">
-          <div className="inline-block min-w-full align-middle">
+        <div className="mt-6 flow-root animate-fade-in flex flex-col min-h-[500px]">
+          <div className="inline-block min-w-full align-middle flex-grow">
             <div className="rounded-xl bg-gray-50 dark:bg-neutral-800 p-2 md:pt-0">
               
               {/* VISTA MÓVIL */}
@@ -251,6 +262,11 @@ export default async function MyPurchasesPage(props: {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* 🟢 PAGINACIÓN */}
+          <div className="mt-6 flex w-full justify-center">
+             <Pagination totalPages={totalPages} />
           </div>
         </div>
       )}

@@ -1,16 +1,19 @@
 import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
-// 👇 AÑADIDO: 'Tag' a los imports para el estado "En Venta"
 import { Plus, Pencil, PackageOpen, Filter, Truck, CheckCircle, PackageX, Clock, NotebookText, Tag } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import { DeleteButton } from '@/app/ui/dashboard/delete-button';
+// 🟢 Importamos el componente de paginación
+import Pagination from '@/app/ui/pagination';
 
 export default async function MyProductsPage(props: {
-  searchParams?: Promise<{ filter?: string }>;
+  searchParams?: Promise<{ filter?: string; page?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const filter = searchParams?.filter || 'all'; 
+  const currentPage = Number(searchParams?.page) || 1;
+  const ITEMS_PER_PAGE = 6; // Ajusta este número según prefieras (6, 8, 12...)
 
   const session = await auth();
   if (!session?.user?.email) return <div>No tienes permiso.</div>;
@@ -33,10 +36,19 @@ export default async function MyProductsPage(props: {
     whereCondition.status = 'cancelled';
   }
 
+  // 1. Contamos el total de elementos para este filtro
+  const totalItems = await prisma.listing.count({
+    where: whereCondition,
+  });
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  // 2. Obtenemos SOLO los de la página actual
   const listings = await prisma.listing.findMany({
     where: whereCondition,
     include: { game: true, platform: true },
     orderBy: { createdAt: 'desc' },
+    take: ITEMS_PER_PAGE,
+    skip: (currentPage - 1) * ITEMS_PER_PAGE,
   });
 
   const activeTabClass = "bg-white text-dark shadow dark:bg-neutral-700 dark:text-white";
@@ -46,12 +58,14 @@ export default async function MyProductsPage(props: {
     <div className="w-full">
       <div className="flex flex-col md:flex-row w-full md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold text-dark dark:text-white">Mis Productos</h1>
-        <Link
-          href="/dashboard/ventas/crear"
-          className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover shadow-md"
-        >
-          <Plus size={16} /> <span>Nuevo Anuncio</span>
-        </Link>
+        <div className="flex items-center gap-4">
+            <Link
+            href="/dashboard/ventas/crear"
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover shadow-md"
+            >
+            <Plus size={16} /> <span>Nuevo Anuncio</span>
+            </Link>
+        </div>
       </div>
 
       {/* --- FILTROS --- */}
@@ -82,8 +96,8 @@ export default async function MyProductsPage(props: {
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Prueba con otro filtro.</p>
         </div>
       ) : (
-        <div className="mt-6 flow-root animate-fade-in">
-          <div className="inline-block min-w-full align-middle">
+        <div className="mt-6 flow-root animate-fade-in flex flex-col min-h-[500px]">
+          <div className="inline-block min-w-full align-middle flex-grow">
             <div className="rounded-xl bg-gray-50 dark:bg-neutral-800 p-2 md:pt-0">
               
               {/* --- VISTA MÓVIL --- */}
@@ -103,7 +117,7 @@ export default async function MyProductsPage(props: {
                         </div>
                       </div>
                       
-                      {/* Badge de estado (Móvil) - UNIFICADO CON MIS COMPRAS */}
+                      {/* Badge de estado (Móvil) */}
                       <div className="flex flex-col items-end">
                         {listing.status === 'active' && (
                             <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-gray-50 text-gray-600 border-gray-200 flex items-center gap-1">
@@ -142,18 +156,18 @@ export default async function MyProductsPage(props: {
                         {formatCurrency(listing.price * 100)}
                       </p>
                       <div className="flex justify-end gap-2 items-center min-w-20">
-                         {listing.status === 'active' ? (
-                           <>
-                             <Link href={`/dashboard/ventas/${listing.id}/editar`} className="p-2 rounded-md text-gray-400 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 transition-colors">
+                          {listing.status === 'active' ? (
+                            <>
+                              <Link href={`/dashboard/ventas/${listing.id}/editar`} className="p-2 rounded-md text-gray-400 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 transition-colors">
                                 <Pencil size={18} />
-                             </Link>
-                             <DeleteButton id={listing.id} />
-                           </>
-                         ) : (
-                           <Link href={`/dashboard/ventas/${listing.id}`} className="p-2 bg-gray-100 dark:bg-neutral-800 rounded-lg text-gray-600 hover:text-primary transition-colors">
+                              </Link>
+                              <DeleteButton id={listing.id} />
+                            </>
+                          ) : (
+                            <Link href={`/dashboard/ventas/${listing.id}`} className="p-2 bg-gray-100 dark:bg-neutral-800 rounded-lg text-gray-600 hover:text-primary transition-colors">
                               <NotebookText size={20} />
-                           </Link>
-                         )}
+                            </Link>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -176,7 +190,7 @@ export default async function MyProductsPage(props: {
                     <tr key={listing.id} className="w-full border-b border-gray-light dark:border-neutral-800 py-3 text-sm last-of-type:border-none transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800/50">
                       <td className="whitespace-nowrap py-3 pl-6 pr-3">
                         <Link href={`/tienda/${listing.id}`} className="flex items-center gap-3 group">
-                          <img src={listing.game?.coverImage || '/placeholder.png'} className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-neutral-700 transition-opacity group-hover:opacity-80" />
+                          <img src={listing.game?.coverImage || '/placeholder.png'} className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-neutral-700 transition-opacity group-hover:opacity-80" alt="" />
                           <div>
                             <p className="font-semibold text-dark dark:text-white max-w-50 truncate transition-colors group-hover:text-primary">{listing.game?.title}</p>
                             <span className="text-xs text-gray-500">{listing.platform?.shortName}</span>
@@ -184,37 +198,36 @@ export default async function MyProductsPage(props: {
                         </Link>
                       </td>
                       
-                      {/* 👇 ESTADO ESTILO TEXTO (Igual que 'Mis Compras') */}
                       <td className="whitespace-nowrap px-3 py-3">
-                         {listing.status === 'active' && (
+                          {listing.status === 'active' && (
                             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 font-medium">
                                 <Tag size={16} /> En Venta
                             </div>
-                         )}
-                         {listing.status === 'cancelled' && (
+                          )}
+                          {listing.status === 'cancelled' && (
                             <div className="flex items-center gap-2 text-red-500 font-medium">
                                 <PackageX size={16} /> Cancelado
                             </div>
-                         )}
-                         {listing.status === 'sold' && (
-                           <>
-                             {listing.deliveryStatus === 'pending' && (
+                          )}
+                          {listing.status === 'sold' && (
+                            <>
+                              {listing.deliveryStatus === 'pending' && (
                                 <div className="flex items-center gap-2 text-yellow-600 font-medium">
                                     <Clock size={16}/> Pendiente
                                 </div>
-                             )}
-                             {listing.deliveryStatus === 'shipped' && (
+                              )}
+                              {listing.deliveryStatus === 'shipped' && (
                                 <div className="flex items-center gap-2 text-blue-600 font-medium">
                                     <Truck size={16}/> Enviado
                                 </div>
-                             )}
-                             {listing.deliveryStatus === 'delivered' && (
+                              )}
+                              {listing.deliveryStatus === 'delivered' && (
                                 <div className="flex items-center gap-2 text-green-600 font-medium">
                                     <CheckCircle size={16}/> Entregado
                                 </div>
-                             )}
-                           </>
-                         )}
+                              )}
+                            </>
+                          )}
                       </td>
 
                       <td className="whitespace-nowrap px-3 py-3 font-bold">{formatCurrency(listing.price * 100)}</td>
@@ -222,20 +235,20 @@ export default async function MyProductsPage(props: {
                       
                       <td className="whitespace-nowrap py-3 pl-6 pr-3">
                         <div className="flex justify-end items-center min-w-20 gap-3">
-                           {listing.status === 'active' ? (
-                             <>
-                               <Link href={`/dashboard/ventas/${listing.id}/editar`} className="p-2 rounded-md text-gray-400 hover:text-primary transition-colors"><Pencil size={18} /></Link>
-                               <DeleteButton id={listing.id} />
-                             </>
-                           ) : (
-                             <Link 
-                                href={`/dashboard/ventas/${listing.id}`} 
-                                className="inline-flex items-center gap-2 text-gray-500 hover:text-primary transition-colors font-medium"
-                             >
-                                <NotebookText size={18} />
-                                <span className="hidden lg:inline">Gestionar</span>
-                             </Link>
-                           )}
+                            {listing.status === 'active' ? (
+                              <>
+                                <Link href={`/dashboard/ventas/${listing.id}/editar`} className="p-2 rounded-md text-gray-400 hover:text-primary transition-colors"><Pencil size={18} /></Link>
+                                <DeleteButton id={listing.id} />
+                              </>
+                            ) : (
+                              <Link 
+                                  href={`/dashboard/ventas/${listing.id}`} 
+                                  className="inline-flex items-center gap-2 text-gray-500 hover:text-primary transition-colors font-medium"
+                              >
+                                  <NotebookText size={18} />
+                                  <span className="hidden lg:inline">Gestionar</span>
+                              </Link>
+                            )}
                         </div>
                       </td>
                     </tr>
@@ -243,6 +256,11 @@ export default async function MyProductsPage(props: {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* 🟢 PAGINACIÓN AL FINAL DE LA LISTA */}
+          <div className="mt-6 flex w-full justify-center">
+             <Pagination totalPages={totalPages} />
           </div>
         </div>
       )}
