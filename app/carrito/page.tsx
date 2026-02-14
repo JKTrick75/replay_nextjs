@@ -33,7 +33,6 @@ export default async function CartPage() {
                 include: { game: true, platform: true, seller: true }
               }
             },
-            // 🟢 CORREGIDO: Usamos 'addedAt' según el schema.prisma
             orderBy: { addedAt: 'desc' }
           }
         }
@@ -61,25 +60,21 @@ export default async function CartPage() {
     );
   }
 
-  // --- LÓGICA DE CÁLCULOS ACTUALIZADA ---
+  // --- LÓGICA DE CÁLCULOS ---
   const allItems = user.cart.items;
-  // 🟢 CORREGIDO: Usamos 'selected' en lugar de 'isSelected'
   const selectedItems = allItems.filter(item => item.selected);
   const allSelected = allItems.length > 0 && allItems.every(item => item.selected);
 
   const subtotal = selectedItems.reduce((acc, item) => acc + item.listing.price, 0);
   
-  // Configuración de envío
   const FREE_SHIPPING_THRESHOLD = 50;
   const shippingCost = 4.90;
   
   const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
-  // Si no hay nada seleccionado, no cobramos envío en el visual (Total 0), pero si hay algo y no llega a 50, cobramos 4.90
   const shipping = (subtotal > 0 && isFreeShipping) ? 0 : (subtotal > 0 ? shippingCost : 0);
   
   const finalTotal = subtotal + shipping;
 
-  // Progreso de la barra (0 si subtotal es 0, máximo 100)
   const diff = FREE_SHIPPING_THRESHOLD - subtotal;
   const progressPercentage = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
@@ -106,7 +101,6 @@ export default async function CartPage() {
               {allItems.map((item) => (
                 <div key={item.id} className={`bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow-sm border transition-all flex gap-4 relative group ${item.selected ? 'border-primary/30 ring-1 ring-primary/10' : 'border-gray-100 dark:border-neutral-700'}`}>
                   <div className="flex items-center">
-                      {/* Pasamos 'selected' correctamente al componente hijo */}
                       <CartCheckbox id={item.id} isSelected={item.selected} />
                   </div>
 
@@ -119,17 +113,22 @@ export default async function CartPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
+                    {/* INFO PRINCIPAL */}
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-0">
                       <div>
-                        <h3 className="font-bold text-dark dark:text-white truncate pr-8">{item.listing.game.title}</h3>
+                        <h3 className="font-bold text-dark dark:text-white truncate sm:pr-8">{item.listing.game.title}</h3>
                         <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                           {item.listing.platform.name} • <span className="text-primary font-medium">{item.listing.condition}</span>
                         </p>
                       </div>
-                      <p className="font-black text-lg text-primary">{formatCurrency(item.listing.price * 100)}</p>
+                      
+                      <p className="font-black text-lg text-primary whitespace-nowrap mt-1 sm:mt-0">
+                        {formatCurrency(item.listing.price * 100)}
+                      </p>
                     </div>
                     
-                    <div className="mt-4 flex items-center gap-2">
+                    {/* 🟢 CORRECCIÓN: 'mb-3' en móvil crea espacio vertical real para que quepa el botón absoluto */}
+                    <div className="mt-2 mb-3 sm:mb-0 flex items-center gap-2">
                        <img src={item.listing.seller.image || `https://ui-avatars.com/api/?name=${item.listing.seller.name}`} className="w-5 h-5 rounded-full" alt="" />
                        <span className="text-[10px] text-gray-400">Vendido por <span className="font-bold">{item.listing.seller.name}</span></span>
                     </div>
@@ -141,11 +140,10 @@ export default async function CartPage() {
             </div>
           </div>
 
-          {/* Columna Derecha: Resumen */}
+          {/* Columna Derecha: Resumen (Sin cambios) */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               
-              {/* Barra de envío gratis */}
               <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-neutral-700 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
