@@ -1,18 +1,20 @@
 'use client';
 
 import { markAsShipped } from '@/app/lib/actions';
-import { Truck, Loader2 } from 'lucide-react';
+import { Truck, Loader2, Send } from 'lucide-react';
 import { useTransition } from 'react';
 import { confirmAction, showToast } from '@/app/lib/swal';
+import { useRouter } from 'next/navigation';
 
 export default function ShipButton({ id }: { id: string }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const handleShip = async () => {
     const result = await confirmAction(
-      '¿Confirmar envío?', 
-      'Avisaremos al comprador de que su paquete está en camino.',
-      'Sí, enviado'
+      '¿Marcar como enviado?',
+      'Haz esto solo si ya has entregado el paquete a la empresa de mensajería.',
+      'Sí, ya está enviado'
     );
 
     if (result.isConfirmed) {
@@ -20,7 +22,8 @@ export default function ShipButton({ id }: { id: string }) {
         const response = await markAsShipped(id);
         
         if (response.success) {
-            showToast('success', '¡Enviado!', 'El estado del pedido se ha actualizado.');
+            showToast('success', '¡Enviado!', 'Hemos avisado al comprador.');
+            router.refresh();
         } else {
             showToast('error', 'Error', response.message || 'No se pudo actualizar.');
         }
@@ -32,20 +35,20 @@ export default function ShipButton({ id }: { id: string }) {
     <button
       onClick={handleShip}
       disabled={isPending}
-      // 👇 ESTILO SIDENAV "ACTIVO": bg-primary text-white shadow-md
+      // 🟢 CAMBIO: Shadow suave (sm) en lugar de md, sin colores extraños
       className={`
-        flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors
-        bg-primary text-white shadow-md hover:bg-primary-hover
+        flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm
+        bg-primary hover:bg-primary-hover text-white
         disabled:opacity-50 disabled:cursor-not-allowed
       `}
-      title="Marcar como enviado"
+      title="Marcar pedido como enviado"
     >
       {isPending ? (
-        <Loader2 size={16} className="animate-spin" />
+        <Loader2 size={18} className="animate-spin" />
       ) : (
-        <Truck size={16} />
+        <Send size={18} />
       )}
-      <span>Confirmar Envío</span>
+      <span>{isPending ? 'Procesando...' : 'Marcar como Enviado'}</span>
     </button>
   );
 }

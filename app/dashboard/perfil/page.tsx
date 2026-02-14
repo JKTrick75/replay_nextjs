@@ -19,8 +19,8 @@ export default async function ProfilePage() {
         </h1>
       </div>
 
-      <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-light dark:border-neutral-700 overflow-hidden">
-        {/* Pasamos los datos del usuario al formulario cliente */}
+      {/* 🟢 CAMBIO: Fondo neutral-800 y borde gray-200 (Estilo Admin unificado) */}
+      <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 overflow-hidden">
         <ProfileForm user={user} />
       </div>
     </div>

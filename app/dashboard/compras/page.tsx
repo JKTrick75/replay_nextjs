@@ -68,6 +68,9 @@ export default async function MyPurchasesPage(props: {
         <h1 className="text-2xl font-bold text-dark dark:text-white">
           Mis Compras
         </h1>
+        <span className="text-sm text-gray-500 hidden md:inline-block">
+            Total: {totalItems}
+        </span>
       </div>
 
       {/* --- FILTROS DE ESTADO --- */}
@@ -103,13 +106,14 @@ export default async function MyPurchasesPage(props: {
         </div>
       ) : (
         <div className="mt-6 flow-root animate-fade-in flex flex-col min-h-[500px]">
-          <div className="inline-block min-w-full align-middle flex-grow">
-            <div className="rounded-xl bg-gray-50 dark:bg-neutral-800 p-2 md:pt-0">
-              
-              {/* VISTA MÓVIL */}
-              <div className="md:hidden">
+          
+          {/* 🟢 CONTENEDOR ESTILO ADMIN: Fondo neutral-800, Borde gris, Sombra */}
+          <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 overflow-hidden flex-grow">
+            
+            {/* VISTA MÓVIL (Dentro del contenedor unificado) */}
+            <div className="md:hidden p-4 space-y-4">
                 {purchases.map((listing) => (
-                  <div key={listing.id} className="mb-2 w-full rounded-md bg-white dark:bg-neutral-900 p-4 border border-gray-100 dark:border-neutral-700 hover:shadow-sm transition-all">
+                  <div key={listing.id} className="w-full rounded-xl bg-white dark:bg-neutral-900 p-4 border border-gray-100 dark:border-neutral-700 hover:shadow-sm transition-all">
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-700 pb-4">
                       
                       <Link href={`/tienda/${listing.id}`} className="flex items-center group">
@@ -126,28 +130,28 @@ export default async function MyPurchasesPage(props: {
                         </div>
                       </Link>
 
-                      {/* BADGE MÓVIL */}
+                      {/* 🟢 ESTADO CLEAN EN MÓVIL (Sin Badges) */}
                       <div className="flex flex-col items-end">
                         {listing.status === 'cancelled' ? (
-                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-red-50 text-red-500 border-red-100 flex items-center gap-1">
-                                <PackageX size={12} /> Cancelado
-                            </span>
+                            <div className="flex items-center gap-1 text-xs font-bold text-red-500">
+                                <PackageX size={14} /> <span>Cancelado</span>
+                            </div>
                         ) : (
                             <>
                                 {listing.deliveryStatus === 'pending' && (
-                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-yellow-50 text-yellow-700 border-yellow-100 flex items-center gap-1">
-                                        <Clock size={12} /> Pendiente
-                                    </span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-yellow-600 dark:text-yellow-500">
+                                        <Clock size={14} /> <span>Pendiente</span>
+                                    </div>
                                 )}
                                 {listing.deliveryStatus === 'shipped' && (
-                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-blue-50 text-blue-700 border-blue-100 flex items-center gap-1">
-                                        <Truck size={12} /> Enviado
-                                    </span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-500">
+                                        <Truck size={14} /> <span>Enviado</span>
+                                    </div>
                                 )}
                                 {listing.deliveryStatus === 'delivered' && (
-                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-green-50 text-green-700 border-green-100 flex items-center gap-1">
-                                        <CheckCircle size={12} /> Entregado
-                                    </span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-green-600 dark:text-green-500">
+                                        <CheckCircle size={14} /> <span>Entregado</span>
+                                    </div>
                                 )}
                             </>
                         )}
@@ -166,45 +170,49 @@ export default async function MyPurchasesPage(props: {
                         </p>
                       </div>
                       
+                      {/* 🟢 BOTÓN MÓVIL NORMALIZADO */}
                       <Link 
                         href={`/dashboard/compras/${listing.id}`}
-                        className="p-2 bg-gray-100 dark:bg-neutral-800 rounded-lg text-gray-600 hover:text-primary transition-colors"
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"
                       >
-                         <NotebookText size={20} />
+                         <NotebookText size={16} /> Ver Pedido
                       </Link>
                     </div>
                   </div>
                 ))}
-              </div>
+            </div>
 
-              {/* VISTA ESCRITORIO */}
-              <table className="hidden min-w-full text-gray-900 dark:text-gray-200 md:table">
-                <thead className="rounded-lg text-left text-sm font-normal">
+            {/* VISTA ESCRITORIO - TABLA ESTILO ADMIN */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                {/* 🟢 THEAD: Fondo oscuro neutral-900 (Admin Style) */}
+                <thead className="bg-gray-50 dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
                   <tr>
-                    <th className="px-4 py-5 font-medium sm:pl-6">Juego</th>
-                    <th className="px-3 py-5 font-medium">Vendedor</th>
-                    <th className="px-3 py-5 font-medium">Estado</th>
-                    <th className="px-3 py-5 font-medium">Precio Pagado</th>
-                    <th className="px-3 py-5 font-medium">Fecha Compra</th>
-                    <th className="px-3 py-5 font-medium text-right">Detalles</th>
+                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Juego</th>
+                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Vendedor</th>
+                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Estado</th>
+                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Precio Pagado</th>
+                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Fecha Compra</th>
+                    <th className="px-6 py-4 font-bold text-right text-gray-900 dark:text-white">Detalles</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-neutral-900">
+                {/* 🟢 TBODY: Transparente + Divisores */}
+                <tbody className="divide-y divide-gray-100 dark:divide-neutral-700">
                   {purchases.map((listing) => (
-                    <tr key={listing.id} className="w-full border-b border-gray-light dark:border-neutral-800 py-3 text-sm last-of-type:border-none hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors">
-                      <td className="whitespace-nowrap py-3 pl-6 pr-3">
+                    <tr key={listing.id} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors">
+                      <td className="px-6 py-4">
                         <Link href={`/tienda/${listing.id}`} className="flex items-center gap-3 group">
                           <img 
                             src={listing.game?.coverImage || '/placeholder.png'} 
-                            className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-neutral-700 transition-opacity group-hover:opacity-80" 
+                            className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-neutral-600 transition-opacity group-hover:opacity-80" 
                             alt="Cover" 
                           />
-                          <p className="font-semibold text-dark dark:text-white truncate max-w-50 transition-colors group-hover:text-primary">
+                          <p className="font-bold text-dark dark:text-white truncate max-w-[200px] group-hover:text-primary transition-colors">
                             {listing.game?.title}
                           </p>
                         </Link>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-3">
+                      <td className="px-6 py-4">
                          <div className="flex items-center gap-2">
                             <div className="h-6 w-6 rounded-full bg-gray-200 overflow-hidden">
                                 <img src={listing.seller.image || '/placeholder-user.png'} alt="" className="h-full w-full object-cover" />
@@ -213,48 +221,49 @@ export default async function MyPurchasesPage(props: {
                          </div>
                       </td>
 
-                      <td className="whitespace-nowrap px-3 py-3">
+                      {/* 🟢 ESTADO CLEAN (Escritorio) */}
+                      <td className="px-6 py-4">
                         {listing.status === 'cancelled' ? (
                             <div className="flex items-center gap-2 text-red-500 font-medium">
-                                <PackageX size={16} /> Cancelado
+                                <PackageX size={16} /> <span>Cancelado</span>
                             </div>
                         ) : (
                             <>
                                 {listing.deliveryStatus === 'pending' && (
-                                    <div className="flex items-center gap-2 text-yellow-600 font-medium">
-                                        <Clock size={16} /> Pendiente
+                                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 font-medium">
+                                        <Clock size={16} /> <span>Pendiente</span>
                                     </div>
                                 )}
                                 {listing.deliveryStatus === 'shipped' && (
-                                    <div className="flex items-center gap-2 text-blue-600 font-medium">
-                                        <Truck size={16} /> Enviado
+                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-500 font-medium">
+                                        <Truck size={16} /> <span>Enviado</span>
                                     </div>
                                 )}
                                 {listing.deliveryStatus === 'delivered' && (
-                                    <div className="flex items-center gap-2 text-green-600 font-medium">
-                                        <CheckCircle size={16} /> Entregado
+                                    <div className="flex items-center gap-2 text-green-600 dark:text-green-500 font-medium">
+                                        <CheckCircle size={16} /> <span>Entregado</span>
                                     </div>
                                 )}
                             </>
                         )}
                       </td>
 
-                      <td className="whitespace-nowrap px-3 py-3 font-bold text-dark dark:text-white">
+                      <td className="px-6 py-4 font-bold text-primary">
                         {formatCurrency(listing.price * 100)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-3 text-gray-500">
+                      <td className="px-6 py-4 text-gray-500">
                          {listing.soldAt 
                             ? formatDateToLocal(listing.soldAt.toString()) 
                             : formatDateToLocal(listing.updatedAt.toString())}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-3 text-right pr-6">
+                      <td className="px-6 py-4 text-right">
+                        {/* 🟢 BOTÓN NORMALIZADO */}
                         <Link 
                           href={`/dashboard/compras/${listing.id}`} 
-                          className="inline-flex items-center gap-2 text-gray-500 hover:text-primary transition-colors font-medium"
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"
                           title="Ver detalles del pedido"
                         >
-                          <NotebookText size={18} />
-                          <span className="hidden lg:inline">Ver Pedido</span>
+                          <NotebookText size={16} /> Ver Pedido
                         </Link>
                       </td>
                     </tr>
@@ -264,7 +273,6 @@ export default async function MyPurchasesPage(props: {
             </div>
           </div>
 
-          {/* 🟢 PAGINACIÓN */}
           <div className="mt-6 flex w-full justify-center">
              <Pagination totalPages={totalPages} />
           </div>

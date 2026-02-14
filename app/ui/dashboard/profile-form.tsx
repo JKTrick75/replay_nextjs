@@ -9,32 +9,24 @@ import { Pencil, Save, RefreshCw, MapPin, Mail, Lock, User as UserIcon, CheckCir
 export default function ProfileForm({ user }: { user: UserType }) {
   const router = useRouter(); 
 
-  // Estado para feedback visual
   const [message, setMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<any>({});
   const [isPending, setIsPending] = useState(false);
-
-  // Estados para controlar qué campos son editables
   const [editMode, setEditMode] = useState<{ [key: string]: boolean }>({});
-
-  // Estado para la imagen
   const [avatarUrl, setAvatarUrl] = useState(user.image || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.name}`);
 
-  // --- ESTADOS PARA VALIDACIÓN EN TIEMPO REAL ---
+  // --- ESTADOS ---
   const [emailInput, setEmailInput] = useState(user.email);
   const [confirmEmailInput, setConfirmEmailInput] = useState('');
-  
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
-  // Lógica de coincidencia
   const emailsMatch = confirmEmailInput.length > 0 && emailInput === confirmEmailInput;
   const emailsMismatch = confirmEmailInput.length > 0 && emailInput !== confirmEmailInput;
-
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmNewPassword;
   const passwordsMismatch = confirmNewPassword.length > 0 && newPassword !== confirmNewPassword;
 
-  // --- LÓGICA DE CIUDAD ---
+  // --- CIUDAD ---
   const [cityQuery, setCityQuery] = useState(user.city || '');
   const [cityResults, setCityResults] = useState<any[]>([]);
   const [selectedCity, setSelectedCity] = useState<{ name: string, lat: string, lng: string } | null>({
@@ -95,15 +87,12 @@ export default function ProfileForm({ user }: { user: UserType }) {
 
   const handleRegenerateAvatar = () => {
     const randomSeed = Math.random().toString(36).substring(7);
-    const newUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${randomSeed}`;
-    setAvatarUrl(newUrl);
+    setAvatarUrl(`https://api.dicebear.com/9.x/pixel-art/svg?seed=${randomSeed}`);
   };
 
   const handleUrlAvatar = () => {
     const url = window.prompt("Introduce la URL de tu imagen:");
-    if (url && url.trim() !== "") {
-      setAvatarUrl(url);
-    }
+    if (url && url.trim() !== "") setAvatarUrl(url);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -143,10 +132,10 @@ export default function ProfileForm({ user }: { user: UserType }) {
     }
   };
 
+  const editButtonClass = "p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors";
+
   return (
     <form onSubmit={handleSubmit} className="p-6 md:p-10">
-      
-      {/* MENSAJE DE ÉXITO/ERROR GLOBAL */}
       {message && (
         <div className={`mb-6 p-4 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${message.includes('éxito') ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-50 text-red-700'}`}>
           <CheckCircle2 size={20} />
@@ -156,41 +145,23 @@ export default function ProfileForm({ user }: { user: UserType }) {
 
       <div className="flex flex-col md:flex-row gap-10">
         
-        {/* --- COLUMNA IZQUIERDA: AVATAR --- */}
+        {/* AVATAR */}
         <div className="flex flex-col items-center gap-4 min-w-50">
           <div className="relative group">
             <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white dark:border-neutral-800 shadow-xl bg-gray-100">
-              <img 
-                src={avatarUrl} 
-                alt="Avatar" 
-                className="w-full h-full object-cover"
-              />
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            
-            <button
-              type="button"
-              onClick={handleRegenerateAvatar}
-              className="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full shadow-lg hover:bg-primary-hover transition-transform hover:scale-110 z-10"
-              title="Generar nuevo avatar aleatorio"
-            >
+            <button type="button" onClick={handleRegenerateAvatar} className="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full shadow-lg hover:bg-primary-hover transition-transform hover:scale-110 z-10">
               <RefreshCw size={18} />
             </button>
-
-            <button
-              type="button"
-              onClick={handleUrlAvatar}
-              className="absolute top-2 right-2 bg-dark dark:bg-white text-white dark:text-dark p-2 rounded-full shadow-lg hover:opacity-90 transition-transform hover:scale-110 z-10"
-              title="Usar URL de imagen"
-            >
+            <button type="button" onClick={handleUrlAvatar} className="absolute top-2 right-2 bg-dark dark:bg-white text-white dark:text-dark p-2 rounded-full shadow-lg hover:opacity-90 transition-transform hover:scale-110 z-10">
               <LinkIcon size={16} />
             </button>
           </div>
-          <p className="text-sm text-gray-500 text-center max-w-50">
-            Personaliza tu avatar o usa una imagen de internet.
-          </p>
+          <p className="text-sm text-gray-500 text-center max-w-50">Personaliza tu avatar.</p>
         </div>
 
-        {/* --- COLUMNA DERECHA: CAMPOS --- */}
+        {/* CAMPOS */}
         <div className="flex-1 space-y-6">
           
           {/* 1. NOMBRE */}
@@ -206,18 +177,13 @@ export default function ProfileForm({ user }: { user: UserType }) {
                 className={`w-full p-3 rounded-lg border transition-all
                   ${editMode.name 
                     ? 'border-primary ring-1 ring-primary bg-white dark:bg-neutral-900 text-dark dark:text-white' 
-                    : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800/50 text-gray-500 cursor-not-allowed focus:outline-none'}
+                    : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900 text-gray-500 cursor-not-allowed focus:outline-none'}
                 `}
               />
-              <button 
-                type="button" 
-                onClick={() => toggleEdit('name')}
-                className="p-2 text-gray-400 hover:text-primary transition-colors"
-              >
+              <button type="button" onClick={() => toggleEdit('name')} className={editButtonClass}>
                 <Pencil size={20} />
               </button>
             </div>
-            {/* 👇 ERROR DE NOMBRE MEJORADO */}
             {errors.name && (
               <div className="mt-1 text-xs text-primary flex flex-col gap-0.5 animate-in fade-in">
                  {errors.name.map((err: string) => <span key={err}>• {err}</span>)}
@@ -225,12 +191,11 @@ export default function ProfileForm({ user }: { user: UserType }) {
             )}
           </div>
 
-          {/* 2. UBICACIÓN */}
+          {/* 2. CIUDAD */}
           <div className="relative" ref={cityWrapperRef}>
             <label className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
               <MapPin size={16} /> Ciudad
             </label>
-            
             <div className="flex items-center gap-2 relative">
               <div className="relative w-full">
                 <input
@@ -244,7 +209,7 @@ export default function ProfileForm({ user }: { user: UserType }) {
                   className={`w-full p-3 rounded-lg border transition-all
                     ${editMode.city 
                       ? 'border-primary ring-1 ring-primary bg-white dark:bg-neutral-900 text-dark dark:text-white' 
-                      : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800/50 text-gray-500 cursor-not-allowed focus:outline-none'}
+                      : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900 text-gray-500 cursor-not-allowed focus:outline-none'}
                   `}
                 />
                 {isSearchingCity && (
@@ -253,12 +218,7 @@ export default function ProfileForm({ user }: { user: UserType }) {
                    </div>
                 )}
               </div>
-
-              <button 
-                type="button" 
-                onClick={() => toggleEdit('city')}
-                className="p-2 text-gray-400 hover:text-primary transition-colors"
-              >
+              <button type="button" onClick={() => toggleEdit('city')} className={editButtonClass}>
                 <Pencil size={20} />
               </button>
             </div>
@@ -266,33 +226,23 @@ export default function ProfileForm({ user }: { user: UserType }) {
             {showCityDropdown && cityResults.length > 0 && editMode.city && (
               <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 shadow-xl overflow-hidden max-h-48 overflow-y-auto left-0">
                 {cityResults.map((result: any) => (
-                  <div
-                    key={result.place_id}
-                    onClick={() => handleSelectCity(result)}
-                    className="cursor-pointer px-4 py-3 hover:bg-primary/10 text-sm text-dark dark:text-white border-b border-gray-100 dark:border-neutral-800 last:border-0 transition-colors"
-                  >
+                  <div key={result.place_id} onClick={() => handleSelectCity(result)} className="cursor-pointer px-4 py-3 hover:bg-primary/10 text-sm text-dark dark:text-white border-b border-gray-100 dark:border-neutral-800 last:border-0 transition-colors">
                     {result.display_name}
                   </div>
                 ))}
               </div>
             )}
-            <p className="text-xs text-gray-400 mt-1">Cambiar la ciudad solo afectará a los anuncios que crees a partir de ahora.</p>
           </div>
 
           <div className="border-t border-gray-light dark:border-neutral-700 my-6"></div>
 
-          {/* 3. EMAIL (Con validación visual) */}
-          <div className="space-y-3 p-4 rounded-xl bg-gray-50 dark:bg-neutral-800/50 border border-gray-100 dark:border-neutral-800">
+          {/* 3. EMAIL - 🟢 Borde unificado a gray-200 (antes gray-100) */}
+          <div className="space-y-3 p-4 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700">
             <div className="flex justify-between items-center">
               <label className="text-sm font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 <Mail size={16} /> Correo Electrónico
               </label>
-              <button 
-                type="button" 
-                onClick={() => toggleEdit('email')}
-                className="p-2 text-gray-400 hover:text-primary transition-colors"
-                title="Editar Email"
-              >
+              <button type="button" onClick={() => toggleEdit('email')} className={editButtonClass}>
                 <Pencil size={18} />
               </button>
             </div>
@@ -304,11 +254,10 @@ export default function ProfileForm({ user }: { user: UserType }) {
               readOnly={!editMode.email} 
               className={`w-full p-3 rounded-lg border transition-all
                 ${editMode.email 
-                  ? 'border-primary bg-white dark:bg-neutral-900 text-dark dark:text-white' 
-                  : 'border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-500 cursor-not-allowed focus:outline-none opacity-70'}
+                  ? 'border-primary bg-white dark:bg-neutral-800 text-dark dark:text-white' 
+                  : 'border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-500 cursor-not-allowed focus:outline-none opacity-70'}
               `}
             />
-            {/* 👇 ERROR DE EMAIL MEJORADO */}
             {errors.email && (
               <div className="mt-1 text-xs text-primary flex flex-col gap-0.5 animate-in fade-in">
                  {errors.email.map((err: string) => <span key={err}>• {err}</span>)}
@@ -322,110 +271,52 @@ export default function ProfileForm({ user }: { user: UserType }) {
                   value={confirmEmailInput}
                   onChange={(e) => setConfirmEmailInput(e.target.value)}
                   placeholder="Confirma el nuevo correo"
-                  className="w-full p-3 rounded-lg border border-primary bg-white dark:bg-neutral-900"
+                  className="w-full p-3 rounded-lg border border-primary bg-white dark:bg-neutral-800"
                 />
-                
-                {/* FEEDBACK VISUAL EMAIL */}
                 <div className="min-h-5 text-sm font-medium transition-all duration-300">
-                  {emailsMismatch && (
-                    <div className="flex items-center gap-2 text-primary animate-pulse"> {/* Usamos text-primary (rojo de marca) */}
-                      <X size={16} />
-                      <span>Los correos no coinciden.</span>
-                    </div>
-                  )}
-                  {emailsMatch && (
-                    <div className="flex items-center gap-2 text-green-600 animate-bounce-short">
-                      <Check size={16} />
-                      <span>¡Los correos coinciden!</span>
-                    </div>
-                  )}
+                  {emailsMismatch && <div className="flex items-center gap-2 text-primary animate-pulse"><X size={16} /><span>No coinciden.</span></div>}
+                  {emailsMatch && <div className="flex items-center gap-2 text-green-600 animate-bounce-short"><Check size={16} /><span>¡Coinciden!</span></div>}
                 </div>
                 {errors.confirmEmail && <p className="text-primary text-xs mt-1">{errors.confirmEmail[0]}</p>}
               </div>
             )}
           </div>
 
-          {/* 4. PASSWORD (Con validación visual COMPLETA) */}
-          <div className="space-y-3 p-4 rounded-xl bg-gray-50 dark:bg-neutral-800/50 border border-gray-100 dark:border-neutral-800">
+          {/* 4. PASSWORD - 🟢 Borde unificado a gray-200 */}
+          <div className="space-y-3 p-4 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700">
             <div className="flex justify-between items-center">
               <label className="text-sm font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 <Lock size={16} /> Contraseña
               </label>
-              <button 
-                type="button" 
-                onClick={() => toggleEdit('password')}
-                className="p-2 text-gray-400 hover:text-primary transition-colors"
-                title="Cambiar Contraseña"
-              >
+              <button type="button" onClick={() => toggleEdit('password')} className={editButtonClass}>
                 <Pencil size={18} />
               </button>
             </div>
 
-            <input
-              type="password"
-              value="********"
-              readOnly
-              className="w-full p-3 rounded-lg border border-gray-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 text-gray-400 cursor-not-allowed focus:outline-none"
-            />
+            <input type="password" value="********" readOnly className="w-full p-3 rounded-lg border border-gray-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 text-gray-400 cursor-not-allowed focus:outline-none" />
 
             {editMode.password && (
               <div className="space-y-3 animate-in fade-in slide-in-from-top-2 mt-2">
                 <div>
-                  <label className="text-xs text-gray-500">Contraseña Actual (Seguridad)</label>
-                  <input
-                    name="currentPassword"
-                    type="password"
-                    placeholder="Tu contraseña actual"
-                    className="w-full p-3 rounded-lg border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-900"
-                  />
+                  <label className="text-xs text-gray-500">Contraseña Actual</label>
+                  <input name="currentPassword" type="password" className="w-full p-3 rounded-lg border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" />
                   {errors.currentPassword && <p className="text-primary text-xs mt-1">{errors.currentPassword[0]}</p>}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
-                    <input
-                      name="newPassword"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Nueva contraseña"
-                      className="w-full p-3 rounded-lg border border-primary bg-white dark:bg-neutral-900"
-                    />
-                    {/* 👇 AQUÍ ESTÁ: ERRORES DE CONTRASEÑA EN ROJO (CORAL) */}
-                    {errors.newPassword && (
-                      <div className="mt-1 text-xs text-primary flex flex-col gap-0.5 animate-in fade-in">
-                        {errors.newPassword.map((err: string) => <span key={err}>• {err}</span>)}
-                      </div>
-                    )}
+                    <input name="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Nueva contraseña" className="w-full p-3 rounded-lg border border-primary bg-white dark:bg-neutral-800" />
+                    {errors.newPassword && <div className="mt-1 text-xs text-primary flex flex-col gap-0.5">{errors.newPassword.map((err: string) => <span key={err}>• {err}</span>)}</div>}
                   </div>
                   <div>
-                    <input
-                      name="confirmNewPassword"
-                      type="password"
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      placeholder="Repetir nueva"
-                      className="w-full p-3 rounded-lg border border-primary bg-white dark:bg-neutral-900"
-                    />
+                    <input name="confirmNewPassword" type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Repetir nueva" className="w-full p-3 rounded-lg border border-primary bg-white dark:bg-neutral-800" />
                   </div>
                 </div>
 
-                {/* FEEDBACK VISUAL COINCIDENCIA */}
                 <div className="min-h-5 text-sm font-medium transition-all duration-300">
-                  {passwordsMismatch && (
-                    <div className="flex items-center gap-2 text-primary animate-pulse">
-                      <X size={16} />
-                      <span>Las contraseñas no coinciden.</span>
-                    </div>
-                  )}
-                  {passwordsMatch && (
-                    <div className="flex items-center gap-2 text-green-600 animate-bounce-short">
-                      <Check size={16} />
-                      <span>¡Las contraseñas coinciden!</span>
-                    </div>
-                  )}
+                  {passwordsMismatch && <div className="flex items-center gap-2 text-primary animate-pulse"><X size={16} /><span>No coinciden.</span></div>}
+                  {passwordsMatch && <div className="flex items-center gap-2 text-green-600 animate-bounce-short"><Check size={16} /><span>¡Coinciden!</span></div>}
                 </div>
-                
                 {errors.confirmNewPassword && <p className="text-primary text-xs">{errors.confirmNewPassword[0]}</p>}
               </div>
             )}
@@ -434,21 +325,15 @@ export default function ProfileForm({ user }: { user: UserType }) {
         </div>
       </div>
 
-      {/* BOTÓN DE GUARDAR GLOBAL */}
       <div className="mt-10 flex justify-end">
         <button
           type="submit"
-          disabled={isPending || emailsMismatch || passwordsMismatch} // Bloqueamos si hay errores
+          disabled={isPending || emailsMismatch || passwordsMismatch}
           className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPending ? 'Guardando...' : (
-            <>
-              <Save size={20} /> Guardar Cambios
-            </>
-          )}
+          {isPending ? 'Guardando...' : <><Save size={20} /> Guardar Cambios</>}
         </button>
       </div>
-
     </form>
   );
 }

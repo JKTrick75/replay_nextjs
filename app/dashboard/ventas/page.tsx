@@ -1,10 +1,9 @@
 import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
-import { Plus, Pencil, PackageOpen, Filter, Truck, CheckCircle, PackageX, Clock, NotebookText, Tag } from 'lucide-react';
+import { Plus, Pencil, PackageOpen, Filter, Truck, CheckCircle, PackageX, Clock, NotebookText, Tag, Settings } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import { DeleteButton } from '@/app/ui/dashboard/delete-button';
-// 🟢 Importamos el componente de paginación
 import Pagination from '@/app/ui/pagination';
 
 export default async function MyProductsPage(props: {
@@ -13,7 +12,7 @@ export default async function MyProductsPage(props: {
   const searchParams = await props.searchParams;
   const filter = searchParams?.filter || 'all'; 
   const currentPage = Number(searchParams?.page) || 1;
-  const ITEMS_PER_PAGE = 6; // Ajusta este número según prefieras (6, 8, 12...)
+  const ITEMS_PER_PAGE = 6; 
 
   const session = await auth();
   if (!session?.user?.email) return <div>No tienes permiso.</div>;
@@ -21,7 +20,6 @@ export default async function MyProductsPage(props: {
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return <div>Usuario no encontrado.</div>;
 
-  // --- LÓGICA DE FILTROS AVANZADA ---
   const whereCondition: any = { sellerId: user.id };
 
   if (filter === 'active') {
@@ -36,13 +34,9 @@ export default async function MyProductsPage(props: {
     whereCondition.status = 'cancelled';
   }
 
-  // 1. Contamos el total de elementos para este filtro
-  const totalItems = await prisma.listing.count({
-    where: whereCondition,
-  });
+  const totalItems = await prisma.listing.count({ where: whereCondition });
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // 2. Obtenemos SOLO los de la página actual
   const listings = await prisma.listing.findMany({
     where: whereCondition,
     include: { game: true, platform: true },
@@ -68,7 +62,6 @@ export default async function MyProductsPage(props: {
         </div>
       </div>
 
-      {/* --- FILTROS --- */}
       <div className="mb-8 flex flex-wrap gap-1 rounded-xl bg-gray-100 p-1 dark:bg-neutral-800 w-fit">
         {[
           { key: 'all', label: 'Todos' },
@@ -97,13 +90,14 @@ export default async function MyProductsPage(props: {
         </div>
       ) : (
         <div className="mt-6 flow-root animate-fade-in flex flex-col min-h-[500px]">
-          <div className="inline-block min-w-full align-middle flex-grow">
-            <div className="rounded-xl bg-gray-50 dark:bg-neutral-800 p-2 md:pt-0">
+          
+          {/* 🟢 CONTENEDOR ESTILO ADMIN: Fondo neutral-800, Borde gris, Sombra */}
+          <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 overflow-hidden flex-grow">
               
-              {/* --- VISTA MÓVIL --- */}
-              <div className="md:hidden">
+              {/* --- VISTA MÓVIL (Tarjetas dentro del contenedor nuevo) --- */}
+              <div className="md:hidden p-4 space-y-4">
                 {listings.map((listing) => (
-                  <div key={listing.id} className="mb-2 w-full rounded-md p-4 border bg-white dark:bg-neutral-900 border-gray-100 dark:border-neutral-700 transition-all hover:shadow-sm">
+                  <div key={listing.id} className="w-full rounded-xl p-4 border bg-white dark:bg-neutral-900 border-gray-100 dark:border-neutral-700 transition-all hover:shadow-sm">
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-700 pb-4">
                       <div className="flex items-center">
                         <img
@@ -117,34 +111,34 @@ export default async function MyProductsPage(props: {
                         </div>
                       </div>
                       
-                      {/* Badge de estado (Móvil) */}
+                      {/* ESTADO CLEAN (Móvil) */}
                       <div className="flex flex-col items-end">
                         {listing.status === 'active' && (
-                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-gray-50 text-gray-600 border-gray-200 flex items-center gap-1">
-                                <Tag size={12} /> Activo
-                            </span>
+                            <div className="flex items-center gap-1 text-xs font-bold text-gray-600 dark:text-gray-400">
+                                <Tag size={14} /> <span>Activo</span>
+                            </div>
                         )}
                         {listing.status === 'cancelled' && (
-                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-red-50 text-red-500 border-red-100 flex items-center gap-1">
-                                <PackageX size={12} /> Cancelado
-                            </span>
+                            <div className="flex items-center gap-1 text-xs font-bold text-red-500">
+                                <PackageX size={14} /> <span>Cancelado</span>
+                            </div>
                         )}
                         {listing.status === 'sold' && (
                             <>
                                 {listing.deliveryStatus === 'pending' && (
-                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-yellow-50 text-yellow-700 border-yellow-100 flex items-center gap-1">
-                                        <Clock size={12} /> Pendiente
-                                    </span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-yellow-600 dark:text-yellow-500">
+                                        <Clock size={14} /> <span>Pendiente</span>
+                                    </div>
                                 )}
                                 {listing.deliveryStatus === 'shipped' && (
-                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-blue-50 text-blue-700 border-blue-100 flex items-center gap-1">
-                                        <Truck size={12} /> Enviado
-                                    </span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-500">
+                                        <Truck size={14} /> <span>Enviado</span>
+                                    </div>
                                 )}
                                 {listing.deliveryStatus === 'delivered' && (
-                                    <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-md border bg-green-50 text-green-700 border-green-100 flex items-center gap-1">
-                                        <CheckCircle size={12} /> Entregado
-                                    </span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-green-600 dark:text-green-500">
+                                        <CheckCircle size={14} /> <span>Entregado</span>
+                                    </div>
                                 )}
                             </>
                         )}
@@ -158,14 +152,14 @@ export default async function MyProductsPage(props: {
                       <div className="flex justify-end gap-2 items-center min-w-20">
                           {listing.status === 'active' ? (
                             <>
-                              <Link href={`/dashboard/ventas/${listing.id}/editar`} className="p-2 rounded-md text-gray-400 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 transition-colors">
+                              <Link href={`/dashboard/ventas/${listing.id}/editar`} className="p-2 rounded-lg bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors">
                                 <Pencil size={18} />
                               </Link>
                               <DeleteButton id={listing.id} />
                             </>
                           ) : (
-                            <Link href={`/dashboard/ventas/${listing.id}`} className="p-2 bg-gray-100 dark:bg-neutral-800 rounded-lg text-gray-600 hover:text-primary transition-colors">
-                              <NotebookText size={20} />
+                            <Link href={`/dashboard/ventas/${listing.id}`} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium">
+                              <Settings size={16} /> Gestionar
                             </Link>
                           )}
                       </div>
@@ -175,90 +169,97 @@ export default async function MyProductsPage(props: {
               </div>
               
               {/* --- TABLA ESCRITORIO --- */}
-              <table className="hidden min-w-full text-gray-900 dark:text-gray-200 md:table">
-                <thead className="rounded-lg text-left text-sm font-normal">
-                  <tr>
-                    <th className="px-4 py-5 font-medium sm:pl-6">Juego</th>
-                    <th className="px-3 py-5 font-medium">Estado</th>
-                    <th className="px-3 py-5 font-medium">Precio</th>
-                    <th className="px-3 py-5 font-medium">Fecha</th>
-                    <th className="relative py-3 pl-6 pr-3"><span className="sr-only">Acciones</span></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-neutral-900">
-                  {listings.map((listing) => (
-                    <tr key={listing.id} className="w-full border-b border-gray-light dark:border-neutral-800 py-3 text-sm last-of-type:border-none transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800/50">
-                      <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                        <Link href={`/tienda/${listing.id}`} className="flex items-center gap-3 group">
-                          <img src={listing.game?.coverImage || '/placeholder.png'} className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-neutral-700 transition-opacity group-hover:opacity-80" alt="" />
-                          <div>
-                            <p className="font-semibold text-dark dark:text-white max-w-50 truncate transition-colors group-hover:text-primary">{listing.game?.title}</p>
-                            <span className="text-xs text-gray-500">{listing.platform?.shortName}</span>
-                          </div>
-                        </Link>
-                      </td>
-                      
-                      <td className="whitespace-nowrap px-3 py-3">
-                          {listing.status === 'active' && (
-                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 font-medium">
-                                <Tag size={16} /> En Venta
-                            </div>
-                          )}
-                          {listing.status === 'cancelled' && (
-                            <div className="flex items-center gap-2 text-red-500 font-medium">
-                                <PackageX size={16} /> Cancelado
-                            </div>
-                          )}
-                          {listing.status === 'sold' && (
-                            <>
-                              {listing.deliveryStatus === 'pending' && (
-                                <div className="flex items-center gap-2 text-yellow-600 font-medium">
-                                    <Clock size={16}/> Pendiente
-                                </div>
-                              )}
-                              {listing.deliveryStatus === 'shipped' && (
-                                <div className="flex items-center gap-2 text-blue-600 font-medium">
-                                    <Truck size={16}/> Enviado
-                                </div>
-                              )}
-                              {listing.deliveryStatus === 'delivered' && (
-                                <div className="flex items-center gap-2 text-green-600 font-medium">
-                                    <CheckCircle size={16}/> Entregado
-                                </div>
-                              )}
-                            </>
-                          )}
-                      </td>
-
-                      <td className="whitespace-nowrap px-3 py-3 font-bold">{formatCurrency(listing.price * 100)}</td>
-                      <td className="whitespace-nowrap px-3 py-3 text-gray-500">{formatDateToLocal(listing.createdAt.toString())}</td>
-                      
-                      <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                        <div className="flex justify-end items-center min-w-20 gap-3">
-                            {listing.status === 'active' ? (
-                              <>
-                                <Link href={`/dashboard/ventas/${listing.id}/editar`} className="p-2 rounded-md text-gray-400 hover:text-primary transition-colors"><Pencil size={18} /></Link>
-                                <DeleteButton id={listing.id} />
-                              </>
-                            ) : (
-                              <Link 
-                                  href={`/dashboard/ventas/${listing.id}`} 
-                                  className="inline-flex items-center gap-2 text-gray-500 hover:text-primary transition-colors font-medium"
-                              >
-                                  <NotebookText size={18} />
-                                  <span className="hidden lg:inline">Gestionar</span>
-                              </Link>
-                            )}
-                        </div>
-                      </td>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                    {/* 🟢 THEAD: Fondo oscuro neutral-900 (igual que Admin) */}
+                    <thead className="bg-gray-50 dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
+                    <tr>
+                        <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Juego</th>
+                        <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Estado</th>
+                        <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Precio</th>
+                        <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Fecha</th>
+                        <th className="px-6 py-4 font-bold text-right text-gray-900 dark:text-white">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    {/* 🟢 TBODY: Transparente (hereda el neutral-800 del contenedor) + Divisores */}
+                    <tbody className="divide-y divide-gray-100 dark:divide-neutral-700">
+                    {listings.map((listing) => (
+                        <tr key={listing.id} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors">
+                        <td className="px-6 py-4">
+                            <Link href={`/tienda/${listing.id}`} className="flex items-center gap-3 group">
+                            <img src={listing.game?.coverImage || '/placeholder.png'} className="h-10 w-10 rounded-md object-cover border border-gray-200 dark:border-neutral-600 transition-opacity group-hover:opacity-80" alt="" />
+                            <div>
+                                <p className="font-bold text-dark dark:text-white truncate max-w-[200px] group-hover:text-primary transition-colors">{listing.game?.title}</p>
+                                <span className="text-xs text-gray-500">{listing.platform?.shortName}</span>
+                            </div>
+                            </Link>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                            {listing.status === 'active' && (
+                                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 font-medium">
+                                    <Tag size={16} /> <span>En Venta</span>
+                                </div>
+                            )}
+                            {listing.status === 'cancelled' && (
+                                <div className="flex items-center gap-2 text-red-500 font-medium">
+                                    <PackageX size={16} /> <span>Cancelado</span>
+                                </div>
+                            )}
+                            {listing.status === 'sold' && (
+                                <>
+                                {listing.deliveryStatus === 'pending' && (
+                                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 font-medium">
+                                        <Clock size={16}/> <span>Pendiente</span>
+                                    </div>
+                                )}
+                                {listing.deliveryStatus === 'shipped' && (
+                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-500 font-medium">
+                                        <Truck size={16}/> <span>Enviado</span>
+                                    </div>
+                                )}
+                                {listing.deliveryStatus === 'delivered' && (
+                                    <div className="flex items-center gap-2 text-green-600 dark:text-green-500 font-medium">
+                                        <CheckCircle size={16}/> <span>Entregado</span>
+                                    </div>
+                                )}
+                                </>
+                            )}
+                        </td>
+
+                        <td className="px-6 py-4 font-bold text-primary">
+                            {formatCurrency(listing.price * 100)}
+                        </td>
+                        <td className="px-6 py-4 text-gray-500">
+                            {formatDateToLocal(listing.createdAt.toString())}
+                        </td>
+                        
+                        <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end items-center gap-2">
+                                {listing.status === 'active' ? (
+                                <>
+                                    <Link href={`/dashboard/ventas/${listing.id}/editar`} className="inline-flex items-center justify-center p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors">
+                                        <Pencil size={18} />
+                                    </Link>
+                                    <DeleteButton id={listing.id} />
+                                </>
+                                ) : (
+                                <Link 
+                                    href={`/dashboard/ventas/${listing.id}`} 
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"
+                                >
+                                    <Settings size={16} /> Gestionar
+                                </Link>
+                                )}
+                            </div>
+                        </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+              </div>
           </div>
 
-          {/* 🟢 PAGINACIÓN AL FINAL DE LA LISTA */}
           <div className="mt-6 flex w-full justify-center">
              <Pagination totalPages={totalPages} />
           </div>

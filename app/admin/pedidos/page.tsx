@@ -1,7 +1,7 @@
 import { prisma } from '@/app/lib/db';
 import { Clock, Truck, ShoppingBag, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
+import { formatDateToLocal } from '@/app/lib/utils';
 import Pagination from '@/app/ui/pagination';
 
 export default async function AdminOrdersPage(props: {
@@ -24,7 +24,7 @@ export default async function AdminOrdersPage(props: {
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // 2. Obtener datos
+  // 2. Obtener datos con paginación
   const orders = await prisma.listing.findMany({
     where: whereCondition,
     include: { game: true, seller: true, buyer: true },
@@ -74,26 +74,32 @@ export default async function AdminOrdersPage(props: {
                       <td className="px-6 py-4 text-gray-500">
                           {order.seller?.name}
                       </td>
+                      
+                      {/* 🟢 ESTADO: Estilo Clean (Solo Icono + Texto) */}
                       <td className="px-6 py-4">
                           {order.deliveryStatus === 'pending' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
-                                  <Clock size={12} /> Pendiente
-                              </span>
+                              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 font-medium">
+                                  <Clock size={16} />
+                                  <span>Pendiente</span>
+                              </div>
                           ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                                  <Truck size={12} /> Enviado
-                              </span>
+                              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-500 font-medium">
+                                  <Truck size={16} />
+                                  <span>Enviado</span>
+                              </div>
                           )}
                       </td>
+
                       <td className="px-6 py-4 text-gray-500">
                           {formatDateToLocal(order.soldAt?.toString() || order.updatedAt.toString())}
                       </td>
                       <td className="px-6 py-4 text-right">
+                          {/* 🟢 BOTÓN NORMALIZADO: px-3 py-2, rounded-lg, text-sm */}
                           <Link 
                               href={`/admin/pedidos/${order.id}`} 
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-xs font-bold"
+                              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"
                           >
-                              <Settings size={14} /> Gestionar
+                              <Settings size={16} /> Gestionar
                           </Link>
                       </td>
                       </tr>

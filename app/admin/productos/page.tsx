@@ -1,9 +1,8 @@
 import { prisma } from '@/app/lib/db';
-import { Pencil, Package } from 'lucide-react';
+import { Pencil, Package, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import { DeleteButton } from '@/app/ui/dashboard/delete-button';
-// 🟢 Importamos tu componente de paginación existente
 import Pagination from '@/app/ui/pagination';
 
 export default async function AdminProductsPage(props: {
@@ -11,16 +10,16 @@ export default async function AdminProductsPage(props: {
 }) {
   const searchParams = await props.searchParams;
   const currentPage = Number(searchParams?.page) || 1;
-  const ITEMS_PER_PAGE = 8; // Puedes ajustar cuántos ver por página
+  const ITEMS_PER_PAGE = 8; 
 
-  // 1. Obtenemos el total de productos activos para calcular páginas
+  // 1. Total de productos activos
   const totalItems = await prisma.listing.count({
     where: { status: 'active' },
   });
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // 2. Obtenemos SOLO los productos de la página actual (Optimización DB)
+  // 2. Productos de la página actual
   const listings = await prisma.listing.findMany({
     where: { status: 'active' },
     include: { game: true, platform: true, seller: true },
@@ -52,6 +51,7 @@ export default async function AdminProductsPage(props: {
                   <tr>
                       <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Artículo</th>
                       <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Vendedor</th>
+                      <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Estado</th> 
                       <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Precio</th>
                       <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Publicado</th>
                       <th className="px-6 py-4 font-bold text-right text-gray-900 dark:text-white">Acciones</th>
@@ -79,6 +79,15 @@ export default async function AdminProductsPage(props: {
                               <span className="text-gray-700 dark:text-gray-300 font-medium">{listing.seller.name}</span>
                           </div>
                       </td>
+                      
+                      {/* 🟢 ESTADO CLEAN */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 font-medium">
+                            <Tag size={16} />
+                            <span>En Venta</span>
+                        </div>
+                      </td>
+
                       <td className="px-6 py-4 font-bold text-primary">
                           {formatCurrency(listing.price * 100)}
                       </td>
@@ -87,12 +96,13 @@ export default async function AdminProductsPage(props: {
                       </td>
                       <td className="px-6 py-4 text-right">
                           <div className="flex justify-end items-center gap-2">
+                              {/* 🟢 BOTÓN EDITAR NORMALIZADO */}
                               <Link 
                                   href={`/admin/productos/${listing.id}`} 
-                                  className="p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors"
+                                  className="inline-flex items-center justify-center p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors"
                                   title="Editar artículo"
                               >
-                                  <Pencil size={16} />
+                                  <Pencil size={18} />
                               </Link>
                               <DeleteButton id={listing.id} />
                           </div>
@@ -103,7 +113,6 @@ export default async function AdminProductsPage(props: {
               </table>
             </div>
             
-            {/* 🟢 PAGINACIÓN AL FINAL DE LA TABLA */}
             <div className="p-4 border-t border-gray-200 dark:border-neutral-700 flex justify-center bg-gray-50 dark:bg-neutral-900/50">
                <Pagination totalPages={totalPages} />
             </div>

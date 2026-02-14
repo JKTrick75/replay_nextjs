@@ -43,8 +43,8 @@ export default function DeliveryStatusButton({ listingId }: { listingId: string 
   }
 
   return (
-    // 🟢 CAMBIO: Fondo blanco/neutro con borde Primary sutil
-    <div className="bg-white dark:bg-neutral-900 p-5 rounded-xl border border-primary/20 shadow-sm mt-3">
+    // 🟢 CAMBIO: Borde neutro (igual que el contenedor padre) en vez de Primary
+    <div className="bg-white dark:bg-neutral-900 p-5 rounded-xl border border-gray-100 dark:border-neutral-700 shadow-sm mt-3">
       <h4 className="font-bold text-dark dark:text-white mb-2 flex items-center gap-2">
         <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
             <PackageCheck size={20} />
@@ -59,7 +59,8 @@ export default function DeliveryStatusButton({ listingId }: { listingId: string 
       <button
         onClick={handleConfirm}
         disabled={isPending}
-        className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        // 🟢 CAMBIO: Quitada la sombra de color (shadow-primary/20) para evitar el blur
+        className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-6 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isPending ? (
           <>

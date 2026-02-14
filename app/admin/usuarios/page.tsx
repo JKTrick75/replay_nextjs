@@ -1,8 +1,8 @@
 import { prisma } from '@/app/lib/db';
-import { Shield, User as UserIcon, Pencil, Users } from 'lucide-react';
+// 🟢 Importamos Settings en lugar de Pencil
+import { Shield, User as UserIcon, Settings, Users } from 'lucide-react';
 import Link from 'next/link';
 import { formatDateToLocal } from '@/app/lib/utils';
-// 🟢 Importamos el componente de paginación
 import Pagination from '@/app/ui/pagination';
 
 export default async function AdminUsersPage(props: {
@@ -10,13 +10,11 @@ export default async function AdminUsersPage(props: {
 }) {
   const searchParams = await props.searchParams;
   const currentPage = Number(searchParams?.page) || 1;
-  const ITEMS_PER_PAGE = 8; // Mostramos 8 usuarios por página
+  const ITEMS_PER_PAGE = 8;
 
-  // 1. Obtener el total de usuarios para calcular páginas
   const totalItems = await prisma.user.count();
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // 2. Obtener SOLO los usuarios de la página actual
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
     take: ITEMS_PER_PAGE,
@@ -67,17 +65,21 @@ export default async function AdminUsersPage(props: {
                           </div>
                         </div>
                       </td>
+                      
                       <td className="px-6 py-4">
                         {user.role === 'admin' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-primary border border-purple-200">
-                                <Shield size={12} /> Admin
-                            </span>
+                            <div className="flex items-center gap-2 text-primary font-medium">
+                                <Shield size={16} />
+                                <span>Admin</span>
+                            </div>
                         ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">
-                                <UserIcon size={12} /> User
-                            </span>
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 font-medium">
+                                <UserIcon size={16} />
+                                <span>User</span>
+                            </div>
                         )}
                       </td>
+
                       <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
                         {user.city || <span className="text-gray-400 italic">No definida</span>}
                       </td>
@@ -85,12 +87,12 @@ export default async function AdminUsersPage(props: {
                         {formatDateToLocal(user.createdAt.toString())}
                       </td>
                       <td className="px-6 py-4 text-right">
+                        {/* 🟢 BOTÓN GESTIONAR NORMALIZADO */}
                         <Link 
                           href={`/admin/usuarios/${user.id}`} 
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 hover:bg-primary hover:text-white text-gray-500 transition-colors"
-                          title="Editar usuario"
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"
                         >
-                          <Pencil size={16} />
+                          <Settings size={16} /> Gestionar
                         </Link>
                       </td>
                     </tr>
@@ -99,7 +101,6 @@ export default async function AdminUsersPage(props: {
               </table>
             </div>
 
-            {/* 🟢 PAGINACIÓN AL FINAL DE LA TABLA */}
             <div className="p-4 border-t border-gray-200 dark:border-neutral-700 flex justify-center bg-gray-50 dark:bg-neutral-900/50">
                <Pagination totalPages={totalPages} />
             </div>

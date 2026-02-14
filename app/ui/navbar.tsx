@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-// 🟢 Importamos Shield para el icono de admin
 import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shield } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
 import { confirmAction, showToast } from '@/app/lib/swal';
@@ -13,7 +12,7 @@ type UserProps = {
   name?: string | null;
   email?: string | null;
   image?: string | null;
-  role?: string; // 🟢 Añadimos el rol para poder comprobarlo
+  role?: string; 
 };
 
 const navLinks = [
@@ -77,7 +76,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
   };
 
   return (
-    <nav className="w-full bg-white dark:bg-dark border-b border-gray-light dark:border-gray sticky top-0 z-50 transition-colors duration-300">
+    <nav className="w-full bg-white dark:bg-neutral-800 border-b border-gray-light dark:border-neutral-800 sticky top-0 z-50 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
@@ -126,7 +125,8 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
               <div className="relative">
                 <button 
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center gap-2 focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-800 p-1 rounded-full transition-colors pr-3 border border-transparent hover:border-gray-200 dark:hover:border-neutral-700"
+                  // 🟢 CAMBIO: dark:hover:bg-neutral-900 (Más oscuro que el fondo 800)
+                  className="flex items-center gap-2 focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-900 p-1 rounded-full transition-colors pr-3 border border-transparent hover:border-gray-200 dark:hover:border-neutral-700"
                 >
                   <img 
                     src={user.image || `https://ui-avatars.com/api/?name=${user.name}`} 
@@ -155,7 +155,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                       Mi Panel
                     </Link>
 
-                    {/* 🟢 ENLACE ADMIN ESCRITORIO */}
                     {user.role === 'admin' && (
                       <Link 
                         href="/admin" 
@@ -266,7 +265,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                    <LayoutDashboard size={18} /> Mi Panel
                 </Link>
 
-                {/* 🟢 ENLACE ADMIN MÓVIL */}
                 {user.role === 'admin' && (
                   <Link 
                     href="/admin"

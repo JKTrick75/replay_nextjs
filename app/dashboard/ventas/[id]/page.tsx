@@ -16,12 +16,22 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
     include: { game: true, buyer: true } 
   });
 
-  // Seguridad: Solo el vendedor (dueño) puede ver esto
   if (!listing || listing.sellerId !== (await prisma.user.findUnique({ where: { email: session?.user?.email! } }))?.id) {
     notFound(); 
   }
 
-  // Mapa de estados
+  // --- TIMELINE ---
+  const getProgress = () => {
+    if (listing.status === 'cancelled') return 0;
+    if (listing.deliveryStatus === 'delivered') return 100;
+    if (listing.deliveryStatus === 'pending') return 5; 
+
+    const fakeRandom = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 40; 
+    return 50 + fakeRandom; 
+  };
+
+  const progress = getProgress();
+  
   const statusMap: any = {
     'pending': { label: 'Pendiente de Envío', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
     'shipped': { label: 'Enviado', color: 'bg-primary/10 text-primary', icon: Truck },
@@ -36,7 +46,7 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
   const StatusIcon = currentStatus.icon;
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-5xl mx-auto">
       <Link href="/dashboard/ventas?filter=sold" className="inline-flex items-center text-gray-500 hover:text-primary mb-6">
         <ArrowLeft size={20} className="mr-2" /> Volver a mis ventas
       </Link>
@@ -55,17 +65,17 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
           </div>
         </div>
 
-        <div className="p-8 grid md:grid-cols-2 gap-8">
+        <div className="p-8 grid md:grid-cols-2 gap-10">
           
-          {/* COLUMNA IZQ: DATOS DEL COMPRADOR Y ENVÍO */}
-          <div className="space-y-6">
+          {/* COLUMNA IZQ */}
+          <div className="space-y-8">
             <div>
                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white flex items-center gap-2">
                     <User size={20} className="text-primary"/> Datos del Comprador
                 </h3>
-                <div className="p-4 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 space-y-2">
-                    <p className="font-bold text-dark dark:text-white">{listing.buyer?.name || 'Usuario desconocido'}</p>
-                    <p className="text-sm text-gray-500 flex items-center gap-2"><Mail size={14}/> {listing.buyer?.email}</p>
+                <div className="p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 space-y-2">
+                    <p className="font-bold text-dark dark:text-white text-lg">{listing.buyer?.name || 'Usuario desconocido'}</p>
+                    <p className="text-sm text-gray-500 flex items-center gap-2"><Mail size={16}/> {listing.buyer?.email}</p>
                 </div>
             </div>
 
@@ -73,39 +83,91 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white flex items-center gap-2">
                     <MapPin size={20} className="text-primary"/> Dirección de Envío
                 </h3>
-                <div className="p-4 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30">
-                    <p className="whitespace-pre-line text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                <div className="p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30">
+                    <p className="whitespace-pre-line text-gray-700 dark:text-gray-300 text-base leading-relaxed">
                         {listing.shippingAddress || 'No especificada'}
                     </p>
                 </div>
             </div>
           </div>
 
-          {/* COLUMNA DER: PRODUCTO Y ACCIONES */}
-          <div className="space-y-6">
+          {/* COLUMNA DER */}
+          <div className="space-y-8">
+             
+             {/* PRODUCTO */}
              <div>
                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white">Producto Vendido</h3>
-                <div className="flex gap-4 p-4 rounded-xl border border-gray-100 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                    <img src={listing.game?.coverImage || '/placeholder.png'} className="w-16 h-20 object-cover rounded-lg" alt="" />
-                    <div>
-                        <p className="font-bold text-dark dark:text-white">{listing.game?.title}</p>
-                        <p className="text-primary font-bold text-xl">{formatCurrency(listing.price * 100)}</p>
+                <div className="flex gap-4 p-4 rounded-xl border border-gray-100 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-sm">
+                    <img src={listing.game?.coverImage || '/placeholder.png'} className="w-20 h-24 object-cover rounded-lg" alt="" />
+                    <div className="flex flex-col justify-center">
+                        <p className="font-bold text-dark dark:text-white text-lg line-clamp-1">{listing.game?.title}</p>
+                        <p className="text-primary font-bold text-2xl mt-1">{formatCurrency(listing.price * 100)}</p>
                         <p className="text-xs text-gray-400 mt-1">Vendido el {listing.soldAt ? formatDateToLocal(listing.soldAt.toString()) : '-'}</p>
                     </div>
                 </div>
              </div>
 
-             {/* CASO CANCELADO */}
+             {/* TIMELINE */}
+             {listing.status !== 'cancelled' && (
+               <div>
+                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white flex items-center gap-2">
+                    <Truck size={20} className="text-primary"/> Seguimiento
+                 </h3>
+                 
+                 <div className="p-6 pt-10 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30">
+                    <div className="relative mx-2">
+                        <div className="absolute top-1/2 left-0 w-full h-1.5 bg-gray-200 dark:bg-neutral-700 -translate-y-1/2 rounded-full"></div>
+                        <div 
+                            className="absolute top-1/2 left-0 h-1.5 bg-primary -translate-y-1/2 rounded-full transition-all duration-1000 ease-out"
+                            style={{ width: `${progress}%` }}
+                        ></div>
+                        <div 
+                            className="absolute top-1/2 -translate-y-1/2 z-10 transition-all duration-1000 ease-out flex flex-col items-center"
+                            style={{ left: `${progress}%`, transform: 'translate(-50%, -50%)' }}
+                        >
+                            <div className="bg-primary text-white p-1.5 rounded-full shadow-sm animate-bounce ring-4 ring-white dark:ring-neutral-800">
+                            <Truck size={16} />
+                            </div>
+                        </div>
+                        <div className="relative flex justify-between w-full text-xs font-medium text-gray-400 pt-6">
+                            <div className="flex flex-col items-center relative" style={{ marginLeft: '-10px' }}>
+                                <div className={`absolute -top-7 w-4 h-4 rounded-full border-[3px] transition-colors duration-500 box-border z-0
+                                    ${progress >= 5 ? 'bg-primary border-primary' : 'bg-white border-gray-200 dark:bg-neutral-800 dark:border-neutral-700'}`}>
+                                </div>
+                                <span className={`transition-colors duration-500 ${progress >= 5 ? 'text-primary font-bold' : ''}`}>Pendiente</span>
+                            </div>
+                            <div className="flex flex-col items-center relative">
+                                <div className={`absolute -top-7 w-4 h-4 rounded-full border-[3px] transition-colors duration-500 box-border z-0
+                                    ${progress >= 50 ? 'bg-primary border-primary' : 'bg-white border-gray-200 dark:bg-neutral-800 dark:border-neutral-700'}`}>
+                                </div>
+                                <span className={`transition-colors duration-500 ${progress >= 50 ? 'text-primary font-bold' : ''}`}>Enviado</span>
+                            </div>
+                            <div className="flex flex-col items-center relative" style={{ marginRight: '-10px' }}>
+                                <div className={`absolute -top-7 w-4 h-4 rounded-full border-[3px] transition-colors duration-500 box-border z-0
+                                    ${progress >= 100 ? 'bg-primary border-primary' : 'bg-white border-gray-200 dark:bg-neutral-800 dark:border-neutral-700'}`}>
+                                </div>
+                                <span className={`transition-colors duration-500 ${progress >= 100 ? 'text-green-600 font-bold' : ''}`}>Entregado</span>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+               </div>
+             )}
+
+             {/* ACCIONES */}
              {listing.status === 'cancelled' && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-xl text-sm border border-red-100 dark:border-red-900/30">
-                  <p className="font-bold mb-1 flex items-center gap-2"><PackageX size={16}/> Pedido Cancelado</p>
-                  Has cancelado este pedido. El producto ha sido republicado automáticamente y el dinero reembolsado al comprador.
+                <div className="p-5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-xl text-sm border border-red-100 dark:border-red-900/30 flex items-start gap-3">
+                  <PackageX size={20} className="shrink-0 mt-0.5" />
+                  <div>
+                      <p className="font-bold mb-1">Pedido Cancelado</p>
+                      <p>El producto ha sido republicado automáticamente.</p>
+                  </div>
                 </div>
              )}
 
-             {/* 🟢 PANEL DE ACCIONES (Botones en fila) */}
              {listing.status === 'sold' && listing.deliveryStatus !== 'delivered' && (
-                 <div className="bg-gray-50 dark:bg-neutral-800/50 p-6 rounded-xl border border-gray-200 dark:border-neutral-700">
+                 // 🟢 CORRECCIÓN: Fondo y borde unificados con el resto de tarjetas
+                 <div className="bg-gray-50 dark:bg-neutral-900/30 p-6 rounded-xl border border-gray-100 dark:border-neutral-700">
                     <h4 className="font-bold text-dark dark:text-white mb-4 flex items-center gap-2">
                         <Settings size={18} className="text-gray-500" /> Acciones Disponibles
                     </h4>
@@ -113,9 +175,8 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
                     {listing.deliveryStatus === 'pending' && (
                         <div className="space-y-4">
                             <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 leading-relaxed">
-                                ¿Ya has enviado el paquete? Confírmalo aquí para avisar al comprador.
+                                ¿Ya has enviado el paquete? Confírmalo aquí.
                             </p>
-                            {/* 🟢 FLEX ROW PARA QUE ESTÉN EN LA MISMA FILA */}
                             <div className="flex flex-wrap items-center gap-3">
                                 <ShipButton id={listing.id} />
                                 <CancelOrderButton id={listing.id} />
@@ -128,20 +189,22 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
                             <div className="p-1.5 bg-primary/10 rounded-md text-primary">
                                 <Truck size={16}/>
                             </div>
-                            <span>El paquete está en camino. Esperando confirmación del comprador.</span>
+                            <span>Esperando confirmación del comprador.</span>
                         </div>
                     )}
                  </div>
              )}
 
-             {/* CASO ENTREGADO */}
              {listing.deliveryStatus === 'delivered' && (
-                <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-xl border border-green-100 dark:border-green-800 text-green-700 dark:text-green-300 flex items-center gap-2 font-bold text-sm">
-                    <CheckCircle size={20} /> Pedido completado y cerrado.
+                <div className="bg-green-50 dark:bg-green-900/10 p-5 rounded-xl border border-green-100 dark:border-green-800 text-green-700 dark:text-green-300 flex items-center gap-3 font-bold">
+                    <CheckCircle size={24} /> 
+                    <div>
+                        <p>Pedido completado</p>
+                        <p className="text-xs font-normal opacity-80">El dinero ha sido liberado.</p>
+                    </div>
                 </div>
              )}
           </div>
-
         </div>
       </div>
     </div>
