@@ -52,15 +52,6 @@ export default function AdminSideNav() {
         
         {/* Espaciador */}
         <div className="hidden h-auto w-full grow rounded-md bg-gray-50 dark:bg-transparent md:block"></div>
-        
-        {/* Botón volver a la tienda normal */}
-        <Link
-            href="/dashboard"
-            className="flex h-12 w-full grow items-center justify-center gap-2 rounded-xl bg-white dark:bg-neutral-800 p-3 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-neutral-700 hover:text-primary md:flex-none md:justify-start md:p-2 md:px-3 transition-colors border border-gray-200 dark:border-neutral-700"
-        >
-            <Home className="w-6" />
-            <div className="hidden md:block">Volver a Tienda</div>
-        </Link>
 
         <form action={async () => {
             await logout();
