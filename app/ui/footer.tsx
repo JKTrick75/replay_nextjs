@@ -3,7 +3,11 @@ import Link from 'next/link';
 export default function Footer() {
   return (
     <footer className="bg-dark text-white pt-12 pb-6 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+      {/* 🟢 MEJORA:
+          - grid-cols-2: Base (Móvil y Tablet) -> Siempre 2 columnas como mínimo.
+          - lg:grid-cols-4: Escritorio -> Pasa a 4 columnas.
+      */}
+      <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-8">
         
         {/* Columna 1: Marca e Info */}
         <div>
@@ -34,7 +38,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Columna 4: Social (Simulado) */}
+        {/* Columna 4: Social */}
         <div>
           <h4 className="font-bold text-lg mb-4">Síguenos</h4>
           <div className="flex space-x-3">
