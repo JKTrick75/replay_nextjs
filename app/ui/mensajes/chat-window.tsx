@@ -1,9 +1,10 @@
 'use client';
 
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
-import { Send, Image as ImageIcon } from 'lucide-react';
+import { Send, Image as ImageIcon, X } from 'lucide-react';
 import { sendMessage } from '@/app/lib/actions'; 
 import { Chat, Message, User } from '@/app/lib/definitions';
+import { askForInput, showToast } from '@/app/lib/swal'; 
 
 export default function ChatWindow({ 
   chat, 
@@ -14,14 +15,13 @@ export default function ChatWindow({
 }) {
   const [content, setContent] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null); 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // ⚡ LÓGICA DE SCROLL INSTANTÁNEO
   const scrollToBottom = (instant = true) => {
     if (chatContainerRef.current) {
       const container = chatContainerRef.current;
-      
       if (instant) {
         container.scrollTop = container.scrollHeight;
       } else {
@@ -30,34 +30,71 @@ export default function ChatWindow({
     }
   };
 
-  useLayoutEffect(() => {
-    scrollToBottom(true);
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom(true); 
-  }, [chat.messages]);
+  useLayoutEffect(() => scrollToBottom(true), []);
+  useEffect(() => scrollToBottom(true), [chat.messages]);
 
   const handleSend = async (formData: FormData) => {
     if (!content.trim()) return;
     
     setIsSending(true);
-    // Optimistic clean
     setContent('');
     
     await sendMessage(null as any, formData);
     
     setIsSending(false);
     formRef.current?.reset();
-    
     setTimeout(() => scrollToBottom(true), 50); 
+  };
+
+  const handleImageClick = async () => {
+    const result = await askForInput(
+      'Enviar imagen',
+      'Pega la URL de la imagen:',
+      'https://...',
+      'url',
+      'Enviar'
+    );
+
+    if (result.isConfirmed && result.value) {
+      setIsSending(true);
+      
+      const formData = new FormData();
+      formData.append('chatId', chat.id);
+      formData.append('image', result.value);
+      formData.append('content', ''); 
+
+      const response = await sendMessage(null as any, formData);
+      
+      if (!response.success) {
+        showToast('error', 'Error', 'No se pudo enviar la imagen.');
+      }
+      setIsSending(false);
+      setTimeout(() => scrollToBottom(true), 50);
+    }
   };
 
   const otherUser = currentUser.id === chat.buyerId ? chat.seller : chat.buyer;
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
+    <div className="flex flex-col h-full bg-white dark:bg-neutral-900 relative">
       
+      {/* MODAL ZOOM */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button className="absolute top-4 right-4 text-white hover:text-gray-300">
+             <X size={40} />
+          </button>
+          <img 
+            src={previewImage} 
+            alt="Zoom" 
+            className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain"
+          />
+        </div>
+      )}
+
       {/* CABECERA */}
       <div className="flex items-center gap-4 p-4 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 z-10 shadow-sm">
         <img 
@@ -92,25 +129,58 @@ export default function ChatWindow({
         {chat.messages && chat.messages.length > 0 ? (
           chat.messages.map((msg) => {
             const isMe = msg.senderId === currentUser.id;
+            
+            const imageRoundedClass = isMe
+                ? (msg.content ? 'rounded-t-2xl' : 'rounded-t-2xl rounded-bl-2xl') 
+                : (msg.content ? 'rounded-t-2xl' : 'rounded-t-2xl rounded-br-2xl');
+
             return (
               <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                 <div className={`
-                  max-w-[75%] px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm relative break-words
+                  max-w-[75%] rounded-2xl shadow-sm relative break-words flex flex-col
                   ${isMe 
                     ? 'bg-primary text-white rounded-br-none' 
                     : 'bg-white dark:bg-neutral-800 text-dark dark:text-gray-200 border border-gray-100 dark:border-neutral-700 rounded-bl-none'
                   }
                 `}>
-                  {msg.content}
                   
-                  {/* 🟢 SOLUCIÓN AQUÍ: suppressHydrationWarning */}
-                  <div 
-                    suppressHydrationWarning
-                    className={`text-[10px] mt-1 text-right opacity-70 ${isMe ? 'text-white' : 'text-gray-400'}`}
-                  >
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                  
+                  {msg.image && (
+                      <img 
+                        src={msg.image} 
+                        alt="Adjunto" 
+                        onClick={() => setPreviewImage(msg.image || null)}
+                        className={`w-full max-h-60 object-cover cursor-zoom-in hover:opacity-90 transition-opacity bg-black/10 ${imageRoundedClass}`}
+                      />
+                  )}
+
+                  {/* CONTENIDO TEXTO + HORA/CHECKS */}
+                  <div className={`${!msg.content && msg.image ? 'px-3 pb-2 pt-1' : 'px-4 py-2'}`}>
+                        {msg.content && (
+                           <p className="text-sm leading-relaxed mb-1">{msg.content}</p>
+                        )}
+                        
+                        {/* 🟢 FOOTER DEL MENSAJE: Hora y Checks juntos */}
+                        <div className={`flex items-end justify-end gap-1 ${isMe ? 'text-white' : 'text-gray-400'}`}>
+                          
+                          {/* Hora */}
+                          <span 
+                            suppressHydrationWarning
+                            className="text-[10px] opacity-70"
+                          >
+                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+
+                          {/* Checks (Solo si soy yo, dentro de la burbuja, blancos) */}
+                          {isMe && (
+                             // Usamos opacidad para diferenciar leído (100%) de no leído (60%) manteniendo el color blanco
+                             <span className={`text-xs leading-none mb-0.5 ${msg.read ? 'opacity-100' : 'opacity-60'}`}>
+                                {msg.read ? '✓✓' : '✓'}
+                             </span>
+                          )}
+                        </div>
+                    </div>
+
+                  {/* 🔴 ELIMINADO: El bloque span absoluto que estaba fuera */}
                 </div>
               </div>
             );
@@ -128,7 +198,13 @@ export default function ChatWindow({
         <form ref={formRef} action={handleSend} className="flex gap-2 items-end">
           <input type="hidden" name="chatId" value={chat.id} />
           
-          <button type="button" disabled className="p-3 text-gray-400 hover:text-primary transition-colors cursor-not-allowed">
+          <button 
+            type="button" 
+            onClick={handleImageClick}
+            disabled={isSending}
+            className="p-3 text-gray-400 hover:text-primary transition-colors hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-xl"
+            title="Enviar imagen"
+          >
             <ImageIcon size={20} />
           </button>
 
@@ -143,7 +219,7 @@ export default function ChatWindow({
           
           <button 
             type="submit" 
-            disabled={!content.trim() || isSending}
+            disabled={(!content.trim() && !isSending) || isSending}
             className="bg-primary hover:bg-primary-hover text-white p-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary/20"
           >
             <Send size={20} />

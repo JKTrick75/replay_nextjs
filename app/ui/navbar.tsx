@@ -8,7 +8,6 @@ import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shi
 import { logout } from '@/app/lib/actions';
 import { confirmAction, showToast } from '@/app/lib/swal';
 
-// Tipado del usuario
 type UserProps = {
   id?: string;
   name?: string | null;
@@ -23,7 +22,16 @@ const navLinks = [
   { name: 'Vender', href: '/dashboard/ventas/crear' },
 ];
 
-export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cartCount?: number }) {
+// 🟢 Añadimos prop unreadCount
+export default function Navbar({ 
+  user, 
+  cartCount = 0, 
+  unreadCount = 0 
+}: { 
+  user?: UserProps, 
+  cartCount?: number, 
+  unreadCount?: number 
+}) {
   const pathname = usePathname();
   const router = useRouter(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -157,14 +165,22 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                       Perfil
                     </Link>
 
-                    {/* 🟢 NUEVO: MENSAJES (Estilo Desktop) */}
+                    {/* 🟢 NUEVO: MENSAJES (Con Badge) */}
                     <Link 
                       href="/mensajes" 
                       onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-dark dark:text-white hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
+                      className="flex items-center justify-between px-4 py-2 text-sm text-dark dark:text-white hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
                     >
-                      <MessageCircle size={16} className="text-primary" />
-                      Mensajes
+                      <div className="flex items-center gap-2">
+                        <MessageCircle size={16} className="text-primary" />
+                        Mensajes
+                      </div>
+                      {/* Badge Rojo */}
+                      {unreadCount > 0 && (
+                        <span className="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                          {unreadCount}
+                        </span>
+                      )}
                     </Link>
 
                     <Link 
@@ -289,15 +305,21 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                    Perfil
                 </Link>
 
-                {/* 🟢 NUEVO: MENSAJES (Estilo Móvil) */}
-                {/* Tiene el mismo estilo 'bloque ancho' (w-full) que el resto de botones móviles */}
+                {/* 🟢 NUEVO: MENSAJES (Móvil con Badge) */}
                 <Link 
                   href="/mensajes"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-dark dark:text-white bg-gray-50 dark:bg-neutral-800 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700"
+                  className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-dark dark:text-white bg-gray-50 dark:bg-neutral-800 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700"
                 >
-                   <MessageCircle size={18} className="text-primary" />
-                   Mensajes
+                   <div className="flex items-center gap-2">
+                      <MessageCircle size={18} className="text-primary" />
+                      Mensajes
+                   </div>
+                   {unreadCount > 0 && (
+                      <span className="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        {unreadCount}
+                      </span>
+                   )}
                 </Link>
 
                 <Link 

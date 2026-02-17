@@ -3,7 +3,7 @@ import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
-import ChatWindow from '@/app/ui/chat/chat-window';
+import ChatWindow from '@/app/ui/mensajes/chat-window';
 import { Chat, User, Listing, Message } from '@/app/lib/definitions'; 
 
 export default async function MessagesPage({ 
@@ -19,7 +19,19 @@ export default async function MessagesPage({
 
   const { chat: selectedChatId } = await searchParams;
 
-  // 1. Obtener TODOS los chats del usuario
+  // 🟢 1. MARCAR COMO LEÍDO (SIDE EFFECT)
+  if (selectedChatId) {
+    await prisma.message.updateMany({
+      where: {
+        chatId: selectedChatId,
+        senderId: { not: currentUser.id }, // Solo los recibidos
+        read: false
+      },
+      data: { read: true }
+    });
+  }
+
+  // 1. Obtener TODOS los chats
   const chats = await prisma.chat.findMany({
     where: {
       OR: [
@@ -33,13 +45,13 @@ export default async function MessagesPage({
       listing: { include: { game: true } },
       messages: {
         orderBy: { createdAt: 'desc' },
-        take: 1
+        take: 1 // Solo necesitamos el último para la vista previa
       }
     },
     orderBy: { updatedAt: 'desc' }
   });
 
-  // 2. Obtener el chat seleccionado completo
+  // 2. Obtener chat activo
   let activeChat = null;
   if (selectedChatId) {
     const rawChat = await prisma.chat.findUnique({
@@ -48,7 +60,7 @@ export default async function MessagesPage({
         buyer: true,
         seller: true,
         listing: { include: { game: true } },
-        messages: { orderBy: { createdAt: 'asc' } } 
+        messages: { orderBy: { createdAt: 'asc' } } // Aquí sí queremos todos
       }
     });
     
@@ -60,8 +72,7 @@ export default async function MessagesPage({
   const safeChats = chats as unknown as (Chat & { buyer: User, seller: User, listing: Listing & { game: any }, messages: Message[] })[];
   const safeActiveChat = activeChat as unknown as (Chat & { buyer: User, seller: User, listing: Listing & { game: any }, messages: Message[] });
 
-  // 🟢 3. LÓGICA FANTASMA: FILTRAR CHATS VACÍOS
-  // Solo mostramos el chat si tiene mensajes O si es el que tenemos abierto ahora mismo.
+  // 🟢 3. LÓGICA FANTASMA: FILTRAR VACÍOS
   const visibleChats = safeChats.filter(chat => {
     const hasMessages = chat.messages && chat.messages.length > 0;
     const isCurrent = chat.id === selectedChatId;
@@ -71,7 +82,7 @@ export default async function MessagesPage({
   return (
     <div className="flex h-[calc(100vh-64px)] bg-white dark:bg-neutral-900 overflow-hidden">
       
-      {/* --- SIDEBAR (LISTA DE CHATS) --- */}
+      {/* SIDEBAR */}
       <div className={`
         w-full md:w-[350px] lg:w-[400px] border-r border-gray-200 dark:border-neutral-800 flex flex-col bg-white dark:bg-neutral-900
         ${selectedChatId ? 'hidden md:flex' : 'flex'} 
@@ -81,7 +92,6 @@ export default async function MessagesPage({
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {/* 🟢 USAMOS visibleChats EN LUGAR DE safeChats */}
           {visibleChats.length === 0 ? (
             <div className="p-8 text-center text-gray-400">
               <MessageSquare size={48} className="mx-auto mb-4 opacity-20" />
@@ -97,70 +107,62 @@ export default async function MessagesPage({
               const otherUser = isMeBuyer ? chat.seller : chat.buyer;
               const lastMsg = chat.messages[0];
               const isActive = selectedChatId === chat.id;
-
               const isCancelled = chat.listing?.status === 'cancelled';
               const isSold = chat.listing?.status === 'sold';
+
+              // 🟢 DETECTAR NO LEÍDO (Si hay mensaje, no está leído y no soy yo el que lo envió)
+              const hasUnread = lastMsg && !lastMsg.read && lastMsg.senderId !== currentUser.id;
 
               return (
                 <Link 
                   key={chat.id} 
                   href={`/mensajes?chat=${chat.id}`}
                   className={`
-                    block p-4 border-b border-gray-50 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors
+                    block p-4 border-b border-gray-50 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors relative
                     ${isActive ? 'bg-primary/5 border-l-4 border-l-primary dark:bg-primary/10' : 'border-l-4 border-l-transparent'}
                   `}
                 >
                   <div className="flex gap-3">
-                    <img 
-                      src={otherUser.image || '/placeholder-user.png'} 
-                      alt={otherUser.name} 
-                      className="w-12 h-12 rounded-full object-cover bg-gray-200"
-                    />
+                    <img src={otherUser.image || '/placeholder-user.png'} alt={otherUser.name} className="w-12 h-12 rounded-full object-cover bg-gray-200"/>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
-                        <p className="font-bold text-dark dark:text-white truncate text-sm">
+                        <p className={`font-bold truncate text-sm ${hasUnread ? 'text-dark dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>
                           {otherUser.name}
                         </p>
                         {lastMsg && (
                           <span 
                             suppressHydrationWarning
-                            className="text-[10px] text-gray-400 whitespace-nowrap ml-2"
+                            className={`text-[10px] whitespace-nowrap ml-2 ${hasUnread ? 'text-primary font-bold' : 'text-gray-400'}`}
                           >
-                            {new Date(lastMsg.createdAt).toLocaleDateString('es-ES', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric'
-                            })}
+                            {new Date(lastMsg.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                           </span>
                         )}
                       </div>
                       
                       {chat.listing && (
                         <div className="flex items-center gap-2 mb-0.5">
-                          <p className={`text-xs font-medium truncate ${
-                              isCancelled ? 'text-primary line-through decoration-primary' : 
-                              isSold ? 'text-gray-500' : 
-                              'text-primary'
-                          }`}>
+                          <p className={`text-xs font-medium truncate ${isCancelled ? 'text-primary line-through' : 'text-primary'}`}>
                             {chat.listing.game?.title}
                           </p>
-
-                          {isCancelled && (
-                             <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-bold shrink-0">
-                               Cancelado
-                             </span>
-                          )}
-                          {isSold && (
-                             <span className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded font-bold shrink-0">
-                               Vendido
-                             </span>
-                          )}
+                          {isCancelled && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 rounded">Cancelado</span>}
+                          {isSold && <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 rounded">Vendido</span>}
                         </div>
                       )}
                       
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {lastMsg ? lastMsg.content : 'Chat iniciado'}
-                      </p>
+                      <div className="flex justify-between items-center">
+                        <p className={`text-xs truncate max-w-[85%] ${hasUnread ? 'font-bold text-dark dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {lastMsg ? (
+                            lastMsg.senderId === currentUser.id 
+                              ? `Tú: ${lastMsg.content || '📷 Foto'}` 
+                              : (lastMsg.content || '📷 Foto')
+                          ) : 'Chat iniciado'}
+                        </p>
+                        
+                        {/* 🟢 PUNTO ROJO DE NO LEÍDO */}
+                        {hasUnread && (
+                          <span className="w-2.5 h-2.5 bg-primary rounded-full shadow-sm animate-pulse"></span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -170,7 +172,7 @@ export default async function MessagesPage({
         </div>
       </div>
 
-      {/* --- ÁREA PRINCIPAL (CHAT ACTIVO) --- */}
+      {/* ÁREA PRINCIPAL */}
       <div className={`
         flex-1 bg-white-off dark:bg-black/20 flex flex-col
         ${!selectedChatId ? 'hidden md:flex' : 'flex'} 

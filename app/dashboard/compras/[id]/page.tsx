@@ -7,7 +7,7 @@ import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import BuyerCancelButton from '@/app/ui/dashboard/buyer-cancel-button';
 import ConfirmDeliveryButton from '@/app/ui/dashboard/confirm-delivery-button';
 import RateOrderButton from '@/app/ui/dashboard/rate-order-button';
-import ContactButton from '@/app/ui/chat/contact-button'; // 🟢 1. IMPORTAMOS
+import ContactButton from '@/app/ui/mensajes/contact-button'; // 🟢 1. IMPORTAMOS
 
 export default async function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -28,6 +28,8 @@ export default async function RootLayout({
   
   let user = undefined;
   let cartCount = 0; 
+  // 🟢 Variable para mensajes no leídos
+  let unreadMessagesCount = 0;
 
   if (session?.user?.email) {
     const dbUser = await prisma.user.findUnique({
@@ -53,6 +55,18 @@ export default async function RootLayout({
         role: dbUser.role,
       };
       cartCount = dbUser.cart?.items.length || 0;
+
+      // 🟢 CONSULTA: Mensajes no leídos donde NO soy el remitente
+      unreadMessagesCount = await prisma.message.count({
+        where: {
+          chat: {
+            OR: [{ buyerId: dbUser.id }, { sellerId: dbUser.id }]
+          },
+          senderId: { not: dbUser.id }, // Mensajes que recibí
+          read: false
+        }
+      });
+
     } else {
       user = {
         ...session.user,
@@ -65,8 +79,8 @@ export default async function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${roboto.className} antialiased bg-white-off dark:bg-neutral-950 text-dark dark:text-white-off flex flex-col min-h-screen transition-colors duration-300`}>
         <Providers>
-          {/* Ahora user.id ya no será undefined */}
-          <Navbar user={user} cartCount={cartCount} />
+          {/* 🟢 Pasamos unreadCount al Navbar */}
+          <Navbar user={user} cartCount={cartCount} unreadCount={unreadMessagesCount} />
           
           <main className="grow">
             {children}

@@ -7,7 +7,7 @@ import MapLoader from '@/app/ui/shop/map-loader';
 import { auth } from '@/auth';
 import FavoriteButton from '@/app/ui/favorite-button';
 import AddToCartButton from '@/app/ui/shop/add-to-cart-button'; 
-import ContactButton from '@/app/ui/chat/contact-button'; // 🟢 1. Importamos el botón de chat
+import ContactButton from '@/app/ui/mensajes/contact-button'; // 🟢 1. Importamos el botón de chat
 
 type Params = Promise<{ id: string }>;
 

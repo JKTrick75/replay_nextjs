@@ -897,7 +897,6 @@ export async function createOrGetChat(listingId: string) {
   }
 
   try {
-    // 1. Buscamos si ya existe un chat para este producto entre estos dos usuarios
     let chat = await prisma.chat.findUnique({
       where: {
         buyerId_sellerId_listingId: {
@@ -908,7 +907,6 @@ export async function createOrGetChat(listingId: string) {
       }
     });
 
-    // 2. Si no existe, lo creamos
     if (!chat) {
       chat = await prisma.chat.create({
         data: {
@@ -919,7 +917,6 @@ export async function createOrGetChat(listingId: string) {
       });
     }
 
-    // 3. Devolvemos la URL para redirigir desde el cliente
     return { success: true, redirectUrl: `/mensajes?chat=${chat.id}` };
 
   } catch (error) {
@@ -928,13 +925,13 @@ export async function createOrGetChat(listingId: string) {
   }
 }
 
-// =========================================================================== //
-// --- CHAT: ENVIAR MENSAJES --- //
-// =========================================================================== //
-
 const SendMessageSchema = z.object({
   chatId: z.string(),
-  content: z.string().min(1, { message: 'El mensaje no puede estar vacío' }),
+  content: z.string().optional(),
+  image: z.string().optional(),
+}).refine(data => data.content || data.image, {
+  message: "El mensaje no puede estar vacío.",
+  path: ["content"]
 });
 
 export async function sendMessage(prevState: State, formData: FormData): Promise<State> {
@@ -944,15 +941,21 @@ export async function sendMessage(prevState: State, formData: FormData): Promise
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return { message: 'Usuario no encontrado' };
 
-  const validatedFields = SendMessageSchema.safeParse(Object.fromEntries(formData.entries()));
+  // 🟢 CORRECCIÓN AQUÍ: Usamos .toString() o undefined para evitar 'null'
+  const rawData = {
+    chatId: formData.get('chatId')?.toString(),
+    content: formData.get('content')?.toString(), 
+    image: formData.get('image')?.toString(),     
+  };
+
+  const validatedFields = SendMessageSchema.safeParse(rawData);
   
   if (!validatedFields.success) {
     return { message: 'Mensaje inválido' };
   }
 
-  const { chatId, content } = validatedFields.data;
+  const { chatId, content, image } = validatedFields.data;
 
-  // Verificar que el usuario pertenece al chat
   const chat = await prisma.chat.findUnique({ 
     where: { id: chatId },
     include: { buyer: true, seller: true } 
@@ -966,13 +969,13 @@ export async function sendMessage(prevState: State, formData: FormData): Promise
   try {
     await prisma.message.create({
       data: {
-        content,
+        content: content || '', 
+        image: image || null,
         chatId,
         senderId: user.id,
       }
     });
 
-    // Actualizamos la fecha del chat para que suba arriba en la lista
     await prisma.chat.update({
       where: { id: chatId },
       data: { updatedAt: new Date() }
