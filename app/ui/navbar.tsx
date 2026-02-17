@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shield } from 'lucide-react';
+import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shield, User as UserIcon } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
 import { confirmAction, showToast } from '@/app/lib/swal';
 
+// 🟢 1. Añadimos 'id' para poder enlazar al perfil
 type UserProps = {
+  id?: string;
   name?: string | null;
   email?: string | null;
   image?: string | null;
@@ -125,7 +127,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
               <div className="relative">
                 <button 
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  // 🟢 CAMBIO: dark:hover:bg-neutral-900 (Más oscuro que el fondo 800)
                   className="flex items-center gap-2 focus:outline-none hover:bg-gray-100 dark:hover:bg-neutral-900 p-1 rounded-full transition-colors pr-3 border border-transparent hover:border-gray-200 dark:hover:border-neutral-700"
                 >
                   <img 
@@ -140,11 +141,21 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute -right-2 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-gray-light dark:border-gray py-2 animate-in fade-in slide-in-from-top-2 z-50 origin-top-right">
+                  <div className="absolute -right-2 mt-2 w-64 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-gray-light dark:border-gray py-2 animate-in fade-in slide-in-from-top-2 z-50 origin-top-right">
                     <div className="px-4 py-3 border-b border-gray-light dark:border-gray mb-2">
                       <p className="text-xs text-gray-500 dark:text-gray-400">Conectado como</p>
                       <p className="text-sm font-bold text-dark dark:text-white truncate">{user.email}</p>
                     </div>
+
+                    {/* 🟢 NUEVO: Enlace al Perfil Público */}
+                    <Link 
+                      href={`/seller/${user.id}`} 
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-dark dark:text-white hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      <UserIcon size={16} className="text-primary" />
+                      Perfil
+                    </Link>
 
                     <Link 
                       href="/dashboard" 
@@ -257,6 +268,16 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                   </div>
                 </div>
                 
+                {/* 🟢 ENLACE MÓVIL TAMBIÉN */}
+                <Link 
+                  href={`/seller/${user.id}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-dark dark:text-white bg-gray-50 dark:bg-neutral-800 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700"
+                >
+                   <UserIcon size={18} className="text-primary" />
+                   Perfil
+                </Link>
+
                 <Link 
                   href="/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}

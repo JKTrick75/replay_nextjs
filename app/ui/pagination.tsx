@@ -6,14 +6,20 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { generatePagination } from '@/app/lib/utils';
 
-export default function Pagination({ totalPages }: { totalPages: number }) {
+export default function Pagination({ 
+  totalPages, 
+  paramName = 'page' 
+}: { 
+  totalPages: number,
+  paramName?: string 
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentPage = Number(searchParams.get('page')) || 1;
+  const currentPage = Number(searchParams.get(paramName)) || 1;
 
   const createPageURL = (pageNumber: number | string) => {
     const params = new URLSearchParams(searchParams);
-    params.set('page', pageNumber.toString());
+    params.set(paramName, pageNumber.toString());
     return `${pathname}?${params.toString()}`;
   };
 
@@ -74,7 +80,6 @@ function PaginationNumber({
       'rounded-l-md': position === 'first' || position === 'single',
       'rounded-r-md': position === 'last' || position === 'single',
       'z-10 bg-primary border-primary text-white': isActive,
-      // CAMBIO: dark:bg-neutral-800, dark:border-neutral-700, dark:hover:bg-neutral-700
       'bg-white dark:bg-neutral-800 border-gray-light dark:border-neutral-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-neutral-700':
         !isActive && position !== 'middle',
       'text-gray-300': position === 'middle',
@@ -84,7 +89,8 @@ function PaginationNumber({
   return isActive || position === 'middle' ? (
     <div className={className}>{page}</div>
   ) : (
-    <Link href={href} className={className}>
+    /* 🟢 CORRECCIÓN: scroll={false} evita el salto hacia arriba */
+    <Link href={href} className={className} scroll={false}>
       {page}
     </Link>
   );
@@ -112,7 +118,8 @@ function PaginationArrow({
   return isDisabled ? (
     <div className={className}>{direction === 'left' ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}</div>
   ) : (
-    <Link className={className} href={href}>
+    /* 🟢 CORRECCIÓN: scroll={false} aquí también */
+    <Link className={className} href={href} scroll={false}>
       {direction === 'left' ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}
     </Link>
   );

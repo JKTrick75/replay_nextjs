@@ -9,6 +9,17 @@ export interface User {
   city?: string | null;
   lat?: number | null;
   lng?: number | null;
+
+  // 🟢 [NUEVO] Relaciones para el Perfil Social
+  sales?: Listing[];            // Para mostrar "En venta (X)"
+  reviewsWritten?: Review[];    // Reviews que ha escrito
+  reviewsReceived?: Review[];   // Reviews que ha recibido (Reputación)
+  
+  // 🟢 [NUEVO] Propiedad especial de Prisma para contar registros
+  _count?: {
+    sales?: number;
+    reviewsReceived?: number;
+  };
 }
 
 export interface Brand {
@@ -38,6 +49,22 @@ export interface Game {
   platforms?: Console[]; 
 }
 
+// 🟢 [NUEVO] Interfaz para las Valoraciones
+export interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: Date;
+  
+  buyerId: string;
+  sellerId: string;
+  listingId: string;
+
+  // Relaciones opcionales
+  buyer?: User;
+  seller?: User;
+}
+
 export interface Listing {
   id: string;
   price: number;
@@ -47,28 +74,31 @@ export interface Listing {
   
   // IDs de relación
   sellerId: string;
-  buyerId?: string | null; // 🟢 [Nuevo] Coincide con schema.prisma
+  buyerId?: string | null; 
   gameId: string;
   platformId: string;
   
   // Datos temporales
   createdAt: Date;
-  soldAt?: Date | null;    // 🟢 [Nuevo] Coincide con schema.prisma
+  soldAt?: Date | null;    
   
   // Ubicación
   lat?: number | null;
   lng?: number | null;
   
-  // Logística 🟢 [Nuevo] (Soluciona los errores del formulario)
+  // Logística
   shippingAddress?: string | null;
   deliveryStatus?: string; // 'pending', 'shipped', 'delivered'
 
   // Relaciones completas
   seller?: User; 
-  buyer?: User | null;     // 🟢 [Nuevo] Coincide con schema.prisma
+  buyer?: User | null;     
   game?: Game;      
   platform?: Console;
-  photos?: string[];       // Lo mantenemos opcional por si decides usarlo
+  photos?: string[];       
+
+  // 🟢 [NUEVO] Relación con la review (1 a 1)
+  review?: Review | null;
 }
 
 // --- TIPOS FORMULARIOS ---
@@ -85,7 +115,6 @@ export type ListingToEdit = {
   game: { title: string; coverImage: string | null; genre?: string };
 };
 
-// 🟢 TIPO STATE DEFINITIVO
 export type State = {
   errors?: {
     newGameTitle?: string[];

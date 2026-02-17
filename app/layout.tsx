@@ -33,10 +33,11 @@ export default async function RootLayout({
     const dbUser = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { 
+        id: true,
         name: true, 
         email: true, 
         image: true,
-        role: true, // 🟢 1. Aquí lo pedimos (esto ya lo tenías bien)
+        role: true, 
         cart: {
           include: { items: true }
         }
@@ -45,17 +46,17 @@ export default async function RootLayout({
     
     if (dbUser) {
       user = {
+        id: dbUser.id,
         name: dbUser.name,
         email: dbUser.email,
         image: dbUser.image,
-        role: dbUser.role, // 🟢 2. ¡AQUÍ ES DONDE FALTABA!
+        role: dbUser.role,
       };
       cartCount = dbUser.cart?.items.length || 0;
     } else {
-      // Fallback por si acaso
       user = {
         ...session.user,
-        role: 'user' // Valor por defecto si falla la DB
+        role: 'user' 
       };
     }
   }
@@ -64,6 +65,7 @@ export default async function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${roboto.className} antialiased bg-white-off dark:bg-neutral-950 text-dark dark:text-white-off flex flex-col min-h-screen transition-colors duration-300`}>
         <Providers>
+          {/* Ahora user.id ya no será undefined */}
           <Navbar user={user} cartCount={cartCount} />
           
           <main className="grow">

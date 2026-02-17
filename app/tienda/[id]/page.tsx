@@ -2,7 +2,7 @@ import { prisma } from '@/app/lib/db';
 import { Listing as IListing } from '@/app/lib/definitions';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Tag, Monitor, Calendar, Globe, Clock, PackageCheck, Ban, Pencil } from 'lucide-react';
+import { ArrowLeft, Tag, Monitor, Calendar, Globe, Clock, PackageCheck, Ban, Pencil, User as UserIcon } from 'lucide-react';
 import MapLoader from '@/app/ui/shop/map-loader';
 import { auth } from '@/auth';
 import FavoriteButton from '@/app/ui/favorite-button';
@@ -134,9 +134,8 @@ export default async function ProductPage({ params }: { params: Params }) {
                   ) : (
                     // CASO ACTIVO
                     isOwner ? (
-                      // 1. ES EL DUEÑO -> Botón Editar (Ruta corregida)
+                      // 1. ES EL DUEÑO -> Botón Editar
                       <Link 
-                        // 👇 CORRECCIÓN AQUÍ: /dashboard/ventas/[id]/editar
                         href={`/dashboard/ventas/${listing.id}/editar`} 
                         className="flex-1 sm:flex-none bg-primary text-white px-6 py-3 rounded-lg font-bold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2"
                       >
@@ -204,17 +203,33 @@ export default async function ProductPage({ params }: { params: Params }) {
                 </p>
               </div>
 
-              <div className="mb-8 pt-6 border-t border-gray-light dark:border-gray-700 flex items-center gap-4">
-                <img 
-                  src={listing.seller?.image || `https://ui-avatars.com/api/?name=${listing.seller?.name}`} 
-                  alt={listing.seller?.name || 'Vendedor'}
-                  className="w-12 h-12 rounded-full border border-gray-200"
-                />
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Vendido por</p>
-                  <p className="font-bold text-dark dark:text-white">{listing.seller?.name}</p>
+              {/* 🟢 NUEVO BLOQUE: VENDEDOR CLICABLE (LINK AL PERFIL) */}
+              <Link 
+                href={`/seller/${listing.seller?.id}`}
+                className="mb-8 pt-6 border-t border-gray-light dark:border-gray-700 flex items-center gap-4 group cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800/50 p-4 rounded-xl -mx-4 transition-all"
+              >
+                <div className="relative">
+                   <img 
+                    src={listing.seller?.image || `https://ui-avatars.com/api/?name=${listing.seller?.name}`} 
+                    alt={listing.seller?.name || 'Vendedor'}
+                    className="w-14 h-14 rounded-full border-2 border-gray-200 dark:border-neutral-600 group-hover:border-primary transition-colors"
+                  />
+                  {/* Icono pequeño de usuario sobre el avatar para indicar perfil */}
+                  <div className="absolute -bottom-1 -right-1 bg-white dark:bg-neutral-800 rounded-full p-1 border border-gray-100 dark:border-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <UserIcon size={12} className="text-primary" />
+                  </div>
                 </div>
-              </div>
+               
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-0.5">Vendido por</p>
+                  <p className="font-bold text-lg text-dark dark:text-white group-hover:text-primary transition-colors">
+                    {listing.seller?.name}
+                  </p>
+                  <p className="text-xs text-gray-400 group-hover:text-primary/80 transition-colors">
+                    Ver perfil completo &rarr;
+                  </p>
+                </div>
+              </Link>
 
               <div className="space-y-3">
                 <h3 className="font-bold text-dark dark:text-white flex items-center gap-2">

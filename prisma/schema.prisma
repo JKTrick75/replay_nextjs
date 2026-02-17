@@ -39,6 +39,10 @@ model User {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  // --- REVIEWS ---
+  reviewsWritten  Review[]  @relation("ReviewAuthor")   // Las que escribe
+  reviewsReceived Review[]  @relation("ReviewTarget")   // Las que recibe (su reputación)
 }
 
 // --------------------------------------------------------
@@ -122,6 +126,9 @@ model Listing {
   shippingAddress String?  @db.Text             // Dirección completa de envío
   deliveryStatus  String   @default("pending")  // Estados: 'pending', 'shipped', 'delivered'
 
+  // REVIEWS
+  review      Review?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -181,4 +188,26 @@ model CartItem {
 
   // Un mismo producto solo puede estar una vez en un mismo carrito
   @@unique([cartId, listingId])
+}
+
+// --------------------------------------------------------
+// 6. SOCIAL (Valoraciones)
+// --------------------------------------------------------
+
+model Review {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  
+  rating    Int      // 1 a 5 estrellas
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  // Relaciones
+  buyerId   String   @db.VarChar(36)
+  buyer     User     @relation("ReviewAuthor", fields: [buyerId], references: [id])
+
+  sellerId  String   @db.VarChar(36)
+  seller    User     @relation("ReviewTarget", fields: [sellerId], references: [id])
+
+  listingId String   @unique @db.VarChar(36) // Una review por venta
+  listing   Listing  @relation(fields: [listingId], references: [id])
 }
