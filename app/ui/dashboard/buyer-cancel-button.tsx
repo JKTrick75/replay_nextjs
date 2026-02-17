@@ -41,8 +41,11 @@ export default function BuyerCancelButton({ id }: { id: string }) {
         bg-white dark:bg-neutral-800 
         border border-gray-200 dark:border-neutral-700
         text-gray-600 dark:text-gray-300
-        hover:border-red-200 hover:bg-red-50 hover:text-red-600 
-        dark:hover:bg-red-900/20 dark:hover:border-red-800 dark:hover:text-red-400
+        
+        /* HOVER: Borde y texto en Primary, fondo sutil */
+        hover:border-primary/50 hover:bg-primary/5 hover:text-primary
+        dark:hover:border-primary/50 dark:hover:bg-primary/10 dark:hover:text-primary
+        
         disabled:opacity-50 disabled:cursor-not-allowed
       `}
       title="Cancelar compra"

@@ -18,7 +18,7 @@ export default async function SellerProfilePage({
   const session = await auth();
 
   // --- CONFIGURACIÓN ---
-  const ITEMS_PER_PAGE = 10; // 5 columnas x 2 filas = 10 items ideal
+  const ITEMS_PER_PAGE = 10;
   const REVIEWS_PER_PAGE = 5;
   
   const inventoryPage = Number(urlParams?.page) || 1;
@@ -31,7 +31,13 @@ export default async function SellerProfilePage({
       id: true, name: true, image: true, createdAt: true, city: true, email: true,
       _count: {
         select: { 
-          sales: { where: { status: 'sold' } },
+          // 🟢 CAMBIO: Solo contamos ventas que han sido ENTREGADAS (delivered)
+          sales: { 
+            where: { 
+              status: 'sold',
+              deliveryStatus: 'delivered' 
+            } 
+          },
           reviewsReceived: true 
         }
       }
@@ -89,13 +95,12 @@ export default async function SellerProfilePage({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 pb-20">
       
-      {/* --- CABECERA (Rediseñada) --- */}
-      {/* Usamos un fondo muy oscuro (casi negro) para la cabecera y un borde sutil abajo */}
+      {/* --- CABECERA --- */}
       <div className="bg-white dark:bg-neutral-950 border-b border-gray-200 dark:border-white/5 pt-10 pb-12 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             
-            {/* Avatar con borde primario suave */}
+            {/* Avatar */}
             <div className="relative group">
                 <img 
                     src={seller.image || `https://ui-avatars.com/api/?name=${seller.name}`} 
@@ -123,7 +128,7 @@ export default async function SellerProfilePage({
                     </div>
                 </div>
 
-                {/* KPIs con fondo oscuro integrado */}
+                {/* KPIs */}
                 <div className="flex items-center justify-center md:justify-start gap-4">
                     <div className="bg-gray-50 dark:bg-neutral-900/50 px-5 py-3 rounded-2xl border border-gray-200 dark:border-neutral-800 text-center min-w-[100px]">
                         <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Ventas</p>
@@ -158,7 +163,7 @@ export default async function SellerProfilePage({
 
       <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
         
-        {/* === SECCIÓN 1: INVENTARIO (Ancho completo) === */}
+        {/* === SECCIÓN 1: INVENTARIO === */}
         <section>
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-dark dark:text-white flex items-center gap-2">
@@ -169,7 +174,6 @@ export default async function SellerProfilePage({
 
             {activeListings.length > 0 ? (
                 <>
-                    {/* 🟢 GRID de 5 COLUMNAS en monitores grandes */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                         {activeListings.map((ad) => (
                             <div key={ad.id} className="h-full">
@@ -194,10 +198,9 @@ export default async function SellerProfilePage({
             )}
         </section>
 
-        {/* Separador Visual */}
         <div className="border-t border-gray-200 dark:border-neutral-800"></div>
 
-        {/* === SECCIÓN 2: REVIEWS (Debajo, estilo lista ancha) === */}
+        {/* === SECCIÓN 2: REVIEWS === */}
         <section className="max-w-4xl">
             <h2 className="text-2xl font-bold text-dark dark:text-white mb-6 flex items-center gap-2">
                 <Star className="text-yellow-400 fill-yellow-400" /> 
@@ -221,7 +224,7 @@ export default async function SellerProfilePage({
                                                 {review.buyer?.name || 'Usuario eliminado'}
                                             </p>
                                             <p className="text-xs text-gray-400 mt-1">
-                                                {new Date(review.createdAt).toLocaleDateString()}
+                                                {new Date(review.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                             </p>
                                         </div>
                                     </div>

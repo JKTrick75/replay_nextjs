@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail, Settings } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
-import DeliveryStatusButton from '@/app/ui/dashboard/delivery-status-button';
 import BuyerCancelButton from '@/app/ui/dashboard/buyer-cancel-button';
+import ConfirmDeliveryButton from '@/app/ui/dashboard/confirm-delivery-button';
+import RateOrderButton from '@/app/ui/dashboard/rate-order-button';
 
 export default async function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,7 +14,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
   
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { game: true, seller: true }
+    include: { game: true, seller: true, review: true }
   });
 
   if (!listing || listing.buyerId !== (await prisma.user.findUnique({ where: { email: session?.user?.email! } }))?.id) {
@@ -67,27 +68,36 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
 
         <div className="p-8 grid md:grid-cols-2 gap-10">
           
-          {/* COLUMNA IZQ */}
+          {/* COLUMNA IZQ: DATOS */}
           <div className="space-y-8">
              <div>
                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white flex items-center gap-2">
                     <User size={20} className="text-primary"/> Datos del Vendedor
                 </h3>
-                <div className="p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 space-y-2">
+                
+                <Link 
+                  href={`/seller/${listing.seller.id}`}
+                  className="block p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all group"
+                >
                     <div className="flex items-center gap-3">
                         <img 
                            src={listing.seller.image || '/placeholder-user.png'} 
-                           className="w-12 h-12 rounded-full bg-gray-200 object-cover"
+                           className="w-12 h-12 rounded-full bg-gray-200 object-cover border-2 border-transparent group-hover:border-primary transition-all"
                            alt=""
                         />
                         <div>
-                            <p className="font-bold text-dark dark:text-white text-lg">{listing.seller.name}</p>
+                            <p className="font-bold text-dark dark:text-white text-lg group-hover:text-primary transition-colors">
+                                {listing.seller.name}
+                            </p>
                             <p className="text-sm text-gray-500 flex items-center gap-1">
                                 <Mail size={14}/> {listing.seller.email}
                             </p>
+                            <p className="text-xs text-primary mt-2 font-bold flex items-center gap-1">
+                                Ver perfil público &rarr;
+                            </p>
                         </div>
                     </div>
-                </div>
+                </Link>
              </div>
 
              <div>
@@ -118,7 +128,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
              </div>
           </div>
 
-          {/* COLUMNA DER */}
+          {/* COLUMNA DER: PRODUCTO Y ACCIONES */}
           <div className="space-y-8">
             
             {/* PRODUCTO */}
@@ -133,7 +143,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                 </div>
              </div>
 
-            {/* TIMELINE */}
+            {/* TIMELINE VISUAL */}
             {listing.status !== 'cancelled' && (
                <div>
                  <h3 className="font-bold text-lg mb-4 text-dark dark:text-white flex items-center gap-2">
@@ -142,6 +152,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                  
                  <div className="p-6 pt-10 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30">
                     <div className="relative mx-2">
+                        {/* Timeline */}
                         <div className="absolute top-1/2 left-0 w-full h-1.5 bg-gray-200 dark:bg-neutral-700 -translate-y-1/2 rounded-full"></div>
                         <div 
                             className="absolute top-1/2 left-0 h-1.5 bg-primary -translate-y-1/2 rounded-full transition-all duration-1000 ease-out"
@@ -155,43 +166,30 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                             <Truck size={16} />
                             </div>
                         </div>
+                        {/* Etiquetas */}
                         <div className="relative flex justify-between w-full text-xs font-medium text-gray-400 pt-6">
-                            <div className="flex flex-col items-center relative" style={{ marginLeft: '-10px' }}>
-                                <div className={`absolute -top-7 w-4 h-4 rounded-full border-[3px] transition-colors duration-500 box-border z-0
-                                    ${progress >= 5 ? 'bg-primary border-primary' : 'bg-white border-gray-200 dark:bg-neutral-800 dark:border-neutral-700'}`}>
-                                </div>
-                                <span className={`transition-colors duration-500 ${progress >= 5 ? 'text-primary font-bold' : ''}`}>Pendiente</span>
-                            </div>
-                            <div className="flex flex-col items-center relative">
-                                <div className={`absolute -top-7 w-4 h-4 rounded-full border-[3px] transition-colors duration-500 box-border z-0
-                                    ${progress >= 50 ? 'bg-primary border-primary' : 'bg-white border-gray-200 dark:bg-neutral-800 dark:border-neutral-700'}`}>
-                                </div>
-                                <span className={`transition-colors duration-500 ${progress >= 50 ? 'text-primary font-bold' : ''}`}>Enviado</span>
-                            </div>
-                            <div className="flex flex-col items-center relative" style={{ marginRight: '-10px' }}>
-                                <div className={`absolute -top-7 w-4 h-4 rounded-full border-[3px] transition-colors duration-500 box-border z-0
-                                    ${progress >= 100 ? 'bg-primary border-primary' : 'bg-white border-gray-200 dark:bg-neutral-800 dark:border-neutral-700'}`}>
-                                </div>
-                                <span className={`transition-colors duration-500 ${progress >= 100 ? 'text-green-600 font-bold' : ''}`}>Entregado</span>
-                            </div>
+                            <span>Pendiente</span>
+                            <span>Enviado</span>
+                            <span className={`${progress >= 100 ? 'text-green-600 font-bold' : ''}`}>Entregado</span>
                         </div>
                     </div>
                  </div>
                </div>
             )}
 
-            {/* ACCIONES */}
-            {listing.status === 'sold' && listing.deliveryStatus !== 'delivered' && (
-              // 🟢 CORRECCIÓN: Fondo y borde unificados con el resto de tarjetas
+            {/* 🟢 ZONA DE ACCIONES - AHORA CON ESTILOS RESTAURADOS */}
+            {listing.status === 'sold' && (
+              // He restaurado aquí las clases que pediste: bg-gray-50, border, rounded-xl...
               <div className="bg-gray-50 dark:bg-neutral-900/30 p-6 rounded-xl border border-gray-100 dark:border-neutral-700">
                 <h4 className="font-bold text-dark dark:text-white mb-4 flex items-center gap-2">
                     <Settings size={18} className="text-gray-500" /> Acciones Disponibles
                 </h4>
                 
+                {/* 1. PENDIENTE: Cancelar */}
                 {listing.deliveryStatus === 'pending' && (
                     <div className="space-y-4">
                         <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                            <Clock size={16} className="text-orange-500"/>
+                            <Clock size={16} className="text-primary"/>
                             <span>Esperando a que el vendedor envíe el paquete...</span>
                         </div>
                         <div className="pt-2">
@@ -200,31 +198,45 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                     </div>
                 )}
 
+                {/* 2. ENVIADO: Confirmar Recepción */}
                 {listing.deliveryStatus === 'shipped' && (
                      <div className="space-y-4">
                         <p className="text-sm text-gray-600 dark:text-gray-300">
                             El vendedor ha marcado el pedido como enviado. Cuando lo recibas, confírmalo abajo.
                         </p>
-                        <DeliveryStatusButton listingId={listing.id} />
+                        <ConfirmDeliveryButton listingId={listing.id} />
                      </div>
+                )}
+
+                {/* 3. ENTREGADO: Valorar o Ver Estado */}
+                {listing.deliveryStatus === 'delivered' && (
+                    <div className="space-y-4">
+                        {listing.review ? (
+                            <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-lg text-green-700 dark:text-green-400">
+                                <CheckCircle size={20} />
+                                <span className="font-medium">Ya has valorado este pedido.</span>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    ¡Pedido completado! ¿Qué te ha parecido la compra?
+                                </p>
+                                <RateOrderButton listingId={listing.id} />
+                            </>
+                        )}
+                    </div>
                 )}
               </div>
             )}
 
-             {/* ESTADOS FINALES */}
-             {(listing.deliveryStatus === 'delivered' || listing.status === 'cancelled') && (
-               <div className={`p-5 rounded-xl border flex items-center gap-3 font-bold
-                  ${listing.status === 'cancelled' 
-                    ? 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400' 
-                    : 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800 text-green-700 dark:text-green-300'
-                  }`}>
-                    {listing.status === 'cancelled' ? <PackageX size={24} /> : <CheckCircle size={24} />}
+             {/* ESTADOS FINALES - 🟢 SOLO APARECE SI ESTÁ CANCELADO */}
+             {listing.status === 'cancelled' && (
+               <div className="p-5 rounded-xl border flex items-center gap-3 font-bold bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400">
+                    <PackageX size={24} />
                     <div>
-                        <p>{listing.status === 'cancelled' ? 'Pedido Cancelado' : 'Pedido Completado'}</p>
+                        <p>Pedido Cancelado</p>
                         <p className="text-xs font-normal opacity-80 mt-0.5">
-                            {listing.status === 'cancelled' 
-                                ? 'El reembolso ha sido emitido.' 
-                                : '¡Que disfrutes de tu compra!'}
+                            El reembolso ha sido emitido.
                         </p>
                     </div>
                </div>

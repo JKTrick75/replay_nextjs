@@ -818,3 +818,62 @@ export async function updateOrderAddress(prevState: State, formData: FormData): 
     return { message: 'Error al actualizar.' };
   }
 }
+
+// =========================================================================== //
+// --- VALORACIONES (REVIEWS) --- //
+// =========================================================================== //
+
+const CreateReviewSchema = z.object({
+  listingId: z.string(),
+  rating: z.coerce.number().min(1).max(5),
+  comment: z.string().optional(),
+});
+
+export async function createReview(prevState: State, formData: FormData): Promise<State> {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado.' };
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user) return { message: 'Usuario no encontrado.' };
+
+  const validatedFields = CreateReviewSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return { message: 'Por favor, selecciona al menos una estrella.' };
+  }
+
+  const { listingId, rating, comment } = validatedFields.data;
+
+  // 1. Verificaciones de seguridad
+  const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+  
+  if (!listing) return { message: 'Pedido no encontrado.' };
+  if (listing.buyerId !== user.id) return { message: 'No puedes valorar una compra que no hiciste.' };
+  
+  // 🟢 Importante: Solo permitimos valorar si ya está entregado
+  if (listing.deliveryStatus !== 'delivered') return { message: 'El pedido debe estar entregado para valorarlo.' };
+
+  try {
+    // 2. Crear la review
+    await prisma.review.create({
+      data: {
+        rating,
+        comment: comment || '',
+        buyerId: user.id,
+        sellerId: listing.sellerId,
+        listingId: listing.id
+      }
+    });
+
+    // 3. Revalidar rutas para actualizar la UI
+    revalidatePath(`/dashboard/compras`);
+    revalidatePath(`/dashboard/compras/${listingId}`);
+    revalidatePath(`/seller/${listing.sellerId}`); // Actualizar perfil del vendedor al instante
+
+    return { success: true, message: '¡Valoración enviada! Gracias.' };
+
+  } catch (error) {
+    console.error(error);
+    return { message: 'Ya has valorado este pedido o hubo un error.' };
+  }
+}
