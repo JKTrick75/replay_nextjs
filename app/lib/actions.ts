@@ -877,3 +877,111 @@ export async function createReview(prevState: State, formData: FormData): Promis
     return { message: 'Ya has valorado este pedido o hubo un error.' };
   }
 }
+
+// =========================================================================== //
+// --- SISTEMA DE CHAT --- //
+// =========================================================================== //
+
+export async function createOrGetChat(listingId: string) {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'Debes iniciar sesión para contactar.' };
+
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!currentUser) return { message: 'Usuario no encontrado.' };
+
+  const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+  if (!listing) return { message: 'Producto no encontrado.' };
+
+  if (listing.sellerId === currentUser.id) {
+    return { message: 'No puedes iniciar un chat contigo mismo.' };
+  }
+
+  try {
+    // 1. Buscamos si ya existe un chat para este producto entre estos dos usuarios
+    let chat = await prisma.chat.findUnique({
+      where: {
+        buyerId_sellerId_listingId: {
+          buyerId: currentUser.id,
+          sellerId: listing.sellerId,
+          listingId: listing.id
+        }
+      }
+    });
+
+    // 2. Si no existe, lo creamos
+    if (!chat) {
+      chat = await prisma.chat.create({
+        data: {
+          buyerId: currentUser.id,
+          sellerId: listing.sellerId,
+          listingId: listing.id
+        }
+      });
+    }
+
+    // 3. Devolvemos la URL para redirigir desde el cliente
+    return { success: true, redirectUrl: `/mensajes?chat=${chat.id}` };
+
+  } catch (error) {
+    console.error(error);
+    return { message: 'Error al iniciar el chat.' };
+  }
+}
+
+// =========================================================================== //
+// --- CHAT: ENVIAR MENSAJES --- //
+// =========================================================================== //
+
+const SendMessageSchema = z.object({
+  chatId: z.string(),
+  content: z.string().min(1, { message: 'El mensaje no puede estar vacío' }),
+});
+
+export async function sendMessage(prevState: State, formData: FormData): Promise<State> {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado' };
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user) return { message: 'Usuario no encontrado' };
+
+  const validatedFields = SendMessageSchema.safeParse(Object.fromEntries(formData.entries()));
+  
+  if (!validatedFields.success) {
+    return { message: 'Mensaje inválido' };
+  }
+
+  const { chatId, content } = validatedFields.data;
+
+  // Verificar que el usuario pertenece al chat
+  const chat = await prisma.chat.findUnique({ 
+    where: { id: chatId },
+    include: { buyer: true, seller: true } 
+  });
+
+  if (!chat) return { message: 'Chat no encontrado' };
+  if (chat.buyerId !== user.id && chat.sellerId !== user.id) {
+    return { message: 'No tienes permiso para escribir en este chat.' };
+  }
+
+  try {
+    await prisma.message.create({
+      data: {
+        content,
+        chatId,
+        senderId: user.id,
+      }
+    });
+
+    // Actualizamos la fecha del chat para que suba arriba en la lista
+    await prisma.chat.update({
+      where: { id: chatId },
+      data: { updatedAt: new Date() }
+    });
+
+    revalidatePath('/mensajes');
+    return { success: true, message: 'Enviado' };
+
+  } catch (error) {
+    return { message: 'Error al enviar el mensaje.' };
+  }
+}

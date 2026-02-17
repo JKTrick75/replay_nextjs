@@ -1,6 +1,6 @@
 import { prisma } from '@/app/lib/db';
 import { notFound } from 'next/navigation';
-import { Calendar, MapPin, Package, Star, MessageCircle, User as UserIcon } from 'lucide-react';
+import { Calendar, MapPin, Package, Star, User as UserIcon } from 'lucide-react'; // 🟢 Quitamos MessageCircle de los imports
 import GameCard from '@/app/ui/game-card';
 import { Listing } from '@/app/lib/definitions';
 import { auth } from '@/auth';
@@ -31,7 +31,7 @@ export default async function SellerProfilePage({
       id: true, name: true, image: true, createdAt: true, city: true, email: true,
       _count: {
         select: { 
-          // 🟢 CAMBIO: Solo contamos ventas que han sido ENTREGADAS (delivered)
+          // Solo contamos ventas que han sido ENTREGADAS (delivered)
           sales: { 
             where: { 
               status: 'sold',
@@ -145,18 +145,7 @@ export default async function SellerProfilePage({
                 </div>
             </div>
 
-            {/* Botón Contactar */}
-            {!isOwnProfile && (
-                <div className="mt-4 md:mt-2">
-                    <button 
-                    disabled
-                    className="bg-dark dark:bg-white text-white dark:text-dark px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2 opacity-60 cursor-not-allowed"
-                    >
-                        <MessageCircle size={20} />
-                        Contactar
-                    </button>
-                </div>
-            )}
+            {/* 🟢 ELIMINADO: Botón de Contactar del perfil */}
           </div>
         </div>
       </div>

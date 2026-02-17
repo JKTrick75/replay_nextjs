@@ -7,6 +7,7 @@ import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import BuyerCancelButton from '@/app/ui/dashboard/buyer-cancel-button';
 import ConfirmDeliveryButton from '@/app/ui/dashboard/confirm-delivery-button';
 import RateOrderButton from '@/app/ui/dashboard/rate-order-button';
+import ContactButton from '@/app/ui/chat/contact-button'; // 🟢 1. IMPORTAMOS
 
 export default async function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -75,29 +76,35 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                     <User size={20} className="text-primary"/> Datos del Vendedor
                 </h3>
                 
-                <Link 
-                  href={`/seller/${listing.seller.id}`}
-                  className="block p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all group"
-                >
-                    <div className="flex items-center gap-3">
-                        <img 
-                           src={listing.seller.image || '/placeholder-user.png'} 
-                           className="w-12 h-12 rounded-full bg-gray-200 object-cover border-2 border-transparent group-hover:border-primary transition-all"
-                           alt=""
-                        />
-                        <div>
-                            <p className="font-bold text-dark dark:text-white text-lg group-hover:text-primary transition-colors">
-                                {listing.seller.name}
-                            </p>
-                            <p className="text-sm text-gray-500 flex items-center gap-1">
-                                <Mail size={14}/> {listing.seller.email}
-                            </p>
-                            <p className="text-xs text-primary mt-2 font-bold flex items-center gap-1">
-                                Ver perfil público &rarr;
-                            </p>
+                {/* 🟢 2. AGRUPAMOS LINK Y BOTÓN DE CHAT */}
+                <div className="flex flex-col gap-3">
+                    <Link 
+                        href={`/seller/${listing.seller.id}`}
+                        className="block p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <img 
+                            src={listing.seller.image || '/placeholder-user.png'} 
+                            className="w-12 h-12 rounded-full bg-gray-200 object-cover border-2 border-transparent group-hover:border-primary transition-all"
+                            alt=""
+                            />
+                            <div>
+                                <p className="font-bold text-dark dark:text-white text-lg group-hover:text-primary transition-colors">
+                                    {listing.seller.name}
+                                </p>
+                                <p className="text-sm text-gray-500 flex items-center gap-1">
+                                    <Mail size={14}/> {listing.seller.email}
+                                </p>
+                                <p className="text-xs text-primary mt-2 font-bold flex items-center gap-1">
+                                    Ver perfil público &rarr;
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
+
+                    {/* BOTÓN DE CHAT AÑADIDO AQUÍ */}
+                    <ContactButton listingId={listing.id} />
+                </div>
              </div>
 
              <div>
@@ -177,9 +184,8 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                </div>
             )}
 
-            {/* 🟢 ZONA DE ACCIONES - AHORA CON ESTILOS RESTAURADOS */}
+            {/* ZONA DE ACCIONES */}
             {listing.status === 'sold' && (
-              // He restaurado aquí las clases que pediste: bg-gray-50, border, rounded-xl...
               <div className="bg-gray-50 dark:bg-neutral-900/30 p-6 rounded-xl border border-gray-100 dark:border-neutral-700">
                 <h4 className="font-bold text-dark dark:text-white mb-4 flex items-center gap-2">
                     <Settings size={18} className="text-gray-500" /> Acciones Disponibles
@@ -229,7 +235,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
               </div>
             )}
 
-             {/* ESTADOS FINALES - 🟢 SOLO APARECE SI ESTÁ CANCELADO */}
+             {/* ESTADOS FINALES - SOLO APARECE SI ESTÁ CANCELADO */}
              {listing.status === 'cancelled' && (
                <div className="p-5 rounded-xl border flex items-center gap-3 font-bold bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400">
                     <PackageX size={24} />

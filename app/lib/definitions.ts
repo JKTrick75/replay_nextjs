@@ -19,6 +19,9 @@ export interface User {
   _count?: {
     sales?: number;
     reviewsReceived?: number;
+    // Nuevo
+    chatsAsBuyer?: number;
+    chatsAsSeller?: number;
   };
 }
 
@@ -156,4 +159,32 @@ export interface Cart {
   id: string;
   userId: string;
   items: CartItem[];
+}
+
+// CHAT & MENSAJES
+export interface Message {
+  id: string;
+  content: string;
+  image?: string | null;
+  createdAt: Date;
+  read: boolean;
+  senderId: string;
+  chatId: string;
+  
+  // Relaciones
+  sender?: User;
+}
+
+export interface Chat {
+  id: string;
+  buyerId: string;
+  sellerId: string;
+  listingId?: string | null;
+  updatedAt: Date;
+  
+  // Relaciones
+  buyer?: User;
+  seller?: User;
+  listing?: Listing | null;
+  messages?: Message[];
 }

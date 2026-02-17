@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shield, User as UserIcon } from 'lucide-react';
+import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shield, User as UserIcon, MessageCircle } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
 import { confirmAction, showToast } from '@/app/lib/swal';
 
-// 🟢 1. Añadimos 'id' para poder enlazar al perfil
+// Tipado del usuario
 type UserProps = {
   id?: string;
   name?: string | null;
@@ -140,6 +140,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                   <ChevronDown size={16} className={`text-gray-500 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
+                {/* --- DROPDOWN ESCRITORIO --- */}
                 {isMenuOpen && (
                   <div className="absolute -right-2 mt-2 w-64 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-gray-light dark:border-gray py-2 animate-in fade-in slide-in-from-top-2 z-50 origin-top-right">
                     <div className="px-4 py-3 border-b border-gray-light dark:border-gray mb-2">
@@ -147,7 +148,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                       <p className="text-sm font-bold text-dark dark:text-white truncate">{user.email}</p>
                     </div>
 
-                    {/* 🟢 NUEVO: Enlace al Perfil Público */}
                     <Link 
                       href={`/seller/${user.id}`} 
                       onClick={() => setIsMenuOpen(false)}
@@ -155,6 +155,16 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                     >
                       <UserIcon size={16} className="text-primary" />
                       Perfil
+                    </Link>
+
+                    {/* 🟢 NUEVO: MENSAJES (Estilo Desktop) */}
+                    <Link 
+                      href="/mensajes" 
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-dark dark:text-white hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      <MessageCircle size={16} className="text-primary" />
+                      Mensajes
                     </Link>
 
                     <Link 
@@ -234,6 +244,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
         <div className="md:hidden border-t border-gray-light dark:border-gray bg-white dark:bg-dark animate-in slide-in-from-top-5">
           <div className="px-4 pt-2 pb-6 space-y-2">
             
+            {/* Enlaces Principales (Home, Tienda...) */}
             {navLinks.map((link) => {
                const isActive = pathname === link.href;
                return (
@@ -254,6 +265,7 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
 
             <div className="border-t border-gray-light dark:border-gray my-2"></div>
 
+            {/* Panel de Usuario Móvil */}
             {user ? (
               <div className="px-3 space-y-3">
                 <div className="flex items-center gap-3 py-2">
@@ -268,7 +280,6 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                   </div>
                 </div>
                 
-                {/* 🟢 ENLACE MÓVIL TAMBIÉN */}
                 <Link 
                   href={`/seller/${user.id}`}
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -276,6 +287,17 @@ export default function Navbar({ user, cartCount = 0 }: { user?: UserProps, cart
                 >
                    <UserIcon size={18} className="text-primary" />
                    Perfil
+                </Link>
+
+                {/* 🟢 NUEVO: MENSAJES (Estilo Móvil) */}
+                {/* Tiene el mismo estilo 'bloque ancho' (w-full) que el resto de botones móviles */}
+                <Link 
+                  href="/mensajes"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-dark dark:text-white bg-gray-50 dark:bg-neutral-800 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700"
+                >
+                   <MessageCircle size={18} className="text-primary" />
+                   Mensajes
                 </Link>
 
                 <Link 

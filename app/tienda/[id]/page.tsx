@@ -7,6 +7,7 @@ import MapLoader from '@/app/ui/shop/map-loader';
 import { auth } from '@/auth';
 import FavoriteButton from '@/app/ui/favorite-button';
 import AddToCartButton from '@/app/ui/shop/add-to-cart-button'; 
+import ContactButton from '@/app/ui/chat/contact-button'; // 🟢 1. Importamos el botón de chat
 
 type Params = Promise<{ id: string }>;
 
@@ -143,8 +144,14 @@ export default async function ProductPage({ params }: { params: Params }) {
                         Editar Anuncio
                       </Link>
                     ) : (
-                      // 2. ES UN COMPRADOR -> Botón Añadir al Carrito
-                      <AddToCartButton listingId={listing.id} />
+                      // 2. ES UN COMPRADOR -> Botones Carrito y Contactar
+                      <div className="flex gap-3 w-full sm:w-auto">
+                          {/* Botón Carrito */}
+                          <AddToCartButton listingId={listing.id} />
+                          
+                          {/* Botón Contactar */}
+                          <ContactButton listingId={listing.id} />
+                      </div>
                     )
                   )}
 
@@ -203,7 +210,7 @@ export default async function ProductPage({ params }: { params: Params }) {
                 </p>
               </div>
 
-              {/* 🟢 NUEVO BLOQUE: VENDEDOR CLICABLE (LINK AL PERFIL) */}
+              {/* VENDEDOR CLICABLE (LINK AL PERFIL) */}
               <Link 
                 href={`/seller/${listing.seller?.id}`}
                 className="mb-8 pt-6 border-t border-gray-light dark:border-gray-700 flex items-center gap-4 group cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800/50 p-4 rounded-xl -mx-4 transition-all"
