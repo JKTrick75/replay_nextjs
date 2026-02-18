@@ -104,19 +104,27 @@ export default async function CartPage() {
                       <CartCheckbox id={item.id} isSelected={item.selected} />
                   </div>
 
-                  <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 dark:border-neutral-700">
+                  {/* 🟢 CORRECCIÓN: IMAGEN ENLAZADA A DETALLES */}
+                  <Link 
+                    href={`/tienda/${item.listing.id}`}
+                    className="w-24 h-24 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 dark:border-neutral-700 block hover:opacity-90 transition-opacity"
+                  >
                     <img 
                       src={item.listing.game.coverImage || '/placeholder-game.png'} 
                       alt={item.listing.game.title}
                       className="w-full h-full object-cover"
                     />
-                  </div>
+                  </Link>
 
                   <div className="flex-1 min-w-0">
                     {/* INFO PRINCIPAL */}
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-0">
                       <div>
-                        <h3 className="font-bold text-dark dark:text-white truncate sm:pr-8">{item.listing.game.title}</h3>
+                        {/* 🟢 CORRECCIÓN: TÍTULO ENLAZADO A DETALLES */}
+                        <Link href={`/tienda/${item.listing.id}`} className="hover:text-primary transition-colors block">
+                           <h3 className="font-bold text-dark dark:text-white truncate sm:pr-8">{item.listing.game.title}</h3>
+                        </Link>
+                        
                         <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
                           {item.listing.platform.name} • <span className="text-primary font-medium">{item.listing.condition}</span>
                         </p>
@@ -127,7 +135,6 @@ export default async function CartPage() {
                       </p>
                     </div>
                     
-                    {/* 🟢 CORRECCIÓN: 'mb-3' en móvil crea espacio vertical real para que quepa el botón absoluto */}
                     <div className="mt-2 mb-3 sm:mb-0 flex items-center gap-2">
                        <img src={item.listing.seller.image || `https://ui-avatars.com/api/?name=${item.listing.seller.name}`} className="w-5 h-5 rounded-full" alt="" />
                        <span className="text-[10px] text-gray-400">Vendido por <span className="font-bold">{item.listing.seller.name}</span></span>

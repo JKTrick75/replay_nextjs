@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '@/app/ui/theme-toggle';
-import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shield, User as UserIcon, MessageCircle } from 'lucide-react';
+import { LogIn, LogOut, LayoutDashboard, ChevronDown, Menu, X, ShoppingCart, Shield, User as UserIcon, MessageCircle, Mail } from 'lucide-react';
 import { logout } from '@/app/lib/actions';
 import { confirmAction, showToast } from '@/app/lib/swal';
 
@@ -22,7 +22,6 @@ const navLinks = [
   { name: 'Vender', href: '/dashboard/ventas/crear' },
 ];
 
-// 🟢 Añadimos prop unreadCount
 export default function Navbar({ 
   user, 
   cartCount = 0, 
@@ -50,6 +49,15 @@ export default function Navbar({
       return () => clearTimeout(timer);
     }
   }, [cartCount]);
+
+  // POLLING GLOBAL (Cada 5 segundos)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 5000); 
+
+    return () => clearInterval(interval);
+  }, [router]);
 
   const handleCartClick = async () => {
     if (user) {
@@ -85,6 +93,10 @@ export default function Navbar({
     }
   };
 
+  // 🟢 CLASES REUTILIZABLES PARA LOS BADGES (para que sean IDÉNTICOS)
+  // Usamos h-5 w-5 para que sean círculos perfectos
+  const badgeClasses = "absolute -top-1 -right-2 bg-primary text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white dark:border-neutral-800 transition-transform";
+
   return (
     <nav className="w-full bg-white dark:bg-neutral-800 border-b border-gray-light dark:border-neutral-800 sticky top-0 z-50 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -116,18 +128,37 @@ export default function Navbar({
               );
             })}
 
-            <button
-              onClick={handleCartClick}
-              className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 mr-2 focus:outline-none"
-              title="Ver carrito"
-            >
-              <ShoppingCart size={24} />
-              {cartCount > 0 && (
-                <span className={`absolute -top-1 -right-2 bg-primary text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white dark:border-dark transition-transform ${animateBadge ? 'scale-125' : 'scale-100'}`}>
-                  {cartCount}
-                </span>
+            {/* CONTENEDOR DE ICONOS (Flex para alinear) */}
+            <div className="flex items-center gap-1 mr-2">
+              
+              {/* 🟢 ICONO SOBRE (Mensajes) */}
+              {user && unreadCount > 0 && (
+                <Link 
+                  href="/mensajes"
+                  className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1"
+                  title="Mensajes nuevos"
+                >
+                  <Mail size={24} />
+                  <span className={`${badgeClasses} animate-pulse`}>
+                    {unreadCount}
+                  </span>
+                </Link>
               )}
-            </button>
+
+              {/* 🟢 ICONO CARRITO */}
+              <button
+                onClick={handleCartClick}
+                className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 focus:outline-none"
+                title="Ver carrito"
+              >
+                <ShoppingCart size={24} />
+                {cartCount > 0 && (
+                  <span className={`${badgeClasses} ${animateBadge ? 'scale-125' : 'scale-100'}`}>
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            </div>
              
             <ThemeToggle />
 
@@ -165,7 +196,6 @@ export default function Navbar({
                       Perfil
                     </Link>
 
-                    {/* 🟢 NUEVO: MENSAJES (Con Badge) */}
                     <Link 
                       href="/mensajes" 
                       onClick={() => setIsMenuOpen(false)}
@@ -175,7 +205,6 @@ export default function Navbar({
                         <MessageCircle size={16} className="text-primary" />
                         Mensajes
                       </div>
-                      {/* Badge Rojo */}
                       {unreadCount > 0 && (
                         <span className="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                           {unreadCount}
@@ -231,13 +260,28 @@ export default function Navbar({
 
           {/* --- BOTÓN MENÚ MÓVIL --- */}
           <div className="flex md:hidden items-center gap-4">
+            
+            {/* 🟢 ICONO SOBRE MÓVIL */}
+            {user && unreadCount > 0 && (
+              <Link 
+                href="/mensajes"
+                className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1"
+              >
+                <Mail size={24} />
+                <span className={`${badgeClasses} animate-pulse`}>
+                  {unreadCount}
+                </span>
+              </Link>
+            )}
+
+            {/* 🟢 ICONO CARRITO MÓVIL */}
             <button
               onClick={handleCartClick}
               className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 focus:outline-none"
             >
               <ShoppingCart size={24} />
               {cartCount > 0 && (
-                <span className={`absolute -top-1 -right-2 bg-primary text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white dark:border-dark transition-transform ${animateBadge ? 'scale-125' : 'scale-100'}`}>
+                <span className={`${badgeClasses} ${animateBadge ? 'scale-125' : 'scale-100'}`}>
                   {cartCount}
                 </span>
               )}
@@ -260,7 +304,7 @@ export default function Navbar({
         <div className="md:hidden border-t border-gray-light dark:border-gray bg-white dark:bg-dark animate-in slide-in-from-top-5">
           <div className="px-4 pt-2 pb-6 space-y-2">
             
-            {/* Enlaces Principales (Home, Tienda...) */}
+            {/* Enlaces Principales */}
             {navLinks.map((link) => {
                const isActive = pathname === link.href;
                return (
@@ -305,7 +349,6 @@ export default function Navbar({
                    Perfil
                 </Link>
 
-                {/* 🟢 NUEVO: MENSAJES (Móvil con Badge) */}
                 <Link 
                   href="/mensajes"
                   onClick={() => setIsMobileMenuOpen(false)}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
+import { useRouter } from 'next/navigation'; 
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 import { sendMessage } from '@/app/lib/actions'; 
 import { Chat, Message, User } from '@/app/lib/definitions';
@@ -16,9 +17,26 @@ export default function ChatWindow({
   const [content, setContent] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null); 
+  
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  
+  // 🟢 1. REF PARA CONTROLAR LA CANTIDAD DE MENSAJES PREVIA
+  // Esto nos ayuda a saber si realmente ha llegado un mensaje nuevo o es solo un refresh
+  const prevMessagesLength = useRef(chat.messages.length);
 
+  const router = useRouter();
+
+  // POLLING: Actualizar chat cada 3 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 3000); 
+
+    return () => clearInterval(interval);
+  }, [router]);
+
+  // Función básica de scroll
   const scrollToBottom = (instant = true) => {
     if (chatContainerRef.current) {
       const container = chatContainerRef.current;
@@ -30,8 +48,43 @@ export default function ChatWindow({
     }
   };
 
-  useLayoutEffect(() => scrollToBottom(true), []);
-  useEffect(() => scrollToBottom(true), [chat.messages]);
+  // Helper: ¿Está el usuario mirando el final del chat?
+  // Consideramos "estar al final" si está a menos de 150px del fondo
+  const isUserAtBottom = () => {
+    const container = chatContainerRef.current;
+    if (!container) return false;
+    const threshold = 150; 
+    return container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+  };
+
+  // 🟢 2. SCROLL INICIAL (Solo al montar el componente)
+  useLayoutEffect(() => {
+    scrollToBottom(true);
+  }, []);
+
+  // 🟢 3. SCROLL INTELIGENTE CUANDO CAMBIAN LOS MENSAJES
+  useEffect(() => {
+    const currentLength = chat.messages.length;
+    const prevLength = prevMessagesLength.current;
+    const lastMessage = chat.messages[chat.messages.length - 1];
+    
+    // Solo actuamos si hay MÁS mensajes que antes (nuevo mensaje real)
+    if (currentLength > prevLength) {
+        const isMe = lastMessage?.senderId === currentUser.id;
+        
+        // Hacemos scroll si:
+        // A) Fui yo quien envió el mensaje (siempre quiero verlo)
+        // B) O si yo estaba ya al final del chat leyendo lo último
+        if (isMe || isUserAtBottom()) {
+            scrollToBottom(false); // false = con animación suave
+        }
+        // Si no se cumple (ej: estoy leyendo arriba y me escribe otro), NO hacemos scroll.
+    }
+
+    // Actualizamos la referencia para la próxima vez
+    prevMessagesLength.current = currentLength;
+
+  }, [chat.messages, currentUser.id]);
 
   const handleSend = async (formData: FormData) => {
     if (!content.trim()) return;
@@ -43,7 +96,9 @@ export default function ChatWindow({
     
     setIsSending(false);
     formRef.current?.reset();
-    setTimeout(() => scrollToBottom(true), 50); 
+    
+    // Forzamos scroll al enviar manualmente también por si acaso
+    setTimeout(() => scrollToBottom(false), 50); 
   };
 
   const handleImageClick = async () => {
@@ -69,7 +124,7 @@ export default function ChatWindow({
         showToast('error', 'Error', 'No se pudo enviar la imagen.');
       }
       setIsSending(false);
-      setTimeout(() => scrollToBottom(true), 50);
+      setTimeout(() => scrollToBottom(false), 50);
     }
   };
 
@@ -153,16 +208,12 @@ export default function ChatWindow({
                       />
                   )}
 
-                  {/* CONTENIDO TEXTO + HORA/CHECKS */}
                   <div className={`${!msg.content && msg.image ? 'px-3 pb-2 pt-1' : 'px-4 py-2'}`}>
                         {msg.content && (
                            <p className="text-sm leading-relaxed mb-1">{msg.content}</p>
                         )}
                         
-                        {/* 🟢 FOOTER DEL MENSAJE: Hora y Checks juntos */}
                         <div className={`flex items-end justify-end gap-1 ${isMe ? 'text-white' : 'text-gray-400'}`}>
-                          
-                          {/* Hora */}
                           <span 
                             suppressHydrationWarning
                             className="text-[10px] opacity-70"
@@ -170,17 +221,13 @@ export default function ChatWindow({
                             {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
 
-                          {/* Checks (Solo si soy yo, dentro de la burbuja, blancos) */}
                           {isMe && (
-                             // Usamos opacidad para diferenciar leído (100%) de no leído (60%) manteniendo el color blanco
                              <span className={`text-xs leading-none mb-0.5 ${msg.read ? 'opacity-100' : 'opacity-60'}`}>
                                 {msg.read ? '✓✓' : '✓'}
                              </span>
                           )}
                         </div>
                     </div>
-
-                  {/* 🔴 ELIMINADO: El bloque span absoluto que estaba fuera */}
                 </div>
               </div>
             );
