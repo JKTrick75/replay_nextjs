@@ -20,16 +20,13 @@ const SPANISH_CITIES = [
 ];
 
 const OLD_MARCAS = [
-  // ... (tus marcas) ...
   { "_id": "69047fcd3bc991d7f84958e4", "nom": "Nintendo", "pais_origen": "Japón" },
   { "_id": "690480b73bc991d7f84958e9", "nom": "Sony", "pais_origen": "EEUU" },
   { "_id": "691379f728c1cdaa2d7cf1bb", "nom": "Microsoft", "pais_origen": "EEUU" }
 ];
 
 const OLD_CONSOLAS = [
-  // ... (tus consolas) ...
   { "_id": "pc-id-001", "nom": "PC", "any_eixida": 1980, "marca_id": "691379f728c1cdaa2d7cf1bb", "foto": "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?q=80&w=800&auto=format&fit=crop" },
-  // ... resto de consolas ...
   { "_id": "69137ba428c1cdaa2d7cf1fe", "nom": "PlayStation 1", "any_eixida": 1994, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/yLOfOCMUbl6KwAcr9ctPd8GMXZM_umAwlYmy0Qx00u0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMjE5/NzUxMDgyMy9mci9w/aG90by9zb255LXBs/YXlzdGF0aW9uLTEt/dmlkZW8tZ2FtZS1j/b25zb2xlLmpwZz9z/PTYxMng2MTImdz0w/Jms9MjAmYz1qU21i/OVhBXzluMzh4LVpk/V0dNc1ZiM3VwbERf/M0FwdGs0MjVXcU1w/TUtVPQ" },
   { "_id": "69137bb328c1cdaa2d7cf200", "nom": "PlayStation 2", "any_eixida": 2000, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/jPhxvz47YdX9bKF3_5wtk1JopTk9FtzFQtXS0ZrwNyA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy8w/LzAzL1BTMi1TbGlt/LUNvbnNvbGUtU2V0/LmpwZw" },
   { "_id": "69137bc428c1cdaa2d7cf202", "nom": "PlayStation 3", "any_eixida": 2006, "marca_id": "690480b73bc991d7f84958e9", "foto": "https://imgs.search.brave.com/DzvvboIMRLfGDhxOHfZMmfTVAoMZs51EJh-GnAgTt0w/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvNDU4/NTkzMDkzL3Bob3Rv/L3NvbnktcGxheXN0/YXRpb24tMy13aXRo/LWNvbnRyb2xsZXIu/anBnP3M9NjEyeDYx/MiZ3PTAmaz0yMCZj/PThMQlRrVjF3MThP/X3ZMUDl2N2JQVGhV/YmpybzB4SlIzbnQ5/X19GTlRxYWs9" },
@@ -48,7 +45,6 @@ const OLD_CONSOLAS = [
 ];
 
 const OLD_JUEGOS = [
-  // ... (tus juegos) ...
   { "nom": "Elden Ring", "genero": "RPG", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co4jni.webp", "consolas_disponibles": ["pc-id-001", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
   { "nom": "The Legend of Zelda: Tears of the Kingdom", "genero": "Aventura", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co5vmg.webp", "consolas_disponibles": ["69137c3c28c1cdaa2d7cf214"] },
   { "nom": "Grand Theft Auto V", "genero": "Acción", "foto": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2lbd.webp", "consolas_disponibles": ["pc-id-001", "69137bc428c1cdaa2d7cf202", "69137bcd28c1cdaa2d7cf204", "69137bdc28c1cdaa2d7cf206", "69137c1728c1cdaa2d7cf20e", "69137c2c28c1cdaa2d7cf210", "69137c3628c1cdaa2d7cf212"] },
@@ -87,36 +83,42 @@ const OLD_JUEGOS = [
 export async function GET() {
   try {
     // 1. Limpieza (Orden correcto para FK)
-    await prisma.review.deleteMany({}); // 🟢 1. Primero las reviews
+    
+    // 🟢 0. LIMPIEZA DE CHATS Y MENSAJES AÑADIDA
+    await prisma.message.deleteMany({});
+    await prisma.chat.deleteMany({});
+    
+    // El resto sigue igual
+    await prisma.review.deleteMany({}); 
     await prisma.favorite.deleteMany({});
     await prisma.cartItem.deleteMany({});
     await prisma.cart.deleteMany({});
     
-    await prisma.listing.deleteMany({}); // 🟢 2. Luego los productos
+    await prisma.listing.deleteMany({}); 
     await prisma.game.deleteMany({});
     await prisma.console.deleteMany({});
     await prisma.brand.deleteMany({});
-    // await prisma.user.deleteMany({}); // Opcional
+    // await prisma.user.deleteMany({}); // No borramos usuarios para no romper tu cuenta real
 
     // 2. GESTIÓN DE USUARIOS
-    let realDavid = await prisma.user.findUnique({
-      where: { email: 'david@gmail.com' }
+    
+    // 🟢 1. ASCENSO A ADMIN: Usamos upsert para actualizar el rol en producción
+    const realDavid = await prisma.user.upsert({
+      where: { email: 'david@gmail.com' },
+      update: {
+        role: 'admin' // ¡Aseguramos que siempre seas admin!
+      },
+      create: {
+        name: 'david',
+        email: 'david@gmail.com',
+        password: 'changeme', 
+        city: 'Aielo de Malferit',
+        lat: 38.8786,
+        lng: -0.5906,
+        role: 'admin',
+        image: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=david'
+      }
     });
-
-    if (!realDavid) {
-      realDavid = await prisma.user.create({
-        data: {
-          name: 'david',
-          email: 'david@gmail.com',
-          password: 'changeme', // Recuerda hashear esto si lo usas en login real
-          city: 'Aielo de Malferit',
-          lat: 38.8786,
-          lng: -0.5906,
-          role: 'admin',
-          image: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=david'
-        }
-      });
-    }
 
     const fakeUser1 = await prisma.user.upsert({
       where: { email: 'david.gamer@example.com' },
@@ -230,7 +232,7 @@ export async function GET() {
       }
     });
 
-    // C) VENTAS COMPLETADAS (Para tener histórico y probar reviews)
+    // C) VENTAS COMPLETADAS (Histórico Base)
     await prisma.listing.create({
       data: {
         sellerId: realDavid.id,
@@ -245,7 +247,7 @@ export async function GET() {
         lat: realDavid.lat || 38.8786, lng: realDavid.lng || -0.5906,
         updatedAt: new Date('2023-11-15'),
         shippingAddress: 'Calle Mayor 45, 3º A, Madrid, España',
-        deliveryStatus: 'pending'
+        deliveryStatus: 'pending' // Pendiente a propósito
       }
     });
 
@@ -263,13 +265,44 @@ export async function GET() {
         lat: fakeUser2.lat || 41.3850, lng: fakeUser2.lng || 2.1734,
         updatedAt: new Date('2024-02-10'),
         shippingAddress: 'Plaza del Ayuntamiento 5, Aielo de Malferit, Valencia',
-        deliveryStatus: 'shipped'
+        deliveryStatus: 'shipped' // Enviado
       }
     });
 
+    // 🟢 D) MÁS PEDIDOS FAKE COMPLETADOS (ENTREGADOS) PARA GRÁFICAS DEL ADMIN
+    const fakeOrdersData = [
+      { seller: fakeUser1, buyer: fakeUser2, gameIdx: 4, price: 15, date: '2025-12-05' },
+      { seller: fakeUser2, buyer: fakeUser1, gameIdx: 7, price: 40, date: '2025-01-20' },
+      { seller: fakeUser1, buyer: fakeUser2, gameIdx: 12, price: 60, date: '2025-02-14' },
+      { seller: fakeUser2, buyer: fakeUser1, gameIdx: 15, price: 35, date: '2025-03-01' },
+      { seller: fakeUser1, buyer: fakeUser2, gameIdx: 20, price: 25, date: '2025-03-15' },
+      { seller: fakeUser2, buyer: fakeUser1, gameIdx: 28, price: 10, date: '2025-04-10' },
+    ];
+
+    for (const order of fakeOrdersData) {
+      await prisma.listing.create({
+        data: {
+          sellerId: order.seller.id,
+          buyerId: order.buyer.id,
+          gameId: createdGames[order.gameIdx].id,
+          platformId: createdGames[order.gameIdx].platforms[0].id,
+          price: order.price,
+          condition: 'Usado',
+          description: 'Transacción completada',
+          status: 'sold',
+          deliveryStatus: 'delivered', // Entregado!
+          soldAt: new Date(order.date),
+          updatedAt: new Date(order.date),
+          lat: order.seller.lat || 40.4167,
+          lng: order.seller.lng || -3.7037,
+          shippingAddress: 'Dirección de prueba, España'
+        }
+      });
+    }
+
     return NextResponse.json({ 
       message: 'Seed actualizado con éxito 🚀', 
-      details: 'Base de datos reiniciada con reviews limpias.' 
+      details: 'Base de datos reiniciada con chats limpios, admin forzado y ventas fake completadas añadidas.' 
     });
 
   } catch (error) {

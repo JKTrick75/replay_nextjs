@@ -25,7 +25,9 @@ export default async function AdminDashboardPage(props: {
     allConsoles
   ] = await Promise.all([
     prisma.user.count(),
+
     prisma.listing.count({ where: { status: 'active' } }),
+    
     prisma.listing.count({ 
         where: { 
             status: 'sold',

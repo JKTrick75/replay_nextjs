@@ -19,7 +19,7 @@ export default function ContactButton({ listingId, className = '' }: { listingId
     if (result.success && result.redirectUrl) {
       router.push(result.redirectUrl);
     } else {
-      showToast('error', 'Error', result.message || 'No se pudo iniciar el chat.');
+      showToast('info', 'Inicia sesión', result.message || 'No se pudo iniciar el chat.');
       setIsPending(false);
     }
   };

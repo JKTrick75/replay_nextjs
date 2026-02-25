@@ -44,7 +44,13 @@ export default async function DashboardPage() {
       } 
     }),
 
-    prisma.listing.count({ where: { buyerId: user.id } }),
+    prisma.listing.count({ 
+      where: { 
+        buyerId: user.id,
+        status: 'sold',
+        deliveryStatus: 'delivered'
+      } 
+    }),
 
     prisma.listing.aggregate({
       where: { 

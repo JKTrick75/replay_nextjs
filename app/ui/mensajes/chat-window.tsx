@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; 
+import Link from 'next/link'; 
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 import { sendMessage } from '@/app/lib/actions'; 
 import { Chat, Message, User } from '@/app/lib/definitions';
@@ -21,8 +22,7 @@ export default function ChatWindow({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   
-  // 🟢 1. REF PARA CONTROLAR LA CANTIDAD DE MENSAJES PREVIA
-  // Esto nos ayuda a saber si realmente ha llegado un mensaje nuevo o es solo un refresh
+  // REF PARA CONTROLAR LA CANTIDAD DE MENSAJES PREVIA
   const prevMessagesLength = useRef(chat.messages.length);
 
   const router = useRouter();
@@ -48,8 +48,6 @@ export default function ChatWindow({
     }
   };
 
-  // Helper: ¿Está el usuario mirando el final del chat?
-  // Consideramos "estar al final" si está a menos de 150px del fondo
   const isUserAtBottom = () => {
     const container = chatContainerRef.current;
     if (!container) return false;
@@ -57,31 +55,23 @@ export default function ChatWindow({
     return container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
   };
 
-  // 🟢 2. SCROLL INICIAL (Solo al montar el componente)
   useLayoutEffect(() => {
     scrollToBottom(true);
   }, []);
 
-  // 🟢 3. SCROLL INTELIGENTE CUANDO CAMBIAN LOS MENSAJES
   useEffect(() => {
     const currentLength = chat.messages.length;
     const prevLength = prevMessagesLength.current;
     const lastMessage = chat.messages[chat.messages.length - 1];
     
-    // Solo actuamos si hay MÁS mensajes que antes (nuevo mensaje real)
     if (currentLength > prevLength) {
         const isMe = lastMessage?.senderId === currentUser.id;
         
-        // Hacemos scroll si:
-        // A) Fui yo quien envió el mensaje (siempre quiero verlo)
-        // B) O si yo estaba ya al final del chat leyendo lo último
         if (isMe || isUserAtBottom()) {
-            scrollToBottom(false); // false = con animación suave
+            scrollToBottom(false); 
         }
-        // Si no se cumple (ej: estoy leyendo arriba y me escribe otro), NO hacemos scroll.
     }
 
-    // Actualizamos la referencia para la próxima vez
     prevMessagesLength.current = currentLength;
 
   }, [chat.messages, currentUser.id]);
@@ -97,7 +87,6 @@ export default function ChatWindow({
     setIsSending(false);
     formRef.current?.reset();
     
-    // Forzamos scroll al enviar manualmente también por si acaso
     setTimeout(() => scrollToBottom(false), 50); 
   };
 
@@ -131,7 +120,8 @@ export default function ChatWindow({
   const otherUser = currentUser.id === chat.buyerId ? chat.seller : chat.buyer;
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-neutral-900 relative">
+    // 🟢 AQUÍ ESTÁ LA MAGIA: Cambiamos 'h-full' por 'flex-1 min-h-0'
+    <div className="flex flex-col flex-1 min-h-0 w-full bg-white dark:bg-neutral-900 relative">
       
       {/* MODAL ZOOM */}
       {previewImage && (
@@ -151,27 +141,50 @@ export default function ChatWindow({
       )}
 
       {/* CABECERA */}
-      <div className="flex items-center gap-4 p-4 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 z-10 shadow-sm">
-        <img 
-          src={otherUser?.image || '/placeholder-user.png'} 
-          alt={otherUser?.name} 
-          className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-neutral-700"
-        />
-        <div className="flex-1">
-          <h2 className="font-bold text-dark dark:text-white leading-tight">{otherUser?.name}</h2>
-          {chat.listing && (
-            <p className="text-xs text-primary font-medium flex items-center gap-1 truncate">
-              Sobre: {chat.listing.game?.title || 'Producto'} ({chat.listing.price}€)
-            </p>
-          )}
-        </div>
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 z-10 shadow-sm">
         
-        {chat.listing?.game?.coverImage && (
-            <img 
-              src={chat.listing.game.coverImage} 
-              className="w-10 h-12 object-cover rounded-md border border-gray-200 dark:border-neutral-700" 
-              alt="Producto"
-            />
+        {/* ENLACE AL PERFIL DEL USUARIO */}
+        <Link 
+          href={`/seller/${otherUser?.id}`}
+          className="flex items-center gap-3 group hover:opacity-90 transition-opacity"
+          title="Ver perfil del usuario"
+        >
+          <img 
+            src={otherUser?.image || '/placeholder-user.png'} 
+            alt={otherUser?.name} 
+            className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-neutral-700 group-hover:border-primary transition-colors"
+          />
+          <div>
+            <h2 className="font-bold text-dark dark:text-white leading-tight group-hover:text-primary transition-colors">
+              {otherUser?.name}
+            </h2>
+            <p className="text-[10px] text-gray-400 font-medium">Ver perfil &rarr;</p>
+          </div>
+        </Link>
+        
+        {/* ENLACE A LOS DETALLES DEL PRODUCTO */}
+        {chat.listing && (
+          <Link 
+            href={`/tienda/${chat.listing.id}`}
+            className="flex items-center gap-3 group hover:opacity-90 transition-opacity text-right"
+            title="Ver detalles del producto"
+          >
+            <div className="hidden sm:block">
+              <p className="text-xs text-primary font-bold truncate max-w-[150px]">
+                {chat.listing.game?.title || 'Producto'}
+              </p>
+              <p className="text-[10px] text-gray-400 font-medium">
+                {chat.listing.price}€ • Ver anuncio &rarr;
+              </p>
+            </div>
+            {chat.listing.game?.coverImage && (
+              <img 
+                src={chat.listing.game.coverImage} 
+                className="w-10 h-12 object-cover rounded-md border border-gray-200 dark:border-neutral-700 group-hover:border-primary transition-colors" 
+                alt="Producto"
+              />
+            )}
+          </Link>
         )}
       </div>
 
