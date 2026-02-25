@@ -2,14 +2,13 @@
 
 import { useActionState, useState, useEffect, useRef } from 'react';
 import { register } from '@/app/lib/actions';
-import { State } from '@/app/lib/definitions'; // Importamos State corregido
+import { State } from '@/app/lib/definitions';
 import { User, Mail, Lock, MapPin, Loader2, AlertCircle, UserPlus, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { showToast } from '@/app/lib/swal';
 
 export default function RegisterForm() {
-  // 🟢 CORRECCIÓN: Ya no hace falta el '& { success?: boolean }'
   const initialState: State = { message: null, errors: {} };
   const [state, formAction] = useActionState(register, initialState);
   const [isPending, setIsPending] = useState(false);
@@ -26,7 +25,6 @@ export default function RegisterForm() {
     }
   }, [state, router]);
 
-  // ... (Resto del componente IGUAL) ...
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -111,7 +109,7 @@ export default function RegisterForm() {
 
       <div className="px-8 pb-8 space-y-5">
         
-        {/* 1. NOMBRE */}
+        {/* 1- NOMBRE */}
         <div>
           <label className="mb-2 block text-sm font-bold text-dark dark:text-gray-200">
             Nombre completo
@@ -123,7 +121,7 @@ export default function RegisterForm() {
           {state.errors?.name && <p className="mt-1 text-xs text-primary font-medium">{state.errors.name[0]}</p>}
         </div>
 
-        {/* 2. EMAIL */}
+        {/* 2- EMAIL */}
         <div>
           <label className="mb-2 block text-sm font-bold text-dark dark:text-gray-200">
             Correo electrónico
@@ -135,7 +133,7 @@ export default function RegisterForm() {
           {state.errors?.email && <p className="mt-1 text-xs text-primary font-medium">{state.errors.email[0]}</p>}
         </div>
 
-        {/* 3. CIUDAD */}
+        {/* 3- CIUDAD */}
         <div className="relative" ref={cityWrapperRef}>
           <label className="mb-2 block text-sm font-bold text-dark dark:text-gray-200">
             Ciudad de Residencia
@@ -178,7 +176,7 @@ export default function RegisterForm() {
           {state.errors?.city && <p className="mt-1 text-xs text-primary font-medium">{state.errors.city[0]}</p>}
         </div>
 
-        {/* 4 & 5. CONTRASEÑAS */}
+        {/* 4- CONTRASEÑAS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className="mb-2 block text-sm font-bold text-dark dark:text-gray-200">
@@ -201,7 +199,7 @@ export default function RegisterForm() {
           </div>
         </div>
 
-        {/* FEEDBACK VISUAL */}
+        {/* 5- FEEDBACK VISUAL */}
         <div className="min-h-5 text-sm font-medium transition-all duration-300">
           {passwordsMismatch && (
             <div className="flex items-center gap-2 text-red-500 animate-pulse">
@@ -222,7 +220,7 @@ export default function RegisterForm() {
           )}
         </div>
 
-        {/* 🚑 MENSAJE GENERAL ERROR */}
+        {/* 6- MENSAJE GENERAL ERROR */}
         {state.message && (
              <div className="flex items-center gap-2 text-primary bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-primary/20">
                <AlertCircle className="h-5 w-5 shrink-0" />

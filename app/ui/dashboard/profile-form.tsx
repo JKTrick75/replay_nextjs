@@ -5,32 +5,27 @@ import { useRouter } from 'next/navigation';
 import { updateProfile } from '@/app/lib/actions';
 import { User as UserType } from '@/app/lib/definitions';
 import { Pencil, Save, RefreshCw, MapPin, Mail, Lock, User as UserIcon, CheckCircle2, Link as LinkIcon, Loader2, Check, X } from 'lucide-react';
-
-// 🟢 1. Importamos la nueva función 'askForInput'
 import { askForInput } from '@/app/lib/swal';
 
 export default function ProfileForm({ user }: { user: UserType }) {
   const router = useRouter(); 
-  // ... (Resto de estados: message, errors, editMode, avatarUrl...) ...
+
   const [message, setMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<any>({});
   const [isPending, setIsPending] = useState(false);
   const [editMode, setEditMode] = useState<{ [key: string]: boolean }>({});
   const [avatarUrl, setAvatarUrl] = useState(user.image || `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.name}`);
 
-  // ... (Estados de inputs: email, password, city...) ...
   const [emailInput, setEmailInput] = useState(user.email);
   const [confirmEmailInput, setConfirmEmailInput] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   
-  // ... (Variables de validación emailsMatch, passwordsMatch...) ...
   const emailsMatch = confirmEmailInput.length > 0 && emailInput === confirmEmailInput;
   const emailsMismatch = confirmEmailInput.length > 0 && emailInput !== confirmEmailInput;
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmNewPassword;
   const passwordsMismatch = confirmNewPassword.length > 0 && newPassword !== confirmNewPassword;
 
-  // ... (Lógica de ciudad: estados y useEffects...) ...
   const [cityQuery, setCityQuery] = useState(user.city || '');
   const [cityResults, setCityResults] = useState<any[]>([]);
   const [selectedCity, setSelectedCity] = useState<{ name: string, lat: string, lng: string } | null>({
@@ -94,14 +89,13 @@ export default function ProfileForm({ user }: { user: UserType }) {
     setAvatarUrl(`https://api.dicebear.com/9.x/pixel-art/svg?seed=${randomSeed}`);
   };
 
-  // 🟢 2. Lógica Refactorizada: Súper limpia
   const handleUrlAvatar = async () => {
     const { value: url } = await askForInput(
       'Cambiar Avatar',
       'Introduce la URL de tu imagen',
       'https://ejemplo.com/mi-foto.png',
-      'url', // Tipo de input
-      'Actualizar' // Texto botón
+      'url',
+      'Actualizar'
     );
 
     if (url) {
@@ -178,7 +172,7 @@ export default function ProfileForm({ user }: { user: UserType }) {
         {/* CAMPOS */}
         <div className="flex-1 space-y-6">
           
-          {/* 1. NOMBRE */}
+          {/* NOMBRE */}
           <div className="relative">
             <label className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
               <UserIcon size={16} /> Nombre
@@ -205,7 +199,7 @@ export default function ProfileForm({ user }: { user: UserType }) {
             )}
           </div>
 
-          {/* 2. CIUDAD */}
+          {/* CIUDAD */}
           <div className="relative" ref={cityWrapperRef}>
             <label className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
               <MapPin size={16} /> Ciudad
@@ -250,7 +244,7 @@ export default function ProfileForm({ user }: { user: UserType }) {
 
           <div className="border-t border-gray-light dark:border-neutral-700 my-6"></div>
 
-          {/* 3. EMAIL */}
+          {/* EMAIL */}
           <div className="space-y-3 p-4 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700">
             <div className="flex justify-between items-center">
               <label className="text-sm font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2">
@@ -296,7 +290,7 @@ export default function ProfileForm({ user }: { user: UserType }) {
             )}
           </div>
 
-          {/* 4. PASSWORD */}
+          {/* PASSWORD */}
           <div className="space-y-3 p-4 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700">
             <div className="flex justify-between items-center">
               <label className="text-sm font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2">

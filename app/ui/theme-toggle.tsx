@@ -8,7 +8,6 @@ export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Evitamos errores de hidratación (esperamos a que cargue el cliente)
   useEffect(() => {
     setMounted(true);
   }, []);

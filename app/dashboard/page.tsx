@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
-import { Package, Euro, ShoppingCart, ShoppingBag, ArrowRight, Truck, CheckCircle, Clock, PackageX, Tag, Hourglass } from 'lucide-react';
+import { Package, Euro, ShoppingBag, ArrowRight, Truck, CheckCircle, Clock, PackageX, Tag, Hourglass } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import Link from 'next/link';
 
@@ -16,7 +16,7 @@ export default async function DashboardPage() {
 
   if (!user) return <div>Usuario no encontrado.</div>;
 
-  // 3. CONSULTAS
+  //CONSULTAS
   const [
     activeListingsCount, 
     processListingsCount, 
@@ -181,9 +181,9 @@ export default async function DashboardPage() {
         </div>
       </div>
       
-      {/* 1. TUS ÚLTIMOS ANUNCIOS */}
+      {/* TUS ÚLTIMOS ANUNCIOS */}
       <div className="mb-8">
-        {/* 🟢 CABECERA FUERA (Estilo Título de Sección) */}
+        {/* CABECERA */}
         <div className="flex justify-between items-center mb-4 px-1">
             <h2 className="text-xl font-bold text-dark dark:text-white">Tus últimos anuncios</h2>
             <Link href="/dashboard/ventas" className="text-sm text-primary hover:underline flex items-center gap-1 font-medium">
@@ -231,9 +231,9 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. TUS ÚLTIMAS COMPRAS */}
+      {/* TUS ÚLTIMAS COMPRAS */}
       <div>
-        {/* 🟢 CABECERA FUERA */}
+        {/* CABECERA */}
         <div className="flex justify-between items-center mb-4 px-1">
             <h2 className="text-xl font-bold text-dark dark:text-white">Tus últimas compras</h2>
             <Link href="/dashboard/compras" className="text-sm text-primary hover:underline flex items-center gap-1 font-medium">

@@ -8,7 +8,7 @@ import { auth } from '@/auth';
 
 export default async function Home() {
   
-  // 1. OBTENER SESIÓN Y FAVORITOS
+  //1- OBTENER SESIÓN Y FAVORITOS
   const session = await auth();
   const userEmail = session?.user?.email;
   let favoriteIds: string[] = [];
@@ -23,7 +23,7 @@ export default async function Home() {
     }
   }
 
-  // 2. Obtener los últimos 8 anuncios activos
+  //2- Obtener los últimos 8 anuncios activos
   const listingsRaw = await prisma.listing.findMany({
     where: { 
       status: 'active' 
@@ -44,13 +44,13 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-white-off dark:bg-neutral-900 transition-colors duration-300">
       
-      {/* 1. SECCIÓN HERO */}
+      {/* HERO */}
       <Hero />
 
-      {/* 2. SECCIÓN: CATEGORÍAS (RENOVADA) */}
+      {/* CATEGORÍAS */}
       <CategoryGrid />
 
-      {/* 3. SECCIÓN: JUEGOS DESTACADOS */}
+      {/* JUEGOS DESTACADOS */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex items-center justify-between mb-10">
           <h2 className="text-3xl font-bold text-gray-800 dark:text-white border-l-4 border-primary pl-4">

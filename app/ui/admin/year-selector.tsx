@@ -8,11 +8,11 @@ export default function YearSelector() {
   const pathname = usePathname();
   const { replace } = useRouter();
 
-  // Obtenemos el año de la URL o usamos el actual por defecto
+  //Obtenemos el año de la URL o usamos el actual por defecto
   const currentYear = new Date().getFullYear();
   const selectedYear = Number(searchParams.get('year')) || currentYear;
 
-  // Generamos una lista de años (ej: desde 2024 hasta el año actual + 1)
+  //Generamos lista de años
   const years = [];
   for (let i = 2024; i <= currentYear + 1; i++) {
     years.push(i);

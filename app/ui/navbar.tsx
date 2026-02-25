@@ -50,7 +50,7 @@ export default function Navbar({
     }
   }, [cartCount]);
 
-  // POLLING GLOBAL (Cada 5 segundos)
+  //POLLING GLOBAL (Refresco cada 5 segundos)
   useEffect(() => {
     const interval = setInterval(() => {
       router.refresh();
@@ -93,8 +93,6 @@ export default function Navbar({
     }
   };
 
-  // 🟢 CLASES REUTILIZABLES PARA LOS BADGES (para que sean IDÉNTICOS)
-  // Usamos h-5 w-5 para que sean círculos perfectos
   const badgeClasses = "absolute -top-1 -right-2 bg-primary text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white dark:border-neutral-800 transition-transform";
 
   return (
@@ -128,10 +126,10 @@ export default function Navbar({
               );
             })}
 
-            {/* CONTENEDOR DE ICONOS (Flex para alinear) */}
+            {/* CONTENEDOR DE ICONOS */}
             <div className="flex items-center gap-1 mr-2">
               
-              {/* 🟢 ICONO SOBRE (Mensajes) */}
+              {/* Mensajes */}
               {user && unreadCount > 0 && (
                 <Link 
                   href="/mensajes"
@@ -145,7 +143,7 @@ export default function Navbar({
                 </Link>
               )}
 
-              {/* 🟢 ICONO CARRITO */}
+              {/* Carrito */}
               <button
                 onClick={handleCartClick}
                 className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 focus:outline-none"
@@ -261,7 +259,7 @@ export default function Navbar({
           {/* --- BOTÓN MENÚ MÓVIL --- */}
           <div className="flex md:hidden items-center gap-4">
             
-            {/* 🟢 ICONO SOBRE MÓVIL */}
+            {/* Mensajes */}
             {user && unreadCount > 0 && (
               <Link 
                 href="/mensajes"
@@ -274,7 +272,7 @@ export default function Navbar({
               </Link>
             )}
 
-            {/* 🟢 ICONO CARRITO MÓVIL */}
+            {/* Carrito */}
             <button
               onClick={handleCartClick}
               className="relative text-gray dark:text-gray-light hover:text-primary transition-colors p-1 focus:outline-none"
@@ -288,6 +286,7 @@ export default function Navbar({
             </button>
 
             <ThemeToggle />
+
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="text-gray-500 dark:text-gray-300 hover:text-primary focus:outline-none"
@@ -325,7 +324,7 @@ export default function Navbar({
 
             <div className="border-t border-gray-light dark:border-gray my-2"></div>
 
-            {/* Panel de Usuario Móvil */}
+            {/* Panel de Usuario */}
             {user ? (
               <div className="px-3 space-y-3">
                 <div className="flex items-center gap-3 py-2">

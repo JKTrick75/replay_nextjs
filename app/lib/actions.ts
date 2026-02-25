@@ -7,7 +7,6 @@ import { prisma } from '@/app/lib/db';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
-// 🟢 Importamos State desde definitions
 import { State } from '@/app/lib/definitions';
 
 // =========================================================================== //
@@ -61,7 +60,6 @@ export async function authenticate(
   return { success: true, message: '¡Hola de nuevo!' };
 }
 
-// 🟢 CORRECCIÓN CLAVE: Tipado explícito del retorno Promise<State>
 export async function register(prevState: State, formData: FormData): Promise<State> {
   const validatedFields = RegisterSchema.safeParse(Object.fromEntries(formData.entries()));
 
@@ -113,7 +111,6 @@ const CreateListingSchema = z.object({
   description: z.string().optional(),
 });
 
-// 🟢 CORRECCIÓN CLAVE: Tipado explícito del retorno Promise<State>
 export async function createListing(prevState: State, formData: FormData): Promise<State> {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
@@ -152,7 +149,6 @@ export async function createListing(prevState: State, formData: FormData): Promi
   if (!rawGenre) errors.genre = ["Debes seleccionar un género."];
 
   if (Object.keys(errors).length > 0) {
-    // Devolvemos timestamp para forzar la recarga del formulario
     return { errors, message: 'Faltan campos obligatorios.', values: rawValues, timestamp: Date.now() };
   }
 
@@ -213,25 +209,24 @@ export async function createListing(prevState: State, formData: FormData): Promi
   return { message: 'Producto publicado correctamente', timestamp: Date.now() };
 }
 
-// 🟢 FUNCIÓN MEJORADA: updateListing
 export async function updateListing(id: string, prevState: State, formData: FormData): Promise<State> {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
 
-  // 1. Obtenemos al usuario completo para ver su ID y ROL
+  //1- Obtenemos al usuario completo para ver su ID y ROL
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return { message: 'Usuario no encontrado.' };
 
-  // 2. Buscamos el anuncio original para verificar el dueño
+  //2- Buscamos el anuncio original para verificar el dueño
   const existingListing = await prisma.listing.findUnique({ where: { id } });
   if (!existingListing) return { message: 'Anuncio no encontrado.' };
 
-  // 3. 🔒 SEGURIDAD CRÍTICA: Solo el dueño O un admin pueden editar
+  //3- SEGURIDAD: Solo el dueño O un admin pueden editar
   if (existingListing.sellerId !== user.id && user.role !== 'admin') {
-    return { message: '⛔ No tienes permiso para editar este anuncio.' };
+    return { message: 'No tienes permiso para editar este anuncio.' };
   }
 
-  // --- RECOGIDA DE DATOS (Igual que tenías) ---
+  // --- RECOGIDA DE DATOS ---
   const rawValues = {
     gameId: formData.get('gameId')?.toString() || '',
     gameSearch: formData.get('gameSearch')?.toString() || '',
@@ -270,7 +265,7 @@ export async function updateListing(id: string, prevState: State, formData: Form
   let finalGameId = gameId;
 
   try {
-    // Lógica de juego nuevo/existente (Igual que tenías)
+    //Lógica de juego nuevo/existente
     if (!finalGameId && newGameTitle) {
       const existingGame = await prisma.game.findFirst({ where: { title: newGameTitle } });
       if (existingGame) {
@@ -295,7 +290,6 @@ export async function updateListing(id: string, prevState: State, formData: Form
 
     if (!finalGameId) return { message: 'Error al identificar el juego.', values: rawValues, timestamp: Date.now() };
 
-    // Actualización final
     await prisma.listing.update({
       where: { id },
       data: { gameId: finalGameId, platformId, price, condition, description: description || '' },
@@ -305,18 +299,17 @@ export async function updateListing(id: string, prevState: State, formData: Form
     return { message: 'Error al actualizar el anuncio.', values: rawValues, timestamp: Date.now() };
   }
 
-  // 4. REDIRECCIÓN INTELIGENTE (Admin vs Usuario)
+  //4- REDIRECCIÓN INTELIGENTE (Admin vs Usuario)
   if (user.role === 'admin') {
       revalidatePath('/admin/productos');
   } else {
       revalidatePath('/dashboard/ventas');
   }
-  revalidatePath('/tienda'); // Siempre refrescar la tienda pública
+  revalidatePath('/tienda');
   
   return { message: 'Producto actualizado correctamente', timestamp: Date.now() };
 }
 
-// 🟢 FUNCIÓN MEJORADA: deleteListing
 export async function deleteListing(id: string) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'No autenticado' };
@@ -327,15 +320,14 @@ export async function deleteListing(id: string) {
   const listing = await prisma.listing.findUnique({ where: { id } });
   if (!listing) return { message: 'Anuncio no encontrado' };
 
-  // 🔒 SEGURIDAD: Dueño o Admin
+  //SEGURIDAD: Dueño o Admin
   if (listing.sellerId !== user.id && user.role !== 'admin') {
-      return { message: '⛔ No tienes permiso para eliminar este anuncio.' };
+      return { message: 'No tienes permiso para eliminar este anuncio.' };
   }
 
   try {
     await prisma.listing.delete({ where: { id } });
     
-    // Refrescamos todas las rutas posibles
     revalidatePath('/dashboard/ventas');
     revalidatePath('/admin/productos');
     revalidatePath('/tienda');
@@ -704,8 +696,8 @@ const AdminUpdateUserSchema = z.object({
   email: z.string().email({ message: 'Email inválido.' }),
   role: z.enum(['user', 'admin'], { message: 'Rol inválido.' }),
   city: z.string().optional(),
-  lat: z.coerce.number().optional(), // 🟢 Añadido
-  lng: z.coerce.number().optional(), // 🟢 Añadido
+  lat: z.coerce.number().optional(),
+  lng: z.coerce.number().optional(),
 });
 
 export async function updateUserByAdmin(prevState: State, formData: FormData): Promise<State> {
@@ -723,8 +715,8 @@ export async function updateUserByAdmin(prevState: State, formData: FormData): P
     email: formData.get('email')?.toString() || '',
     role: formData.get('role')?.toString() || 'user',
     city: formData.get('city')?.toString() || '',
-    lat: formData.get('lat')?.toString() || '', // 🟢 Recogemos lat
-    lng: formData.get('lng')?.toString() || '', // 🟢 Recogemos lng
+    lat: formData.get('lat')?.toString() || '',
+    lng: formData.get('lng')?.toString() || '',
   };
 
   const validatedFields = AdminUpdateUserSchema.safeParse(rawValues);
@@ -754,8 +746,8 @@ export async function updateUserByAdmin(prevState: State, formData: FormData): P
         email, 
         role, 
         city, 
-        lat, // 🟢 Guardamos
-        lng  // 🟢 Guardamos
+        lat,
+        lng
       },
     });
 
@@ -794,7 +786,6 @@ export async function updateOrderAddress(prevState: State, formData: FormData): 
     return { message: 'Datos inválidos.' };
   }
 
-  // Verificar estado antes de guardar
   const listing = await prisma.listing.findUnique({ where: { id: listingId } });
   
   if (!listing) return { message: 'Pedido no encontrado.' };
@@ -810,7 +801,6 @@ export async function updateOrderAddress(prevState: State, formData: FormData): 
     });
 
     revalidatePath('/admin/pedidos');
-    // Revalidamos también la vista de detalle por si el admin sigue ahí
     revalidatePath(`/admin/pedidos/${listingId}`);
     
     return { success: true, message: 'Dirección de envío actualizada.' };
@@ -844,17 +834,17 @@ export async function createReview(prevState: State, formData: FormData): Promis
 
   const { listingId, rating, comment } = validatedFields.data;
 
-  // 1. Verificaciones de seguridad
+  //1- Verificaciones de seguridad
   const listing = await prisma.listing.findUnique({ where: { id: listingId } });
   
   if (!listing) return { message: 'Pedido no encontrado.' };
   if (listing.buyerId !== user.id) return { message: 'No puedes valorar una compra que no hiciste.' };
   
-  // 🟢 Importante: Solo permitimos valorar si ya está entregado
+  //Solo permitimos valorar si ya está entregado
   if (listing.deliveryStatus !== 'delivered') return { message: 'El pedido debe estar entregado para valorarlo.' };
 
   try {
-    // 2. Crear la review
+    //2- Crear la review
     await prisma.review.create({
       data: {
         rating,
@@ -865,10 +855,10 @@ export async function createReview(prevState: State, formData: FormData): Promis
       }
     });
 
-    // 3. Revalidar rutas para actualizar la UI
+    //3- Revalidar rutas para actualizar la UI
     revalidatePath(`/dashboard/compras`);
     revalidatePath(`/dashboard/compras/${listingId}`);
-    revalidatePath(`/seller/${listing.sellerId}`); // Actualizar perfil del vendedor al instante
+    revalidatePath(`/seller/${listing.sellerId}`);
 
     return { success: true, message: '¡Valoración enviada! Gracias.' };
 
@@ -941,7 +931,6 @@ export async function sendMessage(prevState: State, formData: FormData): Promise
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return { message: 'Usuario no encontrado' };
 
-  // 🟢 CORRECCIÓN AQUÍ: Usamos .toString() o undefined para evitar 'null'
   const rawData = {
     chatId: formData.get('chatId')?.toString(),
     content: formData.get('content')?.toString(), 

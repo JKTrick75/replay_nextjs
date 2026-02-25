@@ -32,17 +32,13 @@ export default function CancelOrderButton({ id }: { id: string }) {
     <button
       onClick={handleCancel}
       disabled={isPending}
-      // 👇 ESTILO SIDENAV "INACTIVO": Fondo blanco/neutro, texto gris, hover primario
       className={`
         flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors
         bg-white dark:bg-neutral-800 
         border border-gray-200 dark:border-neutral-700
         text-gray-600 dark:text-gray-300
-        
-        /* HOVER: Primary */
         hover:bg-primary/5 hover:border-primary/50 hover:text-primary
         dark:hover:bg-primary/10 dark:hover:border-primary/50
-        
         disabled:opacity-50 disabled:cursor-not-allowed
       `}
       title="Cancelar pedido y republicar"

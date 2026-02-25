@@ -19,7 +19,7 @@ export default function AdminCharts({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
       
-      {/* 1. GRÁFICO DE BARRAS: INGRESOS MENSUALES */}
+      {/* 1- GRÁFICO DE BARRAS: INGRESOS MENSUALES */}
       <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-700 overflow-hidden">
         
         <div className="flex flex-row items-center justify-between mb-6">
@@ -29,7 +29,6 @@ export default function AdminCharts({
             </div>
         </div>
 
-        {/* Scroll horizontal activado para móviles */}
         <div className="w-full overflow-x-auto pb-2">
             <div className="h-[300px] min-w-[600px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -67,21 +66,17 @@ export default function AdminCharts({
         </div>
       </div>
 
-      {/* 2. GRÁFICO DONUT: STOCK POR PLATAFORMA */}
+      {/* 2- GRÁFICO DONUT: STOCK POR PLATAFORMA */}
       <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-700">
         <h3 className="text-lg font-bold text-dark dark:text-white mb-6">Stock por Plataforma</h3>
-        
-        {/* 🟢 CORRECCIÓN: 
-            1. Aumentamos altura a h-[400px] para que quepan muchas leyendas.
-            2. ResponsiveContainer se ajustará a este espacio.
-        */}
+
         <div className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={platformData}
                 cx="50%"
-                cy="45%" // Subimos un pelín el círculo (50% -> 45%) para dejar sitio abajo
+                cy="45%"
                 innerRadius={60}
                 outerRadius={80}
                 paddingAngle={5}
@@ -105,7 +100,6 @@ export default function AdminCharts({
                 align="center"
                 iconType="circle"
                 wrapperStyle={{ paddingTop: '20px' }}
-                // 🟢 IMPORTANTE: Quitamos 'height={36}' para que no limite la altura y permita el wrap
               />
             </PieChart>
           </ResponsiveContainer>

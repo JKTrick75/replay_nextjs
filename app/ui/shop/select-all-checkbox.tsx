@@ -8,7 +8,6 @@ export default function SelectAllCheckbox({ allSelected }: { allSelected: boolea
   const [isPending, startTransition] = useTransition();
 
   const handleChange = () => {
-    // Si ya están todos seleccionados, la acción será desmarcar (false). Si no, marcar (true).
     const newState = !allSelected;
     
     startTransition(async () => {

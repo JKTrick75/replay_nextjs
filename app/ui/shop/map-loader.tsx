@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 
-// Aquí movemos la lógica de carga dinámica que tenías en la página
 const ShopMap = dynamic(() => import('@/app/ui/shop/map'), {
   ssr: false,
   loading: () => (

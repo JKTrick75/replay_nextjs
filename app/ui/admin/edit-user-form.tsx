@@ -14,10 +14,10 @@ export default function EditUserForm({ userToEdit }: { userToEdit: User }) {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
-  // --- LÓGICA DE CIUDAD (Igual que en Register) ---
+  // --- LÓGICA DE CIUDAD ---
   const [cityQuery, setCityQuery] = useState(userToEdit.city || '');
   const [cityResults, setCityResults] = useState<any[]>([]);
-  // Inicializamos con los datos del usuario si existen
+  //Inicializamos con los datos del usuario si existen
   const [selectedCity, setSelectedCity] = useState<{ name: string, lat: string | number, lng: string | number } | null>(
     userToEdit.city 
       ? { name: userToEdit.city, lat: userToEdit.lat || 0, lng: userToEdit.lng || 0 } 
@@ -38,10 +38,9 @@ export default function EditUserForm({ userToEdit }: { userToEdit: User }) {
     }
   }, [state, router]);
 
-  // Efecto para buscar ciudad al escribir
+  //Efecto para buscar ciudad al escribir
   useEffect(() => {
     const timer = setTimeout(async () => {
-      // Solo buscamos si ha cambiado el texto y no coincide con la ciudad ya seleccionada
       if (cityQuery.length > 2 && (!selectedCity || cityQuery !== selectedCity.name)) {
         setIsSearchingCity(true);
         try {
@@ -61,7 +60,7 @@ export default function EditUserForm({ userToEdit }: { userToEdit: User }) {
     return () => clearTimeout(timer);
   }, [cityQuery, selectedCity]);
 
-  // Cerrar dropdown al hacer clic fuera
+  //Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (cityWrapperRef.current && !cityWrapperRef.current.contains(event.target as Node)) {
@@ -121,7 +120,7 @@ export default function EditUserForm({ userToEdit }: { userToEdit: User }) {
                 </div>
             </div>
 
-            {/* CIUDAD (Con autocompletado y API) */}
+            {/* CIUDAD */}
             <div className="relative" ref={cityWrapperRef}>
                 <label className="mb-2 block text-sm font-bold text-dark dark:text-gray-200">Ciudad</label>
                 <div className="relative">
@@ -131,7 +130,6 @@ export default function EditUserForm({ userToEdit }: { userToEdit: User }) {
                         value={cityQuery}
                         onChange={(e) => {
                             setCityQuery(e.target.value);
-                            // Si el usuario edita a mano, borramos la selección anterior para forzar que elija de la lista
                             if (selectedCity && e.target.value !== selectedCity.name) {
                                 setSelectedCity(null); 
                             }

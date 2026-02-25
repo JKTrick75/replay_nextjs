@@ -166,7 +166,6 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
              )}
 
              {listing.status === 'sold' && listing.deliveryStatus !== 'delivered' && (
-                 // 🟢 CORRECCIÓN: Fondo y borde unificados con el resto de tarjetas
                  <div className="bg-gray-50 dark:bg-neutral-900/30 p-6 rounded-xl border border-gray-100 dark:border-neutral-700">
                     <h4 className="font-bold text-dark dark:text-white mb-4 flex items-center gap-2">
                         <Settings size={18} className="text-gray-500" /> Acciones Disponibles

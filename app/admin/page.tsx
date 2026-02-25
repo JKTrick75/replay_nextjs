@@ -1,21 +1,20 @@
 import { prisma } from '@/app/lib/db';
 import { Users, ShoppingBag, Package } from 'lucide-react';
 import AdminCharts from '@/app/ui/admin/charts';
-// 🔴 Eliminamos la importación de YearSelector aquí, ya no hace falta en la página
 
 export default async function AdminDashboardPage(props: {
   searchParams?: Promise<{ year?: string }>;
 }) {
   const searchParams = await props.searchParams;
   
-  // 1. DETERMINAR EL AÑO (Mantenemos la lógica de filtrado)
+  //1- DETERMINAR EL AÑO
   const currentYear = new Date().getFullYear();
   const selectedYear = Number(searchParams?.year) || currentYear;
 
   const startDate = new Date(selectedYear, 0, 1); 
   const endDate = new Date(selectedYear + 1, 0, 1); 
 
-  // 2. CONSULTAS
+  //2- CONSULTAS
   const [
     userCount, 
     listingCount, 
@@ -35,7 +34,7 @@ export default async function AdminDashboardPage(props: {
         } 
     }),
     
-    // GRÁFICA VENTAS (Filtrada por año)
+    //GRÁFICA VENTAS (Filtrada por año)
     prisma.listing.findMany({
         where: { 
             status: 'sold',
@@ -48,7 +47,7 @@ export default async function AdminDashboardPage(props: {
         select: { price: true, soldAt: true }
     }),
 
-    // GRÁFICA PLATAFORMAS
+    //GRÁFICA PLATAFORMAS
     prisma.listing.groupBy({
         by: ['platformId'],
         where: { status: 'active' },
@@ -60,7 +59,7 @@ export default async function AdminDashboardPage(props: {
 
   // --- PROCESAMIENTO DE DATOS ---
 
-  // A) Datos Ingresos
+  //A) Datos Ingresos
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const revenueMap = new Map();
   months.forEach(m => revenueMap.set(m, 0));
@@ -78,7 +77,7 @@ export default async function AdminDashboardPage(props: {
 
   const revenueChartData = Array.from(revenueMap, ([name, total]) => ({ name, total }));
 
-  // B) Datos Plataformas
+  //B) Datos Plataformas
   const platformChartData = activeListingsByPlatform.map(group => {
       const consoleName = allConsoles.find(c => c.id === group.platformId)?.name || 'Otros';
       return {
@@ -89,7 +88,6 @@ export default async function AdminDashboardPage(props: {
 
   return (
     <main>
-      {/* 🟢 CABECERA LIMPIA (Sin selector) */}
       <h1 className="text-3xl font-bold text-dark dark:text-white mb-8">
           Panel de Administración
       </h1>

@@ -25,7 +25,6 @@ export default function AddToCartButton({ listingId }: { listingId: string }) {
       router.refresh(); 
       setTimeout(() => setFeedback('idle'), 2000);
     } else {
-      // 🟢 MEJORA UX: Preguntar antes de redirigir al login
       if (result.message && result.message.includes('Inicia sesión')) {
          
          const userWantsToLogin = await confirmAction(
@@ -37,11 +36,10 @@ export default function AddToCartButton({ listingId }: { listingId: string }) {
          if (userWantsToLogin.isConfirmed) {
              router.push('/login');
          }
-         // Si cancela, simplemente nos quedamos aquí y no pasa nada
+
          return;
       }
 
-      // Si es otro tipo de error, lo mostramos en el botón
       setFeedback('error');
       setErrorMessage(result.message || 'Error al añadir');
       setTimeout(() => setFeedback('idle'), 3000);

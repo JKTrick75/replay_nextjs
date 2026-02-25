@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/db';
 
 const SPANISH_CITIES = [
-  // ... (tus ciudades) ...
   { name: 'Aielo de Malferit', lat: 38.8786, lng: -0.5906 },
   { name: 'Ontinyent', lat: 38.8228, lng: -0.6074 },
   { name: 'Madrid', lat: 40.416775, lng: -3.703790 },
@@ -84,11 +83,10 @@ export async function GET() {
   try {
     // 1. Limpieza (Orden correcto para FK)
     
-    // 🟢 0. LIMPIEZA DE CHATS Y MENSAJES AÑADIDA
+    //LIMPIEZA DE CHATS Y MENSAJES AÑADIDA
     await prisma.message.deleteMany({});
     await prisma.chat.deleteMany({});
     
-    // El resto sigue igual
     await prisma.review.deleteMany({}); 
     await prisma.favorite.deleteMany({});
     await prisma.cartItem.deleteMany({});
@@ -98,15 +96,15 @@ export async function GET() {
     await prisma.game.deleteMany({});
     await prisma.console.deleteMany({});
     await prisma.brand.deleteMany({});
-    // await prisma.user.deleteMany({}); // No borramos usuarios para no romper tu cuenta real
+    // await prisma.user.deleteMany({}); //No borramos usuarios para no romper cuenta real
 
-    // 2. GESTIÓN DE USUARIOS
+    //2- GESTIÓN DE USUARIOS
     
-    // 🟢 1. ASCENSO A ADMIN: Usamos upsert para actualizar el rol en producción
+    //ASCENSO A ADMIN: Usamos upsert para actualizar el rol en producción
     const realDavid = await prisma.user.upsert({
       where: { email: 'david@gmail.com' },
       update: {
-        role: 'admin' // ¡Aseguramos que siempre seas admin!
+        role: 'admin' //Aseguramos que siempre sea admin
       },
       create: {
         name: 'david',
@@ -146,7 +144,7 @@ export async function GET() {
       }
     });
 
-    // 3. CATÁLOGO
+    //3- CATÁLOGO
     const brandMap: Record<string, string> = {}; 
     for (const oldBrand of OLD_MARCAS) {
       const newBrand = await prisma.brand.create({
@@ -189,9 +187,9 @@ export async function GET() {
       createdGames.push(newGame);
     }
 
-    // 4. GENERAR ANUNCIOS
+    //4- GENERAR ANUNCIOS
     
-    // A) RELLENO MASIVO
+    //A) RELLENO MASIVO
     const conditions = ['Nuevo', 'Seminuevo', 'Usado'] as const;
     
     for (const game of createdGames) {
@@ -218,11 +216,11 @@ export async function GET() {
       }
     }
 
-    // B) TUS VENTAS (Tú vendes, FakeUser1 compra)
+    //B) TUS VENTAS
     await prisma.listing.create({
       data: {
         sellerId: realDavid.id,
-        gameId: createdGames[0].id, // Elden Ring
+        gameId: createdGames[0].id,
         platformId: createdGames[0].platforms[0].id,
         price: 45,
         condition: 'Seminuevo',
@@ -232,11 +230,11 @@ export async function GET() {
       }
     });
 
-    // C) VENTAS COMPLETADAS (Histórico Base)
+    //C) VENTAS COMPLETADAS
     await prisma.listing.create({
       data: {
         sellerId: realDavid.id,
-        gameId: createdGames[2].id, // GTA V
+        gameId: createdGames[2].id,
         platformId: createdGames[2].platforms[0].id,
         price: 20, 
         condition: 'Usado',
@@ -247,14 +245,14 @@ export async function GET() {
         lat: realDavid.lat || 38.8786, lng: realDavid.lng || -0.5906,
         updatedAt: new Date('2023-11-15'),
         shippingAddress: 'Calle Mayor 45, 3º A, Madrid, España',
-        deliveryStatus: 'pending' // Pendiente a propósito
+        deliveryStatus: 'pending'
       }
     });
 
     await prisma.listing.create({
       data: {
         sellerId: fakeUser2.id, 
-        gameId: createdGames[9].id, // Witcher 3
+        gameId: createdGames[9].id,
         platformId: createdGames[9].platforms[0].id,
         price: 15,
         condition: 'Usado',
@@ -265,11 +263,11 @@ export async function GET() {
         lat: fakeUser2.lat || 41.3850, lng: fakeUser2.lng || 2.1734,
         updatedAt: new Date('2024-02-10'),
         shippingAddress: 'Plaza del Ayuntamiento 5, Aielo de Malferit, Valencia',
-        deliveryStatus: 'shipped' // Enviado
+        deliveryStatus: 'shipped'
       }
     });
 
-    // 🟢 D) MÁS PEDIDOS FAKE COMPLETADOS (ENTREGADOS) PARA GRÁFICAS DEL ADMIN
+    //D) MÁS PEDIDOS FAKE ENTREGADOS PARA GRÁFICAS DEL ADMIN
     const fakeOrdersData = [
       { seller: fakeUser1, buyer: fakeUser2, gameIdx: 4, price: 15, date: '2025-12-05' },
       { seller: fakeUser2, buyer: fakeUser1, gameIdx: 7, price: 40, date: '2025-01-20' },
@@ -290,7 +288,7 @@ export async function GET() {
           condition: 'Usado',
           description: 'Transacción completada',
           status: 'sold',
-          deliveryStatus: 'delivered', // Entregado!
+          deliveryStatus: 'delivered',
           soldAt: new Date(order.date),
           updatedAt: new Date(order.date),
           lat: order.seller.lat || 40.4167,
@@ -301,8 +299,8 @@ export async function GET() {
     }
 
     return NextResponse.json({ 
-      message: 'Seed actualizado con éxito 🚀', 
-      details: 'Base de datos reiniciada con chats limpios, admin forzado y ventas fake completadas añadidas.' 
+      message: 'Seed actualizado con éxito!!!', 
+      details: 'Base de datos reiniciada correctamente, lista para empezar a testear.' 
     });
 
   } catch (error) {

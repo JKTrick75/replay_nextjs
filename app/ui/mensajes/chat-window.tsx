@@ -22,12 +22,11 @@ export default function ChatWindow({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   
-  // REF PARA CONTROLAR LA CANTIDAD DE MENSAJES PREVIA
   const prevMessagesLength = useRef(chat.messages.length);
 
   const router = useRouter();
 
-  // POLLING: Actualizar chat cada 3 segundos
+  //POLLING: Actualizar chat cada 3 segundos
   useEffect(() => {
     const interval = setInterval(() => {
       router.refresh();
@@ -36,7 +35,7 @@ export default function ChatWindow({
     return () => clearInterval(interval);
   }, [router]);
 
-  // Función básica de scroll
+  //Scroll automático
   const scrollToBottom = (instant = true) => {
     if (chatContainerRef.current) {
       const container = chatContainerRef.current;
@@ -120,7 +119,6 @@ export default function ChatWindow({
   const otherUser = currentUser.id === chat.buyerId ? chat.seller : chat.buyer;
 
   return (
-    // 🟢 AQUÍ ESTÁ LA MAGIA: Cambiamos 'h-full' por 'flex-1 min-h-0'
     <div className="flex flex-col flex-1 min-h-0 w-full bg-white dark:bg-neutral-900 relative">
       
       {/* MODAL ZOOM */}
@@ -247,7 +245,7 @@ export default function ChatWindow({
           })
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2 opacity-60">
-            <p>👋 ¡Saluda a {otherUser?.name}!</p>
+            <p>¡Saluda a {otherUser?.name}!</p>
             <p className="text-xs">Pregunta por el estado del producto o negocia el envío.</p>
           </div>
         )}

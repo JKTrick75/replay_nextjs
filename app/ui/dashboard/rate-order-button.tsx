@@ -23,7 +23,7 @@ export default function RateOrderButton({ listingId }: { listingId: string }) {
         isOpen={isModalOpen} 
         onClose={() => {
           setIsModalOpen(false);
-          router.refresh(); // Refrescamos para ver la review publicada
+          router.refresh(); //Refrescamos para ver la review publicada
         }} 
       />
     </>

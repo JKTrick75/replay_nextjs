@@ -35,10 +35,9 @@ export default function SideNav() {
     if (confirm.isConfirmed) {
       await logout();
       
-      // 1. Mostramos Toast
+      //Mostramos Toast
       showToast('info', 'Has cerrado sesión', '¡Hasta pronto!');
-      
-      // 2. Redirigimos YA (sin esperar)
+
       router.push('/');
       router.refresh();
     }

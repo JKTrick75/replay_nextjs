@@ -31,7 +31,6 @@ export default function CreateListingForm({
   const router = useRouter(); 
 
   // --- ESTADOS ---
-  // Al tener key en el form, estos estados se reiniciarán con state.values cuando vuelva del servidor
   const [query, setQuery] = useState(state.values?.gameSearch || listing?.game.title || '');
   const [selectedGameId, setSelectedGameId] = useState<string>(state.values?.gameId || listing?.gameId || '');
   const [customImageUrl, setCustomImageUrl] = useState(state.values?.coverImage || listing?.game.coverImage || '');
@@ -50,7 +49,7 @@ export default function CreateListingForm({
     }
   }, [state, listing, router]); 
 
-  // Sincronización extra por seguridad
+  //Sincronización extra por seguridad
   useEffect(() => {
     if (state.values) {
         setQuery(state.values.gameSearch ?? '');
@@ -96,14 +95,13 @@ export default function CreateListingForm({
   };
 
   return (
-    // 🟢 LA SOLUCIÓN: La key aquí fuerza el repintado TOTAL si el servidor responde
     <form 
       action={formAction} 
       key={`form-${state.timestamp ?? 'init'}`}
       className="rounded-xl bg-white-off dark:bg-neutral-800 p-6 md:p-8 border border-gray-light dark:border-neutral-700 shadow-sm transition-all duration-300"
     >
       
-      {/* 1. BUSCADOR DE JUEGOS */}
+      {/* BUSCADOR DE JUEGOS */}
       <div className="mb-6 relative" ref={wrapperRef}>
         <label htmlFor="gameSearch" className="mb-2 block text-sm font-bold text-dark dark:text-white">
           Nombre del Juego
@@ -160,7 +158,7 @@ export default function CreateListingForm({
         )}
       </div>
 
-      {/* BLOQUE DE DETALLES DEL JUEGO */}
+      {/* BLOQUE DETALLES DEL JUEGO */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-xl bg-gray-50 dark:bg-neutral-900/50 border border-gray-100 dark:border-neutral-700/50">
           
           <div className="md:col-span-1">
@@ -224,7 +222,7 @@ export default function CreateListingForm({
 
       </div>
 
-      {/* 2. PLATAFORMA */}
+      {/* PLATAFORMA */}
       <div className="mb-6">
         <label htmlFor="platformId" className="mb-2 block text-sm font-bold text-dark dark:text-white">
           Plataforma / Consola
@@ -248,7 +246,7 @@ export default function CreateListingForm({
         {state.errors?.platformId && <p className="mt-2 text-sm text-primary font-medium">{state.errors.platformId[0]}</p>}
       </div>
 
-      {/* 3. PRECIO Y ESTADO */}
+      {/* PRECIO Y ESTADO */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
           <label htmlFor="price" className="mb-2 block text-sm font-bold text-dark dark:text-white">
@@ -289,7 +287,7 @@ export default function CreateListingForm({
         </div>
       </div>
 
-      {/* 4. DESCRIPCIÓN */}
+      {/* DESCRIPCIÓN */}
       <div className="mb-8">
         <label htmlFor="description" className="mb-2 block text-sm font-bold text-dark dark:text-white">
           Descripción (Opcional)

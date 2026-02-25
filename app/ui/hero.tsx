@@ -3,19 +3,17 @@ import Link from 'next/link';
 export default function Hero() {
   return (
     <div className="relative bg-dark text-white overflow-hidden mb-8">
-      {/* Fondo con imagen y superposición oscura */}
+      {/* Imagen */}
       <div className="absolute inset-0">
-        {/* Imagen de fondo (puedes cambiar la URL por la que quieras más adelante) */}
         <img 
           src="https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2070&auto=format&fit=crop" 
           alt="Fondo Videojuegos" 
           className="w-full h-full object-cover opacity-30"
         />
-        {/* Degradado para que el texto se lea mejor */}
         <div className="absolute inset-0 bg-linear-to-t from-dark via-transparent to-transparent"></div>
       </div>
 
-      {/* Contenido (Texto y Botones) */}
+      {/* Contenido */}
       <div className="relative max-w-7xl mx-auto px-4 py-24 sm:px-6 lg:px-8 flex flex-col items-center text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white">
           Bienvenido a <span className="text-primary">Replay</span>

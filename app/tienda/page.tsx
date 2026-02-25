@@ -66,7 +66,6 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
   const paginatedListings = filteredListings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
-    // 🟢 CAMBIO: Fondo neutral-900 (El intermedio perfecto)
     <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-neutral-900 transition-colors duration-300">
       
       {/* --- COLUMNA IZQUIERDA: LISTA --- */}
@@ -81,7 +80,6 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
           <ShopFilters platforms={platforms} />
 
           {paginatedListings.length === 0 ? (
-            // 🟢 CAMBIO: Fondo neutral-800 para destacar sobre el 900
             <div className="text-center py-20 bg-white dark:bg-neutral-800 rounded-xl border border-gray-200 dark:border-neutral-700">
               <p className="text-gray-500 dark:text-gray-400 text-lg">No hay juegos con estos filtros.</p>
               <Link href="/tienda" className="text-primary mt-2 inline-block hover:underline">
@@ -109,7 +107,6 @@ export default async function ShopPage(props: { searchParams: SearchParams }) {
       </div>
 
       {/* --- COLUMNA DERECHA: MAPA --- */}
-      {/* 🟢 CAMBIO: Fondo neutral-900 para continuidad visual */}
       <div className="hidden lg:block w-2/5 sticky top-16 h-[calc(100vh-64px)] bg-gray-200 dark:bg-neutral-900 border-l border-gray-200 dark:border-neutral-800 z-0">
          <MapLoader listings={paginatedListings} /> 
       </div>

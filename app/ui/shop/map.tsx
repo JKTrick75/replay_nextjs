@@ -6,7 +6,7 @@ import L from 'leaflet';
 import { Listing } from '@/app/lib/definitions';
 import Link from 'next/link';
 
-// CONFIGURACIÓN DEL MARCADOR PERSONALIZADO
+//CONFIGURACIÓN MARCADOR PERSONALIZADO
 const customIcon = L.icon({
   iconUrl: '/marker.png',
   iconSize: [40, 40], 
@@ -57,26 +57,22 @@ export default function ShopMap({ listings }: { listings: Listing[] }) {
               <Popup>
                 <Link 
                   href={`/tienda/${ad.id}`}
-                  // DISEÑO TIPO "CARTA":
-                  // w-32 (más estrecho) y h-35 (alto fijo) para que todas sean iguales
                   className="group block w-32 h-35 relative rounded-lg overflow-hidden shadow-lg border border-white/20 font-sans" 
                 >
-                  {/* 1. IMAGEN DE FONDO (Ocupa todo el espacio) */}
+                  {/* IMAGEN */}
                   <img 
                     src={ad.game?.coverImage || '/placeholder.png'} 
                     alt={ad.game?.title || 'Juego'}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   
-                  {/* 2. DEGRADADO OSCURO (Para que se lea el texto abajo) */}
                   <div className="absolute inset-0 bg-linear-to-t from-black via-black/60 to-transparent opacity-90" />
 
-                  {/* 3. BADGE DE CONDICIÓN (Arriba Derecha) */}
                   <div className="absolute top-1 left-1 bg-primary text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm">
                     {ad.condition}
                   </div>
 
-                  {/* 4. INFORMACIÓN (Pegada abajo, sobre la foto) */}
+                  {/* INFORMACIÓN */}
                   <div className="absolute bottom-0 w-full p-2 flex flex-col justify-end">
                     
                     {/* Título en blanco */}
@@ -85,12 +81,12 @@ export default function ShopMap({ listings }: { listings: Listing[] }) {
                     </h3>
                     
                     <div className="flex justify-between items-center">
-                        {/* Plataforma (Badge oscuro semi-transparente) */}
+                        {/* Plataforma */}
                         <span className="text-[9px] font-bold text-white bg-white/20 backdrop-blur-md px-1.5 py-0.5 rounded uppercase">
                             {ad.platform?.shortName || ad.platform?.name?.substring(0, 3)}
                         </span>
                         
-                        {/* Precio en tu color primary */}
+                        {/* Precio */}
                         <span className="text-sm font-black text-primary drop-shadow-md">
                             {ad.price} €
                         </span>

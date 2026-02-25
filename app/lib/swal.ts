@@ -3,7 +3,7 @@ import withReactContent from 'sweetalert2-react-content';
 
 const MySwal = withReactContent(Swal);
 
-// --- CONFIGURACIÓN BASE (ESTILOS COMUNES) ---
+// --- CONFIGURACIÓN BASE ---
 const baseStyles = {
   confirmButton: 'bg-[#E96B56] text-white px-6 py-2 rounded-lg font-bold mx-2 hover:bg-[#ee8b7a] transition-colors shadow-md',
   cancelButton: 'bg-gray-200 text-gray-600 px-6 py-2 rounded-lg font-bold mx-2 hover:bg-gray-300 transition-colors',
@@ -17,7 +17,7 @@ export const showAlert = MySwal.mixin({
   buttonsStyling: false,
 });
 
-// --- ABSTRACCIÓN 1: TOASTS (NOTIFICACIONES) ---
+// --- 1- TOASTS (NOTIFICACIONES) ---
 export const showToast = (
   icon: SweetAlertIcon, 
   title: string, 
@@ -43,7 +43,7 @@ export const showToast = (
   });
 };
 
-// --- ABSTRACCIÓN 2: CONFIRMACIONES (MODALES) ---
+// --- 2- CONFIRMACIONES (MODALES) ---
 export const confirmAction = async (
   title: string, 
   text: string, 
@@ -61,13 +61,12 @@ export const confirmAction = async (
   });
 };
 
-// --- ABSTRACCIÓN 3: INPUTS (URL / TEXTO) --- 🟢 NUEVO
-// Úsalo para: Pedir URL de avatar, cambiar nombre rápido, etc.
+// --- 3- INPUTS (URL / TEXTO) ---
 export const askForInput = async (
   title: string,
   text: string,
   placeholder: string,
-  inputType: SweetAlertInput = 'text', // 'text', 'url', 'email', etc.
+  inputType: SweetAlertInput = 'text',
   confirmText: string = 'Guardar'
 ) => {
   return showAlert.fire({
@@ -80,10 +79,8 @@ export const askForInput = async (
     cancelButtonText: 'Cancelar',
     reverseButtons: true,
     
-    // 🟢 Sobrescribimos customClass para añadir estilo al input, 
-    // pero mantenemos los estilos base usando el objeto baseStyles definido arriba.
     customClass: {
-      ...baseStyles, // Heredamos botones y popup
+      ...baseStyles,
       input: 'w-full p-3 rounded-lg border border-gray-light dark:border-neutral-600 bg-white dark:bg-neutral-900 text-dark dark:text-white focus:ring-2 focus:ring-[#E96B56] focus:border-transparent outline-none transition-all mt-4 shadow-inner placeholder-gray-400'
     }
   });

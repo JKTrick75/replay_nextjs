@@ -23,7 +23,7 @@ export default function EditOrderForm({ order }: { order: ListingWithRelations }
 
   const isShipped = order.deliveryStatus === 'shipped';
 
-  // --- LÓGICA DE DIRECCIÓN (API NOMINATIM) ---
+  // --- LÓGICA DE DIRECCIÓN ---
   const [addressQuery, setAddressQuery] = useState(order.shippingAddress || '');
   const [addressResults, setAddressResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -117,7 +117,6 @@ export default function EditOrderForm({ order }: { order: ListingWithRelations }
             <p className="text-sm"><span className="font-bold">Vendedor:</span> {order.seller.name}</p>
             <p className="text-sm"><span className="font-bold">Comprador:</span> {order.buyer?.name}</p>
             
-            {/* 🟢 NUEVO: Mostramos la dirección actual aquí para referencia rápida */}
             <div className="pt-3 mt-3 border-t border-gray-100 dark:border-neutral-700">
                 <p className="text-xs font-bold text-gray-400 uppercase mb-1">Dirección de Entrega Actual:</p>
                 <p className="text-sm text-dark dark:text-gray-200 leading-snug">

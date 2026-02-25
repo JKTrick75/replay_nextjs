@@ -11,7 +11,7 @@ export default function ConfirmDeliveryButton({ listingId }: { listingId: string
   const router = useRouter();
 
   const handleConfirm = async () => {
-    // 1. Confirmación de seguridad
+    //Confirmación de seguridad
     const result = await confirmAction(
         '¿Todo correcto?', 
         'Confirma solo si tienes el producto en tus manos y funciona correctamente.',
@@ -21,12 +21,11 @@ export default function ConfirmDeliveryButton({ listingId }: { listingId: string
     if (!result.isConfirmed) return;
 
     startTransition(async () => {
-      // 2. Acción de Servidor
       const response = await confirmDelivery(listingId);
       
       if (response.success) {
         showToast('success', '¡Disfruta tu juego!', 'Has confirmado la recepción.');
-        // 3. Simplemente refrescamos. La página cambiará este botón por el de "Valorar".
+
         router.refresh();
       } else {
         showToast('error', 'Error', response.message || "Hubo un error.");

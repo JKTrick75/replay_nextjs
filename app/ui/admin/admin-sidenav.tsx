@@ -50,7 +50,6 @@ export default function AdminSideNav() {
           );
         })}
         
-        {/* Espaciador */}
         <div className="hidden h-auto w-full grow rounded-md bg-gray-50 dark:bg-transparent md:block"></div>
 
         <form action={async () => {

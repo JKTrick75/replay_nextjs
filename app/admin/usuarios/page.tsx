@@ -1,5 +1,4 @@
 import { prisma } from '@/app/lib/db';
-// 🟢 Importamos Settings en lugar de Pencil
 import { Shield, User as UserIcon, Settings, Users } from 'lucide-react';
 import Link from 'next/link';
 import { formatDateToLocal } from '@/app/lib/utils';
@@ -8,6 +7,7 @@ import Pagination from '@/app/ui/pagination';
 export default async function AdminUsersPage(props: {
   searchParams?: Promise<{ page?: string }>;
 }) {
+  //Paginación
   const searchParams = await props.searchParams;
   const currentPage = Number(searchParams?.page) || 1;
   const ITEMS_PER_PAGE = 8;
@@ -15,6 +15,7 @@ export default async function AdminUsersPage(props: {
   const totalItems = await prisma.user.count();
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
+  //Buscamos usuarios
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
     take: ITEMS_PER_PAGE,
@@ -87,7 +88,6 @@ export default async function AdminUsersPage(props: {
                         {formatDateToLocal(user.createdAt.toString())}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {/* 🟢 BOTÓN GESTIONAR NORMALIZADO */}
                         <Link 
                           href={`/admin/usuarios/${user.id}`} 
                           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"

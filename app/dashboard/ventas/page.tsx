@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
-import { Plus, Pencil, PackageOpen, Filter, Truck, CheckCircle, PackageX, Clock, NotebookText, Tag, Settings } from 'lucide-react';
+import { Plus, Pencil, PackageOpen, Filter, Truck, CheckCircle, PackageX, Clock, Tag, Settings } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import { DeleteButton } from '@/app/ui/dashboard/delete-button';
 import Pagination from '@/app/ui/pagination';
@@ -90,11 +90,9 @@ export default async function MyProductsPage(props: {
         </div>
       ) : (
         <div className="mt-6 flow-root animate-fade-in flex flex-col min-h-[500px]">
-          
-          {/* 🟢 CONTENEDOR ESTILO ADMIN: Fondo neutral-800, Borde gris, Sombra */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 overflow-hidden flex-grow">
               
-              {/* --- VISTA MÓVIL (Tarjetas dentro del contenedor nuevo) --- */}
+              {/* --- VISTA MÓVIL --- */}
               <div className="md:hidden p-4 space-y-4">
                 {listings.map((listing) => (
                   <div key={listing.id} className="w-full rounded-xl p-4 border bg-white dark:bg-neutral-900 border-gray-100 dark:border-neutral-700 transition-all hover:shadow-sm">
@@ -111,7 +109,6 @@ export default async function MyProductsPage(props: {
                         </div>
                       </div>
                       
-                      {/* ESTADO CLEAN (Móvil) */}
                       <div className="flex flex-col items-end">
                         {listing.status === 'active' && (
                             <div className="flex items-center gap-1 text-xs font-bold text-gray-600 dark:text-gray-400">
@@ -171,7 +168,6 @@ export default async function MyProductsPage(props: {
               {/* --- TABLA ESCRITORIO --- */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
-                    {/* 🟢 THEAD: Fondo oscuro neutral-900 (igual que Admin) */}
                     <thead className="bg-gray-50 dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
                     <tr>
                         <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Juego</th>
@@ -181,7 +177,6 @@ export default async function MyProductsPage(props: {
                         <th className="px-6 py-4 font-bold text-right text-gray-900 dark:text-white">Acciones</th>
                     </tr>
                     </thead>
-                    {/* 🟢 TBODY: Transparente (hereda el neutral-800 del contenedor) + Divisores */}
                     <tbody className="divide-y divide-gray-100 dark:divide-neutral-700">
                     {listings.map((listing) => (
                         <tr key={listing.id} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors">

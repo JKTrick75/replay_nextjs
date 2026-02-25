@@ -9,7 +9,7 @@ type Params = Promise<{ id: string }>;
 export default async function AdminEditOrderPage({ params }: { params: Params }) {
   const { id } = await params;
 
-  // Traemos TODO: Listing, Juego, Consola, Vendedor, Comprador
+  //Sacamos datos: Listing, Juego, Consola, Vendedor, Comprador
   const order = await prisma.listing.findUnique({
     where: { id },
     include: { 

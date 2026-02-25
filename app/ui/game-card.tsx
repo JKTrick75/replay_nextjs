@@ -6,14 +6,14 @@ import FavoriteButton from './favorite-button';
 export default function GameCard({ 
   ad, 
   initialIsFavorite = false,
-  isLoggedIn // 👇 NUEVA PROP REQUERIDA
+  isLoggedIn
 }: { 
   ad: Listing,
   initialIsFavorite?: boolean,
-  isLoggedIn: boolean // Definimos el tipo
+  isLoggedIn: boolean
 }) {
   
-  // LÓGICA DE NOVEDAD:
+  //LÓGICA DE NOVEDAD:
   const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
   const isNew = new Date(ad.createdAt).getTime() > threeDaysAgo;
 
@@ -22,7 +22,7 @@ export default function GameCard({
 
       <div className="bg-white dark:bg-neutral-800 rounded-xl overflow-hidden border border-gray-light dark:border-neutral-700 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
         
-        {/* --- ZONA DE IMAGEN (Con Link) --- */}
+        {/* --- IMAGEN --- */}
         <div className="relative aspect-video overflow-hidden">
             <Link href={`/tienda/${ad.id}`}>
                 <div className="absolute inset-0 bg-gray-200 dark:bg-neutral-700 animate-pulse" />
@@ -45,17 +45,17 @@ export default function GameCard({
                 {ad.platform?.shortName || ad.platform?.name}
             </span>
 
-            {/* BADGE: ESTADO (Abajo Derecha) */}
+            {/* BADGE: ESTADO */}
             <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md border border-white/10 pointer-events-none">
                 {ad.condition}
             </div>
 
-            {/* ❤️ BOTÓN FAVORITO (Abajo Izquierda - DENTRO DE LA FOTO) */}
+            {/* BOTÓN FAVORITO */}
             <div className="absolute bottom-2 left-2 z-30">
                 <FavoriteButton 
                     listingId={ad.id} 
                     initialIsFavorite={initialIsFavorite}
-                    isLoggedIn={isLoggedIn} // 👈 SE LO PASAMOS AQUÍ
+                    isLoggedIn={isLoggedIn}
                 />
             </div>
         </div>

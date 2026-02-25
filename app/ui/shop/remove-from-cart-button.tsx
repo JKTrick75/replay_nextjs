@@ -3,7 +3,6 @@
 import { removeFromCart } from '@/app/lib/actions';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useTransition } from 'react';
-// 👇 Importamos el Toast
 import { showToast } from '@/app/lib/swal';
 
 export default function RemoveFromCartButton({ itemId }: { itemId: string }) {
@@ -13,11 +12,8 @@ export default function RemoveFromCartButton({ itemId }: { itemId: string }) {
     <button
       onClick={() => {
         startTransition(async () => {
-          // 1. Acción del servidor
           await removeFromCart(itemId);
           
-          // 2. Feedback visual MEJORADO
-          // Ignoramos el mensaje del servidor y ponemos uno bonito
           showToast(
             'success', 
             '¡Listo!', 

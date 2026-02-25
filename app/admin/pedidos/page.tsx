@@ -11,24 +11,24 @@ export default async function AdminOrdersPage(props: {
   const currentPage = Number(searchParams?.page) || 1;
   const ITEMS_PER_PAGE = 8;
 
-  // Filtro base: Vendidos y NO entregados/cancelados (Solo gestión activa)
+  //Filtro base: Vendidos y NO entregados/cancelados
   const whereCondition = { 
     status: 'sold',
     deliveryStatus: { in: ['pending', 'shipped'] }
   };
 
-  // 1. Contar total para paginación
+  //1- Contar total para paginación
   const totalItems = await prisma.listing.count({
     where: whereCondition,
   });
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // 2. Obtener datos con paginación
+  //2- Obtener datos con paginación
   const orders = await prisma.listing.findMany({
     where: whereCondition,
     include: { game: true, seller: true, buyer: true },
-    orderBy: { soldAt: 'asc' }, // Los más antiguos primero (urgencia)
+    orderBy: { soldAt: 'asc' }, // Los más antiguos primero
     take: ITEMS_PER_PAGE,
     skip: (currentPage - 1) * ITEMS_PER_PAGE,
   });
@@ -75,7 +75,6 @@ export default async function AdminOrdersPage(props: {
                           {order.seller?.name}
                       </td>
                       
-                      {/* 🟢 ESTADO: Estilo Clean (Solo Icono + Texto) */}
                       <td className="px-6 py-4">
                           {order.deliveryStatus === 'pending' ? (
                               <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 font-medium">
@@ -94,7 +93,6 @@ export default async function AdminOrdersPage(props: {
                           {formatDateToLocal(order.soldAt?.toString() || order.updatedAt.toString())}
                       </td>
                       <td className="px-6 py-4 text-right">
-                          {/* 🟢 BOTÓN NORMALIZADO: px-3 py-2, rounded-lg, text-sm */}
                           <Link 
                               href={`/admin/pedidos/${order.id}`} 
                               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"

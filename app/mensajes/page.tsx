@@ -19,19 +19,19 @@ export default async function MessagesPage({
 
   const { chat: selectedChatId } = await searchParams;
 
-  // 🟢 1. MARCAR COMO LEÍDO (SIDE EFFECT)
+  //MARCAR COMO LEÍDO
   if (selectedChatId) {
     await prisma.message.updateMany({
       where: {
         chatId: selectedChatId,
-        senderId: { not: currentUser.id }, // Solo los recibidos
+        senderId: { not: currentUser.id },
         read: false
       },
       data: { read: true }
     });
   }
 
-  // 1. Obtener TODOS los chats
+  //1- Obtener TODOS los chats
   const chats = await prisma.chat.findMany({
     where: {
       OR: [
@@ -45,13 +45,13 @@ export default async function MessagesPage({
       listing: { include: { game: true } },
       messages: {
         orderBy: { createdAt: 'desc' },
-        take: 1 // Solo necesitamos el último para la vista previa
+        take: 1
       }
     },
     orderBy: { updatedAt: 'desc' }
   });
 
-  // 2. Obtener chat activo
+  //2- Obtener chat activo
   let activeChat = null;
   if (selectedChatId) {
     const rawChat = await prisma.chat.findUnique({
@@ -60,7 +60,7 @@ export default async function MessagesPage({
         buyer: true,
         seller: true,
         listing: { include: { game: true } },
-        messages: { orderBy: { createdAt: 'asc' } } // Aquí sí queremos todos
+        messages: { orderBy: { createdAt: 'asc' } }
       }
     });
     
@@ -72,7 +72,7 @@ export default async function MessagesPage({
   const safeChats = chats as unknown as (Chat & { buyer: User, seller: User, listing: Listing & { game: any }, messages: Message[] })[];
   const safeActiveChat = activeChat as unknown as (Chat & { buyer: User, seller: User, listing: Listing & { game: any }, messages: Message[] });
 
-  // 🟢 3. LÓGICA FANTASMA: FILTRAR VACÍOS
+  //3- FILTRAR VACÍOS
   const visibleChats = safeChats.filter(chat => {
     const hasMessages = chat.messages && chat.messages.length > 0;
     const isCurrent = chat.id === selectedChatId;
@@ -110,7 +110,7 @@ export default async function MessagesPage({
               const isCancelled = chat.listing?.status === 'cancelled';
               const isSold = chat.listing?.status === 'sold';
 
-              // 🟢 DETECTAR NO LEÍDO (Si hay mensaje, no está leído y no soy yo el que lo envió)
+              //DETECTAR NO LEÍDO (Si hay mensaje, no está leído y no soy yo el que lo envió)
               const hasUnread = lastMsg && !lastMsg.read && lastMsg.senderId !== currentUser.id;
 
               return (
@@ -158,7 +158,7 @@ export default async function MessagesPage({
                           ) : 'Chat iniciado'}
                         </p>
                         
-                        {/* 🟢 PUNTO ROJO DE NO LEÍDO */}
+                        {/* PUNTO ROJO DE NO LEÍDO */}
                         {hasUnread && (
                           <span className="w-2.5 h-2.5 bg-primary rounded-full shadow-sm animate-pulse"></span>
                         )}

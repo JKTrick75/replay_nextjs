@@ -7,7 +7,7 @@ import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import BuyerCancelButton from '@/app/ui/dashboard/buyer-cancel-button';
 import ConfirmDeliveryButton from '@/app/ui/dashboard/confirm-delivery-button';
 import RateOrderButton from '@/app/ui/dashboard/rate-order-button';
-import ContactButton from '@/app/ui/mensajes/contact-button'; // 🟢 1. IMPORTAMOS
+import ContactButton from '@/app/ui/mensajes/contact-button';
 
 export default async function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -76,7 +76,6 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                     <User size={20} className="text-primary"/> Datos del Vendedor
                 </h3>
                 
-                {/* 🟢 2. AGRUPAMOS LINK Y BOTÓN DE CHAT */}
                 <div className="flex flex-col gap-3">
                     <Link 
                         href={`/seller/${listing.seller.id}`}
@@ -102,7 +101,6 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                         </div>
                     </Link>
 
-                    {/* BOTÓN DE CHAT AÑADIDO AQUÍ */}
                     <ContactButton listingId={listing.id} />
                 </div>
              </div>
@@ -135,7 +133,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
              </div>
           </div>
 
-          {/* COLUMNA DER: PRODUCTO Y ACCIONES */}
+          {/* COLUMNA DERECHA: PRODUCTO Y ACCIONES */}
           <div className="space-y-8">
             
             {/* PRODUCTO */}
@@ -191,7 +189,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                     <Settings size={18} className="text-gray-500" /> Acciones Disponibles
                 </h4>
                 
-                {/* 1. PENDIENTE: Cancelar */}
+                {/* 1- PENDIENTE: Cancelar */}
                 {listing.deliveryStatus === 'pending' && (
                     <div className="space-y-4">
                         <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
@@ -204,7 +202,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                     </div>
                 )}
 
-                {/* 2. ENVIADO: Confirmar Recepción */}
+                {/* 2- ENVIADO: Confirmar Recepción */}
                 {listing.deliveryStatus === 'shipped' && (
                      <div className="space-y-4">
                         <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -214,7 +212,7 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                      </div>
                 )}
 
-                {/* 3. ENTREGADO: Valorar o Ver Estado */}
+                {/* 3- ENTREGADO: Valorar o Ver Estado */}
                 {listing.deliveryStatus === 'delivered' && (
                     <div className="space-y-4">
                         {listing.review ? (

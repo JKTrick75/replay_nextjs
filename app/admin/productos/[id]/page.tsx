@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import CreateListingForm from '@/app/ui/dashboard/create-form';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-// 🟢 Importamos auth para saber quién somos
 import { auth } from '@/auth';
 
 type Params = Promise<{ id: string }>;
@@ -11,13 +10,13 @@ type Params = Promise<{ id: string }>;
 export default async function AdminEditProductPage({ params }: { params: Params }) {
   const { id } = await params;
 
-  // 1. Obtener sesión para saber quién está editando
+  //1- Obtener sesión para saber quién está editando
   const session = await auth();
   const currentUser = await prisma.user.findUnique({ 
     where: { email: session?.user?.email || '' } 
   });
 
-  // 2. Buscamos el anuncio
+  //2- Buscamos el anuncio
   const listing = await prisma.listing.findUnique({
     where: { id },
     include: { game: true } 
@@ -27,10 +26,10 @@ export default async function AdminEditProductPage({ params }: { params: Params 
     notFound();
   }
 
-  // 🟢 3. Comprobamos si soy el dueño
+  //3- Comprobamos si soy el dueño
   const isOwner = currentUser?.id === listing.sellerId;
 
-  // 4. Datos auxiliares
+  //4- Datos auxiliares
   const games = await prisma.game.findMany({
     select: { id: true, title: true, coverImage: true, genre: true },
     orderBy: { title: 'asc' },
@@ -49,7 +48,7 @@ export default async function AdminEditProductPage({ params }: { params: Params 
         <h1 className="text-2xl font-bold text-dark dark:text-white">Editar Artículo</h1>
       </div>
 
-      {/* 🟢 CONDICIONAL: Solo mostramos el aviso si NO es mío */}
+      {/* Solo mostramos el aviso si NO es el propietario */}
       {!isOwner && (
         <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/30 rounded-xl p-4 mb-6 text-sm text-orange-800 dark:text-orange-200 flex flex-col sm:flex-row gap-2">
            <span className="font-bold">Modo Administrador:</span> 

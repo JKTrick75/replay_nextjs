@@ -104,7 +104,6 @@ export default async function CartPage() {
                       <CartCheckbox id={item.id} isSelected={item.selected} />
                   </div>
 
-                  {/* 🟢 CORRECCIÓN: IMAGEN ENLAZADA A DETALLES */}
                   <Link 
                     href={`/tienda/${item.listing.id}`}
                     className="w-24 h-24 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100 dark:border-neutral-700 block hover:opacity-90 transition-opacity"
@@ -120,7 +119,6 @@ export default async function CartPage() {
                     {/* INFO PRINCIPAL */}
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-0">
                       <div>
-                        {/* 🟢 CORRECCIÓN: TÍTULO ENLAZADO A DETALLES */}
                         <Link href={`/tienda/${item.listing.id}`} className="hover:text-primary transition-colors block">
                            <h3 className="font-bold text-dark dark:text-white truncate sm:pr-8">{item.listing.game.title}</h3>
                         </Link>
@@ -147,7 +145,7 @@ export default async function CartPage() {
             </div>
           </div>
 
-          {/* Columna Derecha: Resumen (Sin cambios) */}
+          {/* Columna Derecha: Resumen */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               

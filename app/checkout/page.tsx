@@ -22,26 +22,26 @@ export default async function CheckoutPage() {
     }
   });
 
-  // Si no hay carrito, fuera
+  //Si no hay carrito, fuera
   if (!user || !user.cart) {
     redirect('/carrito');
   }
 
-  // 👇 1. FILTRADO: Solo procesamos los items con el checkbox activado
+  //1- FILTRADO: Solo procesamos los items con el checkbox activado
   const selectedItems = user.cart.items.filter(item => item.selected);
 
-  // Si no hay nada seleccionado, volvemos al carrito
+  //Si no hay nada seleccionado, volvemos al carrito
   if (selectedItems.length === 0) {
     redirect('/carrito');
   }
 
-  // 👇 2. CÁLCULOS: Subtotal, Envío y Total
+  //2- CÁLCULOS: Subtotal, Envío y Total
   const subtotal = selectedItems.reduce((sum, item) => sum + item.listing.price, 0);
   
   const SHIPPING_COST = 4.99;
   const FREE_SHIPPING_THRESHOLD = 50.00;
   
-  // Regla: Envío gratis si supera 50€
+  //Regla: Envío gratis si supera 50€
   const shippingPrice = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
   const finalTotal = subtotal + shippingPrice;
 

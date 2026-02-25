@@ -11,18 +11,14 @@ export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(authenticate, undefined);
   const router = useRouter();
 
-  // 👇 LÓGICA DE ALERTAS RÁPIDA
   useEffect(() => {
-    // CASO 1: ÉXITO
     if (state?.success) {
-      // 1. Lanzamos el Toast (se quedará flotando mientras carga la página)
       showToast('success', '¡Sesión iniciada!', 'Bienvenido de nuevo');
       
-      // 2. Redirigimos INMEDIATAMENTE sin esperar
       router.push('/dashboard');
       router.refresh();
     } 
-    // CASO 2: ERROR
+
     else if (state?.message) {
       showToast('error', 'Error de acceso', state.message);
     }

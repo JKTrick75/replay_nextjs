@@ -35,7 +35,6 @@ export default function BuyerCancelButton({ id }: { id: string }) {
     <button
       onClick={handleCancel}
       disabled={isPending}
-      // 🟢 ESTILO: Neutro (Gris) por defecto -> Rojo al pasar el ratón
       className={`
         w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all
         bg-white dark:bg-neutral-800 

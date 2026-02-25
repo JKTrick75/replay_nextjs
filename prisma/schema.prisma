@@ -1,8 +1,5 @@
-// prisma/schema.prisma
-
 generator client {
   provider      = "prisma-client-js"
-  // Añade esta línea para que funcione en Windows (native) y en Docker Alpine (linux-musl)
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -127,7 +124,7 @@ model Listing {
   // RELACIÓN CARRITO (Para saber en qué carritos está este item)
   inCarts   CartItem[]
 
-  // NUEVOS CAMPOS PARA LOGÍSTICA
+  // CAMPOS LOGÍSTICA
   shippingAddress String?  @db.Text             // Dirección completa de envío
   deliveryStatus  String   @default("pending")  // Estados: 'pending', 'shipped', 'delivered'
 
@@ -243,9 +240,7 @@ model Chat {
   updatedAt DateTime @updatedAt // Importante para ordenar chats por "más recientes"
   createdAt DateTime @default(now())
 
-  // Evitar duplicados: Un comprador y un vendedor solo deberían tener UN chat abierto para un mismo producto (opcional, pero recomendado)
-  // O simplemente un chat entre dos personas. Tú decides. 
-  // Para wallapop suele ser: 1 Chat por Producto.
+  // Evitar duplicados: Un comprador y un vendedor solo deberían tener UN chat abierto para un mismo producto
   @@unique([buyerId, sellerId, listingId]) 
 }
 

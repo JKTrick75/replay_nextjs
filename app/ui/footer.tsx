@@ -3,13 +3,9 @@ import Link from 'next/link';
 export default function Footer() {
   return (
     <footer className="bg-dark text-white pt-12 pb-6 mt-auto">
-      {/* 🟢 MEJORA:
-          - grid-cols-2: Base (Móvil y Tablet) -> Siempre 2 columnas como mínimo.
-          - lg:grid-cols-4: Escritorio -> Pasa a 4 columnas.
-      */}
       <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-8">
         
-        {/* Columna 1: Marca e Info */}
+        {/* Marca e Info */}
         <div>
           <h3 className="text-2xl font-bold text-primary mb-4">Replay</h3>
           <div className="text-sm text-gray-light space-y-2 opacity-80">
@@ -19,7 +15,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Columna 2: Enlaces */}
+        {/* Enlaces */}
         <div>
           <h4 className="font-bold text-lg mb-4">Enlaces útiles</h4>
           <ul className="space-y-2 text-sm text-gray-light opacity-80">
@@ -29,7 +25,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Columna 3: Legal */}
+        {/* Legal */}
         <div>
           <h4 className="font-bold text-lg mb-4">Empresa</h4>
           <ul className="space-y-2 text-sm text-gray-light opacity-80">
@@ -38,7 +34,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Columna 4: Social */}
+        {/* Social */}
         <div>
           <h4 className="font-bold text-lg mb-4">Síguenos</h4>
           <div className="flex space-x-3">
@@ -51,7 +47,7 @@ export default function Footer() {
       
       {/* Copyright */}
       <div className="text-center text-xs text-gray-light opacity-50 mt-12 border-t border-gray pt-6">
-        © 2025 Replay. Proyecto Final 2º DAW.
+        © 2026 Replay. Proyecto Final 2º DAW David Martínez Borderia.
       </div>
     </footer>
   );

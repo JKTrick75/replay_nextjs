@@ -13,7 +13,6 @@ export default function ContactButton({ listingId, className = '' }: { listingId
   const handleContact = async () => {
     setIsPending(true);
     
-    // Llamamos a la Server Action
     const result = await createOrGetChat(listingId);
 
     if (result.success && result.redirectUrl) {
@@ -28,10 +27,6 @@ export default function ContactButton({ listingId, className = '' }: { listingId
     <button
       onClick={handleContact}
       disabled={isPending}
-      // 🟢 ESTILO ACTUALIZADO: 
-      // 1. Quitamos scale-105
-      // 2. Fondo blanco/oscuro con borde (Outline style) en vez de bloque sólido negro/blanco
-      // 3. Hover suave con el color primario
       className={`
         w-full py-3 px-6 rounded-xl font-bold shadow-sm transition-colors duration-200
         flex items-center justify-center gap-2 

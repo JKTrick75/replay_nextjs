@@ -34,14 +34,14 @@ export default function CheckoutForm({ userCity, userAddressDefault }: { userCit
     const result = await processCheckout(finalAddress);
 
     if (result.success) {
-      // 1. Toast
+      //Toast
       showToast(
         'success', 
         '¡Pedido Confirmado!', 
         'Gracias por tu compra. Preparando envío...'
       );
       
-      // 2. Redirección inmediata
+      //Redirección
       router.push('/dashboard/compras');
       router.refresh();
     } else {

@@ -9,6 +9,7 @@ type Params = Promise<{ id: string }>;
 export default async function AdminEditUserPage({ params }: { params: Params }) {
   const { id } = await params;
 
+  //1- Buscamos al usuario
   const user = await prisma.user.findUnique({
     where: { id },
   });

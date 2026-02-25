@@ -3,7 +3,6 @@ import { prisma } from '@/app/lib/db';
 import Link from 'next/link'; 
 import { ShoppingBag, NotebookText, Truck, CheckCircle, Clock, PackageX, Filter } from 'lucide-react'; 
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
-// 🟢 Importamos paginación
 import Pagination from '@/app/ui/pagination';
 
 export default async function MyPurchasesPage(props: {
@@ -40,13 +39,13 @@ export default async function MyPurchasesPage(props: {
     whereCondition.status = 'cancelled';
   }
 
-  // 1. Contar total para paginación
+  //1- Contar total para paginación
   const totalItems = await prisma.listing.count({
     where: whereCondition,
   });
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // 2. Obtener compras de la página actual
+  //2- Obtener compras de la página actual
   const purchases = await prisma.listing.findMany({
     where: whereCondition,
     include: { 
@@ -107,10 +106,9 @@ export default async function MyPurchasesPage(props: {
       ) : (
         <div className="mt-6 flow-root animate-fade-in flex flex-col min-h-[500px]">
           
-          {/* 🟢 CONTENEDOR ESTILO ADMIN: Fondo neutral-800, Borde gris, Sombra */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 overflow-hidden flex-grow">
             
-            {/* VISTA MÓVIL (Dentro del contenedor unificado) */}
+            {/* VISTA MÓVIL */}
             <div className="md:hidden p-4 space-y-4">
                 {purchases.map((listing) => (
                   <div key={listing.id} className="w-full rounded-xl bg-white dark:bg-neutral-900 p-4 border border-gray-100 dark:border-neutral-700 hover:shadow-sm transition-all">
@@ -130,7 +128,6 @@ export default async function MyPurchasesPage(props: {
                         </div>
                       </Link>
 
-                      {/* 🟢 ESTADO CLEAN EN MÓVIL (Sin Badges) */}
                       <div className="flex flex-col items-end">
                         {listing.status === 'cancelled' ? (
                             <div className="flex items-center gap-1 text-xs font-bold text-red-500">
@@ -170,7 +167,6 @@ export default async function MyPurchasesPage(props: {
                         </p>
                       </div>
                       
-                      {/* 🟢 BOTÓN MÓVIL NORMALIZADO */}
                       <Link 
                         href={`/dashboard/compras/${listing.id}`}
                         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"
@@ -185,7 +181,6 @@ export default async function MyPurchasesPage(props: {
             {/* VISTA ESCRITORIO - TABLA ESTILO ADMIN */}
             <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full text-left text-sm">
-                {/* 🟢 THEAD: Fondo oscuro neutral-900 (Admin Style) */}
                 <thead className="bg-gray-50 dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
                   <tr>
                     <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Juego</th>
@@ -196,7 +191,6 @@ export default async function MyPurchasesPage(props: {
                     <th className="px-6 py-4 font-bold text-right text-gray-900 dark:text-white">Detalles</th>
                   </tr>
                 </thead>
-                {/* 🟢 TBODY: Transparente + Divisores */}
                 <tbody className="divide-y divide-gray-100 dark:divide-neutral-700">
                   {purchases.map((listing) => (
                     <tr key={listing.id} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors">
@@ -221,7 +215,6 @@ export default async function MyPurchasesPage(props: {
                          </div>
                       </td>
 
-                      {/* 🟢 ESTADO CLEAN (Escritorio) */}
                       <td className="px-6 py-4">
                         {listing.status === 'cancelled' ? (
                             <div className="flex items-center gap-2 text-red-500 font-medium">
@@ -257,7 +250,6 @@ export default async function MyPurchasesPage(props: {
                             : formatDateToLocal(listing.updatedAt.toString())}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {/* 🟢 BOTÓN NORMALIZADO */}
                         <Link 
                           href={`/dashboard/compras/${listing.id}`} 
                           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors text-sm font-medium"

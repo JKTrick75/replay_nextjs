@@ -1,6 +1,6 @@
 import { prisma } from '@/app/lib/db';
 import { notFound } from 'next/navigation';
-import { Calendar, MapPin, Package, Star, User as UserIcon } from 'lucide-react'; // 🟢 Quitamos MessageCircle de los imports
+import { Calendar, MapPin, Package, Star, User as UserIcon } from 'lucide-react';
 import GameCard from '@/app/ui/game-card';
 import { Listing } from '@/app/lib/definitions';
 import { auth } from '@/auth';
@@ -24,14 +24,14 @@ export default async function SellerProfilePage({
   const inventoryPage = Number(urlParams?.page) || 1;
   const reviewsPage = Number(urlParams?.rPage) || 1;
 
-  // 1. DATOS DEL VENDEDOR
+  //1- DATOS DEL VENDEDOR
   const seller = await prisma.user.findUnique({
     where: { id },
     select: {
       id: true, name: true, image: true, createdAt: true, city: true, email: true,
       _count: {
         select: { 
-          // Solo contamos ventas que han sido ENTREGADAS (delivered)
+          //Solo contamos ventas que han sido ENTREGADAS
           sales: { 
             where: { 
               status: 'sold',
@@ -46,7 +46,7 @@ export default async function SellerProfilePage({
 
   if (!seller) notFound();
 
-  // 2. INVENTARIO
+  //2- INVENTARIO
   const [activeListings, totalListings] = await prisma.$transaction([
     prisma.listing.findMany({
       where: { sellerId: id, status: 'active' },
@@ -58,7 +58,7 @@ export default async function SellerProfilePage({
     prisma.listing.count({ where: { sellerId: id, status: 'active' } })
   ]);
 
-  // 3. REVIEWS
+  //3- REVIEWS
   const [reviews, totalReviews] = await prisma.$transaction([
     prisma.review.findMany({
       where: { sellerId: id },
@@ -70,7 +70,7 @@ export default async function SellerProfilePage({
     prisma.review.count({ where: { sellerId: id } })
   ]);
 
-  // 4. CÁLCULOS
+  //4- CÁLCULOS
   const totalInventoryPages = Math.ceil(totalListings / ITEMS_PER_PAGE);
   const totalReviewPages = Math.ceil(totalReviews / REVIEWS_PER_PAGE);
 
@@ -145,14 +145,13 @@ export default async function SellerProfilePage({
                 </div>
             </div>
 
-            {/* 🟢 ELIMINADO: Botón de Contactar del perfil */}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
         
-        {/* === SECCIÓN 1: INVENTARIO === */}
+        {/* === SECCIÓN 1- INVENTARIO === */}
         <section>
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-dark dark:text-white flex items-center gap-2">
@@ -189,7 +188,7 @@ export default async function SellerProfilePage({
 
         <div className="border-t border-gray-200 dark:border-neutral-800"></div>
 
-        {/* === SECCIÓN 2: REVIEWS === */}
+        {/* === SECCIÓN 2- REVIEWS === */}
         <section className="max-w-4xl">
             <h2 className="text-2xl font-bold text-dark dark:text-white mb-6 flex items-center gap-2">
                 <Star className="text-yellow-400 fill-yellow-400" /> 

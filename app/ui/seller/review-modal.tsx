@@ -25,16 +25,12 @@ export default function ReviewModal({
     const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {
-      // 1. Llamamos a la Server Action manualmente
-      // Pasamos 'null' como prevState porque createReview lo espera
       const result = await createReview(null as any, formData);
 
       if (result.success) {
-        // 2. ÉXITO: Mostramos alerta Y LUEGO cerramos
         showToast('success', '¡Gracias por tu valoración!', 'Tu opinión ayuda a la comunidad.');
         onClose(); 
       } else {
-        // 3. ERROR: Mostramos el mensaje en el formulario
         setErrorMessage(result.message || 'Ha ocurrido un error.');
       }
     });
@@ -56,7 +52,6 @@ export default function ReviewModal({
           </button>
         </div>
 
-        {/* Usamos onSubmit en lugar de action={formAction} */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <input type="hidden" name="listingId" value={listingId} />
 

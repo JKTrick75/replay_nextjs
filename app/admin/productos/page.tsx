@@ -12,14 +12,14 @@ export default async function AdminProductsPage(props: {
   const currentPage = Number(searchParams?.page) || 1;
   const ITEMS_PER_PAGE = 8; 
 
-  // 1. Total de productos activos
+  //1- Total de productos activos
   const totalItems = await prisma.listing.count({
     where: { status: 'active' },
   });
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // 2. Productos de la página actual
+  //2- Productos de la página actual
   const listings = await prisma.listing.findMany({
     where: { status: 'active' },
     include: { game: true, platform: true, seller: true },
@@ -80,7 +80,6 @@ export default async function AdminProductsPage(props: {
                           </div>
                       </td>
                       
-                      {/* 🟢 ESTADO CLEAN */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 font-medium">
                             <Tag size={16} />
@@ -96,7 +95,6 @@ export default async function AdminProductsPage(props: {
                       </td>
                       <td className="px-6 py-4 text-right">
                           <div className="flex justify-end items-center gap-2">
-                              {/* 🟢 BOTÓN EDITAR NORMALIZADO */}
                               <Link 
                                   href={`/admin/productos/${listing.id}`} 
                                   className="inline-flex items-center justify-center p-2 rounded-lg bg-gray-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 hover:bg-primary hover:text-white transition-colors"

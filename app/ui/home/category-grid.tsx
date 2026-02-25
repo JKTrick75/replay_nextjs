@@ -7,7 +7,6 @@ import {
 
 export default function CategoryGrid() {
   
-  // Consolas: Ajustamos la posición (bgIconPosition) individualmente
   const consoles = [
     { 
       name: 'PlayStation', 
@@ -25,7 +24,6 @@ export default function CategoryGrid() {
       bgIconClass: 'text-red-500/5',
       icon: <Joystick size={32} />,
       BgIcon: Joystick,
-      // 👇 SUBIMOS EL JOYSTICK: -bottom-2 en lugar de -4 para que se vea la base
       bgIconPosition: '-right-4 -bottom-2' 
     },
     { 
@@ -35,7 +33,6 @@ export default function CategoryGrid() {
       bgIconClass: 'text-green-500/5',
       icon: <Gamepad2 size={32} />,
       BgIcon: Gamepad2,
-      // 👇 Posición estándar
       bgIconPosition: '-right-4 -bottom-4'
     },
     { 
@@ -45,7 +42,6 @@ export default function CategoryGrid() {
       bgIconClass: 'text-purple-500/5',
       icon: <Monitor size={32} />,
       BgIcon: Monitor,
-      // 👇 SUBIMOS EL MONITOR: -bottom-2 para que no se corte el soporte
       bgIconPosition: '-right-4 -bottom-2'
     },
   ];
@@ -72,7 +68,7 @@ export default function CategoryGrid() {
     <section className="py-16 bg-white dark:bg-neutral-900 border-y border-gray-light dark:border-neutral-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* 1. SECCIÓN CONSOLAS */}
+        {/* 1- SECCIÓN CONSOLAS */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold text-dark dark:text-white mb-8 flex items-center gap-2">
             <span className="w-1.5 h-8 bg-primary rounded-full mr-2"></span>
@@ -94,7 +90,6 @@ export default function CategoryGrid() {
                     ${console.hoverColor}
                   `}
                 >
-                  {/* Icono gigante de fondo (Posición dinámica con bgIconPosition) */}
                   <div className={`absolute opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${console.bgIconClass} ${console.bgIconPosition}`}>
                      <BgIcon size={120} strokeWidth={1} />
                   </div>
@@ -113,7 +108,7 @@ export default function CategoryGrid() {
           </div>
         </div>
 
-        {/* 2. SECCIÓN GÉNEROS (CARRUSEL) */}
+        {/* 2- SECCIÓN GÉNEROS (CARRUSEL) */}
         <div>
           <h2 className="text-xl font-bold text-dark dark:text-white mb-6 flex items-center justify-between">
             <span>Explora por Género</span>
@@ -160,7 +155,7 @@ export default function CategoryGrid() {
   );
 }
 
-// Helpers
+//Helpers
 function Layers({ size, className }: { size?: number, className?: string }) {
     return <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
 }

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { toggleFavorite } from '@/app/lib/actions';
-// 👇 1. Importamos el Toast y quitamos useRouter
 import { showToast } from '@/app/lib/swal'; 
 
 export default function FavoriteButton({ 
@@ -22,8 +21,6 @@ export default function FavoriteButton({
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault(); 
     
-    // 🛑 VALIDACIÓN DE SESIÓN
-    // Si no está logueado, mostramos el Toast y cortamos la ejecución
     if (!isLoggedIn) {
       showToast('info', 'Inicia sesión', 'Debes iniciar sesión para añadir a favoritos.');
       return; 
@@ -35,7 +32,7 @@ export default function FavoriteButton({
     const previousState = isFavorite;
     const newState = !isFavorite;
 
-    // 1. Animación (Solo si hay sesión)
+    //Animación
     if (newState === true) {
       setAnimClass('animate-like-trigger'); 
     } else {
@@ -43,14 +40,12 @@ export default function FavoriteButton({
     }
 
     setTimeout(() => setAnimClass(''), 600); 
-
-    // 2. Optimistic UI update
     setIsFavorite(newState);
 
     try {
       await toggleFavorite(listingId);
     } catch (error) {
-      setIsFavorite(previousState); // Revertimos si falla
+      setIsFavorite(previousState);
       console.error(error);
     } finally {
       setIsLoading(false);

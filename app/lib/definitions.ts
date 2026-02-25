@@ -1,5 +1,4 @@
-// app/lib/definitions.ts
-
+//Usuario
 export interface User {
   id: string;
   name: string;
@@ -10,21 +9,19 @@ export interface User {
   lat?: number | null;
   lng?: number | null;
 
-  // 🟢 [NUEVO] Relaciones para el Perfil Social
-  sales?: Listing[];            // Para mostrar "En venta (X)"
-  reviewsWritten?: Review[];    // Reviews que ha escrito
-  reviewsReceived?: Review[];   // Reviews que ha recibido (Reputación)
+  sales?: Listing[];
+  reviewsWritten?: Review[];
+  reviewsReceived?: Review[];
   
-  // 🟢 [NUEVO] Propiedad especial de Prisma para contar registros
   _count?: {
     sales?: number;
     reviewsReceived?: number;
-    // Nuevo
     chatsAsBuyer?: number;
     chatsAsSeller?: number;
   };
 }
 
+//Marcas
 export interface Brand {
   id: string;
   name: string;
@@ -32,6 +29,7 @@ export interface Brand {
   logo?: string | null;
 }
 
+//Plataformas
 export interface Console {
   id: string;
   name: string;
@@ -42,6 +40,7 @@ export interface Console {
   brand?: Brand;
 }
 
+//Juegos base
 export interface Game {
   id: string;
   title: string;
@@ -52,7 +51,7 @@ export interface Game {
   platforms?: Console[]; 
 }
 
-// 🟢 [NUEVO] Interfaz para las Valoraciones
+//Valoraciones
 export interface Review {
   id: string;
   rating: number;
@@ -63,11 +62,11 @@ export interface Review {
   sellerId: string;
   listingId: string;
 
-  // Relaciones opcionales
   buyer?: User;
   seller?: User;
 }
 
+//Pedidos
 export interface Listing {
   id: string;
   price: number;
@@ -75,32 +74,31 @@ export interface Listing {
   description?: string | null;
   status: 'active' | 'sold' | 'reserved' | string;
   
-  // IDs de relación
+  //IDs de relación
   sellerId: string;
   buyerId?: string | null; 
   gameId: string;
   platformId: string;
   
-  // Datos temporales
+  //Datos temporales
   createdAt: Date;
   soldAt?: Date | null;    
   
-  // Ubicación
+  //Ubicación
   lat?: number | null;
   lng?: number | null;
   
-  // Logística
+  //Logística
   shippingAddress?: string | null;
-  deliveryStatus?: string; // 'pending', 'shipped', 'delivered'
+  deliveryStatus?: string;
 
-  // Relaciones completas
+  //Relaciones completas
   seller?: User; 
   buyer?: User | null;     
   game?: Game;      
   platform?: Console;
   photos?: string[];       
 
-  // 🟢 [NUEVO] Relación con la review (1 a 1)
   review?: Review | null;
 }
 
@@ -118,6 +116,7 @@ export type ListingToEdit = {
   game: { title: string; coverImage: string | null; genre?: string };
 };
 
+//Estados globales
 export type State = {
   errors?: {
     newGameTitle?: string[];
@@ -145,7 +144,7 @@ export type State = {
   };
 };
 
-// --- CARRITO ---
+//CARRITO
 export interface CartItem {
   id: string;
   cartId: string;
@@ -161,7 +160,7 @@ export interface Cart {
   items: CartItem[];
 }
 
-// CHAT & MENSAJES
+//CHAT
 export interface Message {
   id: string;
   content: string;
@@ -171,10 +170,10 @@ export interface Message {
   senderId: string;
   chatId: string;
   
-  // Relaciones
   sender?: User;
 }
 
+//MENSAJES
 export interface Chat {
   id: string;
   buyerId: string;
@@ -182,7 +181,6 @@ export interface Chat {
   listingId?: string | null;
   updatedAt: Date;
   
-  // Relaciones
   buyer?: User;
   seller?: User;
   listing?: Listing | null;

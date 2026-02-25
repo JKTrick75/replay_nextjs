@@ -39,7 +39,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row bg-white-off dark:bg-neutral-900">
-      {/* 🟢 CAMBIO: Fondo adaptativo igual que el layout normal (bg-white dark:bg-neutral-900) */}
       <div className="w-full flex-none md:w-64 border-b md:border-b-0 md:border-r border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 z-10">
         <AdminSideNav />
       </div>

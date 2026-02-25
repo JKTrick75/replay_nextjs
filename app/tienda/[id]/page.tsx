@@ -7,17 +7,17 @@ import MapLoader from '@/app/ui/shop/map-loader';
 import { auth } from '@/auth';
 import FavoriteButton from '@/app/ui/favorite-button';
 import AddToCartButton from '@/app/ui/shop/add-to-cart-button'; 
-import ContactButton from '@/app/ui/mensajes/contact-button'; // 🟢 1. Importamos el botón de chat
+import ContactButton from '@/app/ui/mensajes/contact-button';
 
 type Params = Promise<{ id: string }>;
 
 export default async function ProductPage({ params }: { params: Params }) {
   const { id } = await params;
 
-  // 1. Obtener sesión
+  //1- Obtener sesión
   const session = await auth();
   
-  // 2. Buscar producto
+  //2- Buscar producto
   const listingRaw = await prisma.listing.findUnique({
     where: { id: id },
     include: {
@@ -31,7 +31,7 @@ export default async function ProductPage({ params }: { params: Params }) {
     notFound(); 
   }
 
-  // 3. Comprobar favorito y obtener usuario actual
+  //3- Comprobar favorito y obtener usuario actual
   let isFavorite = false;
   let currentUser = null; 
 
@@ -54,10 +54,10 @@ export default async function ProductPage({ params }: { params: Params }) {
   const listing = listingRaw as unknown as IListing;
   const listingsArray = [listing];
 
-  // 4. VERIFICAR PROPIEDAD
+  //4- Verificar propiedad
   const isOwner = currentUser?.id === listing.sellerId;
 
-  // CALCULAR DÍAS
+  //CALCULAR DÍAS
   const now = new Date();
   const created = new Date(listing.createdAt);
   const diffTime = Math.abs(now.getTime() - created.getTime());
@@ -67,7 +67,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   if (diffDays === 1) publishedText = "Ayer";
   if (diffDays > 1) publishedText = `Hace ${diffDays} días`;
 
-  // DETECTAR SI ESTÁ VENDIDO
+  //DETECTAR SI ESTÁ VENDIDO
   const isSold = listing.status === 'sold';
 
   return (
@@ -135,7 +135,7 @@ export default async function ProductPage({ params }: { params: Params }) {
                   ) : (
                     // CASO ACTIVO
                     isOwner ? (
-                      // 1. ES EL DUEÑO -> Botón Editar
+                      //1 ES EL DUEÑO -> Botón Editar
                       <Link 
                         href={`/dashboard/ventas/${listing.id}/editar`} 
                         className="flex-1 sm:flex-none bg-primary text-white px-6 py-3 rounded-lg font-bold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2"
@@ -144,7 +144,7 @@ export default async function ProductPage({ params }: { params: Params }) {
                         Editar Anuncio
                       </Link>
                     ) : (
-                      // 2. ES UN COMPRADOR -> Botones Carrito y Contactar
+                      //2- ES UN COMPRADOR -> Botones Carrito y Contactar
                       <div className="flex gap-3 w-full sm:w-auto">
                           {/* Botón Carrito */}
                           <AddToCartButton listingId={listing.id} />
@@ -210,7 +210,7 @@ export default async function ProductPage({ params }: { params: Params }) {
                 </p>
               </div>
 
-              {/* VENDEDOR CLICABLE (LINK AL PERFIL) */}
+              {/* VENDEDOR (LINK AL PERFIL) */}
               <Link 
                 href={`/seller/${listing.seller?.id}`}
                 className="mb-8 pt-6 border-t border-gray-light dark:border-gray-700 flex items-center gap-4 group cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800/50 p-4 rounded-xl -mx-4 transition-all"
@@ -221,7 +221,6 @@ export default async function ProductPage({ params }: { params: Params }) {
                     alt={listing.seller?.name || 'Vendedor'}
                     className="w-14 h-14 rounded-full border-2 border-gray-200 dark:border-neutral-600 group-hover:border-primary transition-colors"
                   />
-                  {/* Icono pequeño de usuario sobre el avatar para indicar perfil */}
                   <div className="absolute -bottom-1 -right-1 bg-white dark:bg-neutral-800 rounded-full p-1 border border-gray-100 dark:border-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity">
                      <UserIcon size={12} className="text-primary" />
                   </div>
@@ -240,7 +239,7 @@ export default async function ProductPage({ params }: { params: Params }) {
 
               <div className="space-y-3">
                 <h3 className="font-bold text-dark dark:text-white flex items-center gap-2">
-                  📍 Ubicación del producto
+                  Ubicación del producto
                 </h3>
                 <div className="h-48 w-full rounded-xl overflow-hidden border border-gray-200 dark:border-neutral-700 shadow-inner bg-gray-100 dark:bg-neutral-900 relative z-0">
                    <MapLoader listings={listingsArray} />

@@ -89,7 +89,6 @@ function PaginationNumber({
   return isActive || position === 'middle' ? (
     <div className={className}>{page}</div>
   ) : (
-    /* 🟢 CORRECCIÓN: scroll={false} evita el salto hacia arriba */
     <Link href={href} className={className} scroll={false}>
       {page}
     </Link>
@@ -118,7 +117,6 @@ function PaginationArrow({
   return isDisabled ? (
     <div className={className}>{direction === 'left' ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}</div>
   ) : (
-    /* 🟢 CORRECCIÓN: scroll={false} aquí también */
     <Link className={className} href={href} scroll={false}>
       {direction === 'left' ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}
     </Link>

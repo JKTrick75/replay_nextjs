@@ -2,13 +2,13 @@ import { prisma } from '@/app/lib/db';
 import CreateListingForm from '@/app/ui/dashboard/create-form';
 
 export default async function CreatePage() {
-  // 1. Obtenemos TODOS los juegos
+  //1- Obtenemos TODOS los juegos
   const games = await prisma.game.findMany({
     select: { id: true, title: true, coverImage: true, genre: true },
     orderBy: { title: 'asc' },
   });
 
-  // 2. Obtenemos TODAS las plataformas
+  //2- Obtenemos TODAS las plataformas
   const consoles = await prisma.console.findMany({
     orderBy: { name: 'asc' },
   });
