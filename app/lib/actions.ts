@@ -977,3 +977,75 @@ export async function sendMessage(prevState: State, formData: FormData): Promise
     return { message: 'Error al enviar el mensaje.' };
   }
 }
+
+// =========================================================================== //
+// --- SISTEMA DE SOPORTE / TICKETS --- //
+// =========================================================================== //
+
+const CreateReportSchema = z.object({
+  subject: z.string().min(1, { message: 'Selecciona el tipo de duda.' }),
+  listingId: z.string().optional(), // <-- Ahora aceptamos la ID opcionalmente
+  message: z.string().min(10, { message: 'Explícanos tu problema con un poco más de detalle (mínimo 10 caracteres).' }),
+});
+
+export async function createReport(prevState: State, formData: FormData): Promise<State> {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'Debes iniciar sesión para contactar con soporte.' };
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user) return { message: 'Usuario no encontrado.' };
+
+  const validatedFields = CreateReportSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Revisa los campos del formulario.',
+    };
+  }
+
+  const { subject, listingId, message } = validatedFields.data;
+
+  try {
+    await prisma.report.create({
+      data: {
+        userId: user.id,
+        subject,
+        message,
+        listingId: listingId || null, // Si viene vacío, guardamos null
+        status: 'pending',
+      },
+    });
+
+    revalidatePath('/admin/incidencias');
+    return { success: true, message: 'Ticket enviado. Nuestro equipo lo revisará lo antes posible.', timestamp: Date.now() };
+  } catch (error) {
+    console.error('Database Error:', error);
+    return { message: 'Hubo un error al enviar tu consulta. Inténtalo de nuevo más tarde.', timestamp: Date.now() };
+  }
+}
+
+// =========================================================================== //
+// --- ADMIN: GESTIÓN DE INCIDENCIAS --- //
+// =========================================================================== //
+
+export async function resolveReport(reportId: string) {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'No autenticado.' };
+
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (currentUser?.role !== 'admin') return { message: 'No tienes permisos.' };
+
+  try {
+    await prisma.report.update({
+      where: { id: reportId },
+      data: { status: 'resolved' }
+    });
+
+    revalidatePath('/admin/incidencias');
+    revalidatePath(`/admin/incidencias/${reportId}`);
+    return { success: true, message: 'Ticket marcado como resuelto.' };
+  } catch (error) {
+    return { message: 'Error al actualizar el ticket.' };
+  }
+}

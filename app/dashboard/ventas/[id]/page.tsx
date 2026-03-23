@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail, Settings } from 'lucide-react';
+import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail, Settings, AlertTriangle } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import ShipButton from '@/app/ui/dashboard/ship-button';
 import CancelOrderButton from '@/app/ui/dashboard/cancel-order-button';
@@ -73,9 +73,21 @@ export default async function SellerOrderDetailsPage({ params }: { params: Promi
                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white flex items-center gap-2">
                     <User size={20} className="text-primary"/> Datos del Comprador
                 </h3>
-                <div className="p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 space-y-2">
-                    <p className="font-bold text-dark dark:text-white text-lg">{listing.buyer?.name || 'Usuario desconocido'}</p>
-                    <p className="text-sm text-gray-500 flex items-center gap-2"><Mail size={16}/> {listing.buyer?.email}</p>
+                
+                <div className="flex flex-col gap-3">
+                    <div className="p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30 space-y-2">
+                        <p className="font-bold text-dark dark:text-white text-lg">{listing.buyer?.name || 'Usuario desconocido'}</p>
+                        <p className="text-sm text-gray-500 flex items-center gap-2"><Mail size={16}/> {listing.buyer?.email}</p>
+                    </div>
+
+                    {/* Reportar Incidencia */}
+                    <Link
+                        href={`/contacto?asunto=pedido&id=${listing.id}`}
+                        className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-primary text-primary font-bold hover:bg-primary/10 dark:hover:bg-primary/20 transition-all"
+                    >
+                        <AlertTriangle size={18} />
+                        Reportar una incidencia
+                    </Link>
                 </div>
             </div>
 

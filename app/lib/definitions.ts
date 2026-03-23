@@ -186,3 +186,18 @@ export interface Chat {
   listing?: Listing | null;
   messages?: Message[];
 }
+
+// TICKETS / INCIDENCIAS
+export interface Report {
+  id: string;
+  userId: string;
+  listingId?: string | null;
+  subject: string;
+  message: string;
+  status: 'pending' | 'in_progress' | 'resolved' | string;
+  createdAt: Date;
+  updatedAt: Date;
+
+  user?: User; 
+  listing?: Listing | null;
+}

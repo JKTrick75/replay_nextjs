@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail, Settings } from 'lucide-react';
+import { ArrowLeft, MapPin, Truck, CheckCircle, Clock, PackageX, User, Mail, Settings, AlertTriangle } from 'lucide-react';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import BuyerCancelButton from '@/app/ui/dashboard/buyer-cancel-button';
 import ConfirmDeliveryButton from '@/app/ui/dashboard/confirm-delivery-button';
@@ -102,6 +102,15 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
                     </Link>
 
                     <ContactButton listingId={listing.id} />
+
+                    {/* NUEVO BOTÓN: Reportar Incidencia */}
+                    <Link
+                        href={`/contacto?asunto=pedido&id=${listing.id}`}
+                        className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-primary text-primary font-bold hover:bg-primary/10 dark:hover:bg-primary/20 transition-all"
+                    >
+                        <AlertTriangle size={18} />
+                        Reportar una incidencia
+                    </Link>
                 </div>
              </div>
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Users, Package, ShoppingCart, BarChart3, LogOut, Home, Shield } from 'lucide-react';
+import { Users, Package, ShoppingCart, BarChart3, LogOut, Home, Shield, Wrench } from 'lucide-react';
 import { logout } from '@/app/lib/actions'; 
 
 const links = [
@@ -10,6 +10,7 @@ const links = [
   { name: 'Usuarios', href: '/admin/usuarios', icon: Users },
   { name: 'Productos', href: '/admin/productos', icon: Package },
   { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingCart },
+  { name: 'Incidencias', href: '/admin/incidencias', icon: Wrench },
 ];
 
 export default function AdminSideNav() {
@@ -31,7 +32,7 @@ export default function AdminSideNav() {
       <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
         {links.map((link) => {
           const LinkIcon = link.icon;
-          const isActive = pathname === link.href;
+          const isActive = pathname.startsWith(link.href) && link.href !== '/admin' || pathname === link.href;
 
           return (
             <Link

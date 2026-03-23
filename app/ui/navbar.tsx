@@ -20,6 +20,7 @@ const navLinks = [
   { name: 'Home', href: '/' },
   { name: 'Tienda', href: '/tienda' },
   { name: 'Vender', href: '/dashboard/ventas/crear' },
+  { name: 'Contacto', href: '/contacto' }
 ];
 
 export default function Navbar({ 

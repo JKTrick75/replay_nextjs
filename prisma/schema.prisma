@@ -42,6 +42,9 @@ model User {
   chatsAsBuyer  Chat[] @relation("ChatBuyer")
   chatsAsSeller Chat[] @relation("ChatSeller")
   messages      Message[]
+
+  // --- TICKETS / REPORTES ---
+  reports       Report[]
   
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -133,6 +136,9 @@ model Listing {
 
   // Relación inversa para el Chat
   chats       Chat[]
+
+  // TICKETS / REPORTES
+  reports     Report[]
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -258,4 +264,25 @@ model Message {
 
   read      Boolean  @default(false) // Para poner el tick de "leído"
   createdAt DateTime @default(now())
+}
+
+// --------------------------------------------------------
+// 8. SOPORTE E INCIDENCIAS (Tickets)
+// --------------------------------------------------------
+
+model Report {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  
+  userId    String   @db.VarChar(36)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  listingId String?  @db.VarChar(36)
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  
+  subject   String   
+  message   String   @db.Text
+  status    String   @default("pending") 
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
