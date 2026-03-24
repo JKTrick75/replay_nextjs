@@ -12,7 +12,7 @@ export default function ChatWindow({
   chat, 
   currentUser 
 }: { 
-  chat: Chat & { messages: Message[], buyer: User, seller: User, listing?: any }; 
+  chat: Chat & { messages: Message[], buyer: User, seller: User, listing?: any, reportId?: string | null }; 
   currentUser: User 
 }) {
   const [content, setContent] = useState('');
@@ -139,9 +139,9 @@ export default function ChatWindow({
       )}
 
       {/* CABECERA */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 z-10 shadow-sm">
+      <div className="relative flex items-center justify-between p-4 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 z-10 shadow-sm">
         
-        {/* ENLACE AL PERFIL DEL USUARIO */}
+        {/* IZQUIERDA: ENLACE AL PERFIL DEL USUARIO */}
         <Link 
           href={`/seller/${otherUser?.id}`}
           className="flex items-center gap-3 group hover:opacity-90 transition-opacity"
@@ -159,9 +159,19 @@ export default function ChatWindow({
             <p className="text-[10px] text-gray-400 font-medium">Ver perfil &rarr;</p>
           </div>
         </Link>
+
+        {/* CENTRO: ETIQUETA DE INCIDENCIA */}
+        {chat.reportId && (
+          <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+            <span className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 border border-primary/20 dark:border-primary/30">
+                Ticket Soporte
+            </span>
+            <span className="text-[10px] text-gray-400 font-mono mt-0.5">ID: {chat.reportId.split('-')[0].toUpperCase()}</span>
+          </div>
+        )}
         
-        {/* ENLACE A LOS DETALLES DEL PRODUCTO */}
-        {chat.listing && (
+        {/* DERECHA: ENLACE A LOS DETALLES DEL PRODUCTO */}
+        {chat.listing ? (
           <Link 
             href={`/tienda/${chat.listing.id}`}
             className="flex items-center gap-3 group hover:opacity-90 transition-opacity text-right"
@@ -183,6 +193,8 @@ export default function ChatWindow({
               />
             )}
           </Link>
+        ) : (
+          <div className="w-[120px] hidden sm:block"></div>
         )}
       </div>
 
@@ -246,10 +258,10 @@ export default function ChatWindow({
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2 opacity-60 text-center px-4">
             <p className="text-lg font-bold">¡Saluda a {otherUser?.name}!</p>
-            {chat.listing ? (
-               <p className="text-xs">Pregunta por el estado del producto o negocia el envío.</p>
-            ) : (
+            {chat.reportId ? (
                <p className="text-xs">Chat de soporte y resolución de dudas.</p>
+            ) : (
+               <p className="text-xs">Pregunta por el estado del producto o negocia el envío.</p>
             )}
           </div>
         )}

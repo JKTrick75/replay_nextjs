@@ -179,11 +179,13 @@ export interface Chat {
   buyerId: string;
   sellerId: string;
   listingId?: string | null;
+  reportId?: string | null;
   updatedAt: Date;
   
   buyer?: User;
   seller?: User;
   listing?: Listing | null;
+  report?: Report | null;
   messages?: Message[];
 }
 
@@ -200,4 +202,5 @@ export interface Report {
 
   user?: User; 
   listing?: Listing | null;
+  chats?: Chat[];
 }

@@ -43,6 +43,7 @@ export default async function MessagesPage({
       buyer: true,
       seller: true,
       listing: { include: { game: true } },
+      report: true,
       messages: {
         orderBy: { createdAt: 'desc' },
         take: 1

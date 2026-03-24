@@ -80,7 +80,6 @@ export async function register(prevState: State, formData: FormData): Promise<St
         name, email, password: hashedPassword, city, lat, lng, image: profileImage,
       },
     });
-    // Ahora 'success' es parte válida de 'State'
     return { success: true, message: 'Cuenta creada correctamente.' };
   } catch (error) {
     console.error(error);
@@ -887,13 +886,13 @@ export async function createOrGetChat(listingId: string) {
   }
 
   try {
-    let chat = await prisma.chat.findUnique({
+    // AHORA USAMOS findFirst Y COMPROBAMOS QUE reportId SEA null
+    let chat = await prisma.chat.findFirst({
       where: {
-        buyerId_sellerId_listingId: {
-          buyerId: currentUser.id,
-          sellerId: listing.sellerId,
-          listingId: listing.id
-        }
+        buyerId: currentUser.id,
+        sellerId: listing.sellerId,
+        listingId: listing.id,
+        reportId: null
       }
     });
 
@@ -984,7 +983,7 @@ export async function sendMessage(prevState: State, formData: FormData): Promise
 
 const CreateReportSchema = z.object({
   subject: z.string().min(1, { message: 'Selecciona el tipo de duda.' }),
-  listingId: z.string().optional(), // <-- Ahora aceptamos la ID opcionalmente
+  listingId: z.string().optional(),
   message: z.string().min(10, { message: 'Explícanos tu problema con un poco más de detalle (mínimo 10 caracteres).' }),
 });
 
@@ -1012,7 +1011,7 @@ export async function createReport(prevState: State, formData: FormData): Promis
         userId: user.id,
         subject,
         message,
-        listingId: listingId || null, // Si viene vacío, guardamos null
+        listingId: listingId || null,
         status: 'pending',
       },
     });
@@ -1034,7 +1033,7 @@ export async function resolveReport(reportId: string) {
   if (!session?.user?.email) return { message: 'No autenticado.' };
 
   const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (currentUser?.role !== 'admin') return { message: 'No tienes permisos.' };
+  if (!currentUser?.role || currentUser.role !== 'admin') return { message: 'No tienes permisos.' };
 
   try {
     await prisma.report.update({
@@ -1054,7 +1053,7 @@ export async function resolveReport(reportId: string) {
 // --- CHAT DE SOPORTE (ADMIN) --- //
 // =========================================================================== //
 
-export async function createOrGetSupportChat(userId: string, listingId?: string | null) {
+export async function createOrGetSupportChat(userId: string, reportId: string, listingId?: string | null) {
   const session = await auth();
   if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
 
@@ -1062,13 +1061,9 @@ export async function createOrGetSupportChat(userId: string, listingId?: string 
   if (admin?.role !== 'admin') return { message: 'Solo los administradores pueden usar esto.' };
 
   try {
-    // Buscamos si ya existe un chat previo de soporte entre este admin y el usuario
+    // AHORA BUSCAMOS ESPECÍFICAMENTE EL CHAT DE ESTE TICKET
     let chat = await prisma.chat.findFirst({
-      where: {
-        buyerId: userId,
-        sellerId: admin.id,
-        listingId: listingId || null
-      }
+      where: { reportId: reportId }
     });
 
     // Si no existe, lo creamos
@@ -1077,7 +1072,8 @@ export async function createOrGetSupportChat(userId: string, listingId?: string 
         data: {
           buyerId: userId, // El usuario que pidió ayuda
           sellerId: admin.id, // El admin que atiende
-          listingId: listingId || null
+          listingId: listingId || null,
+          reportId: reportId // <-- Lo vinculamos
         }
       });
     }

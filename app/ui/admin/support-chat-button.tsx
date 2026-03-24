@@ -6,15 +6,15 @@ import { MessageCircle, Loader2 } from 'lucide-react';
 import { createOrGetSupportChat } from '@/app/lib/actions';
 import { showToast } from '@/app/lib/swal';
 
-export default function SupportChatButton({ userId, listingId }: { userId: string, listingId?: string | null }) {
+export default function SupportChatButton({ userId, reportId, listingId }: { userId: string, reportId: string, listingId?: string | null }) {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
   const handleContact = async () => {
     setIsPending(true);
     
-    // Llamamos a la nueva función de Admin
-    const result = await createOrGetSupportChat(userId, listingId);
+    // Pasamos el reportId a la función
+    const result = await createOrGetSupportChat(userId, reportId, listingId);
 
     if (result.success && result.redirectUrl) {
       router.push(result.redirectUrl);

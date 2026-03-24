@@ -78,7 +78,7 @@ export default async function AdminReportDetailsPage({ params }: { params: Promi
                     
                     {/* BOTÓN DE CHAT */}
                     <div className="border-t border-gray-200 dark:border-neutral-700 pt-3 mt-1">
-                        <SupportChatButton userId={report.user!.id} listingId={report.listingId} />
+                        <SupportChatButton userId={report.user!.id} reportId={report.id} listingId={report.listingId} />
                     </div>
                 </div>
              </div>
