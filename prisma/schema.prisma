@@ -224,37 +224,35 @@ model Review {
 }
 
 // --------------------------------------------------------
-// 7. SISTEMA DE CHAT (Nuevo al final del archivo)
+// 7. SISTEMA DE CHAT 
 // --------------------------------------------------------
 
 model Chat {
   id        String   @id @default(uuid()) @db.VarChar(36)
   
-  // Relacionamos siempre dos usuarios: Comprador (interesado) y Vendedor
   buyerId   String   @db.VarChar(36)
   buyer     User     @relation("ChatBuyer", fields: [buyerId], references: [id])
 
   sellerId  String   @db.VarChar(36)
   seller    User     @relation("ChatSeller", fields: [sellerId], references: [id])
 
-  // Opcional: Podemos vincular el chat a un producto específico para saber de qué hablan
   listingId String?  @db.VarChar(36) 
   listing   Listing? @relation(fields: [listingId], references: [id])
 
+  reportId  String?  @db.VarChar(36)
+  report    Report?  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
   messages  Message[]
 
-  updatedAt DateTime @updatedAt // Importante para ordenar chats por "más recientes"
+  updatedAt DateTime @updatedAt 
   createdAt DateTime @default(now())
-
-  // Evitar duplicados: Un comprador y un vendedor solo deberían tener UN chat abierto para un mismo producto
-  @@unique([buyerId, sellerId, listingId]) 
 }
 
 model Message {
   id        String   @id @default(uuid()) @db.VarChar(36)
   
   content   String   @db.Text
-  image     String?  @db.Text // Por si quieres enviar fotos en el futuro
+  image     String?  @db.Text 
   
   chatId    String   @db.VarChar(36)
   chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
@@ -262,7 +260,7 @@ model Message {
   senderId  String   @db.VarChar(36)
   sender    User     @relation(fields: [senderId], references: [id])
 
-  read      Boolean  @default(false) // Para poner el tick de "leído"
+  read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
@@ -283,6 +281,9 @@ model Report {
   message   String   @db.Text
   status    String   @default("pending") 
   
+  // NUEVO: Un ticket puede tener chats asociados
+  chats     Chat[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

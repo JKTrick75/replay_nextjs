@@ -1049,3 +1049,43 @@ export async function resolveReport(reportId: string) {
     return { message: 'Error al actualizar el ticket.' };
   }
 }
+
+// =========================================================================== //
+// --- CHAT DE SOPORTE (ADMIN) --- //
+// =========================================================================== //
+
+export async function createOrGetSupportChat(userId: string, listingId?: string | null) {
+  const session = await auth();
+  if (!session?.user?.email) return { message: 'Debes iniciar sesión.' };
+
+  const admin = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (admin?.role !== 'admin') return { message: 'Solo los administradores pueden usar esto.' };
+
+  try {
+    // Buscamos si ya existe un chat previo de soporte entre este admin y el usuario
+    let chat = await prisma.chat.findFirst({
+      where: {
+        buyerId: userId,
+        sellerId: admin.id,
+        listingId: listingId || null
+      }
+    });
+
+    // Si no existe, lo creamos
+    if (!chat) {
+      chat = await prisma.chat.create({
+        data: {
+          buyerId: userId, // El usuario que pidió ayuda
+          sellerId: admin.id, // El admin que atiende
+          listingId: listingId || null
+        }
+      });
+    }
+
+    return { success: true, redirectUrl: `/mensajes?chat=${chat.id}` };
+
+  } catch (error) {
+    console.error(error);
+    return { message: 'Error al iniciar el chat de soporte.' };
+  }
+}

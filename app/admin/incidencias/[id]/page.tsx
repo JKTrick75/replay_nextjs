@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, User, MessageSquare, Package, CheckCircle, ExternalLink, Settings, Clock } from 'lucide-react';
 import { formatDateToLocal, formatCurrency } from '@/app/lib/utils';
 import ResolveTicketButton from '@/app/ui/admin/resolve-ticket-button';
+import SupportChatButton from '@/app/ui/admin/support-chat-button';
 
 export default async function AdminReportDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -62,15 +63,22 @@ export default async function AdminReportDetailsPage({ params }: { params: Promi
                 <h3 className="font-bold text-lg mb-4 text-dark dark:text-white flex items-center gap-2">
                     <User size={20} className="text-primary"/> Emisor del Reporte
                 </h3>
-                <div className="flex items-center gap-4 p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30">
-                    <img 
-                      src={report.user?.image || '/placeholder-user.png'} 
-                      alt="" 
-                      className="w-14 h-14 rounded-full bg-gray-200 object-cover border border-gray-300 dark:border-neutral-600"
-                    />
-                    <div>
-                        <p className="font-bold text-dark dark:text-white text-lg">{report.user?.name}</p>
-                        <p className="text-sm text-gray-500">{report.user?.email}</p>
+                <div className="flex flex-col gap-3 p-5 rounded-xl border border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/30">
+                    <div className="flex items-center gap-4">
+                        <img 
+                          src={report.user?.image || '/placeholder-user.png'} 
+                          alt="" 
+                          className="w-14 h-14 rounded-full bg-gray-200 object-cover border border-gray-300 dark:border-neutral-600"
+                        />
+                        <div>
+                            <p className="font-bold text-dark dark:text-white text-lg">{report.user?.name}</p>
+                            <p className="text-sm text-gray-500">{report.user?.email}</p>
+                        </div>
+                    </div>
+                    
+                    {/* BOTÓN DE CHAT */}
+                    <div className="border-t border-gray-200 dark:border-neutral-700 pt-3 mt-1">
+                        <SupportChatButton userId={report.user!.id} listingId={report.listingId} />
                     </div>
                 </div>
              </div>

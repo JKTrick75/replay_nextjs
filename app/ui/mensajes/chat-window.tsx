@@ -244,9 +244,13 @@ export default function ChatWindow({
             );
           })
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2 opacity-60">
-            <p>¡Saluda a {otherUser?.name}!</p>
-            <p className="text-xs">Pregunta por el estado del producto o negocia el envío.</p>
+          <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2 opacity-60 text-center px-4">
+            <p className="text-lg font-bold">¡Saluda a {otherUser?.name}!</p>
+            {chat.listing ? (
+               <p className="text-xs">Pregunta por el estado del producto o negocia el envío.</p>
+            ) : (
+               <p className="text-xs">Chat de soporte y resolución de dudas.</p>
+            )}
           </div>
         )}
       </div>
