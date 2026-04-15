@@ -3,12 +3,15 @@ import { prisma } from '@/app/lib/db';
 import Link from 'next/link';
 import { Wrench, Clock, CheckCircle, Eye, AlertCircle, Filter } from 'lucide-react';
 import { formatDateToLocal } from '@/app/lib/utils';
+import Pagination from '@/app/ui/pagination'; // NUEVO IMPORT
 
 export default async function AdminReportsPage(props: {
-  searchParams?: Promise<{ filter?: string }>;
+  searchParams?: Promise<{ filter?: string; page?: string }>; // Añadimos 'page'
 }) {
   const searchParams = await props.searchParams;
   const filter = searchParams?.filter || 'all';
+  const currentPage = Number(searchParams?.page) || 1; // Página actual
+  const ITEMS_PER_PAGE = 8; // Límite por página (igual que en pedidos)
 
   const session = await auth();
   const user = await prisma.user.findUnique({ where: { email: session?.user?.email! } });
@@ -20,22 +23,35 @@ export default async function AdminReportsPage(props: {
   if (filter === 'pending') whereCondition.status = 'pending';
   if (filter === 'resolved') whereCondition.status = 'resolved';
 
-  // Obtener los tickets de la BD
+  // 1- Contar total para paginación
+  const totalItems = await prisma.report.count({
+    where: whereCondition,
+  });
+
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  // 2- Obtener los tickets de la BD con paginación
   const reports = await prisma.report.findMany({
     where: whereCondition,
     include: { user: true, listing: { include: { game: true } } },
     orderBy: { createdAt: 'desc' },
+    take: ITEMS_PER_PAGE,         // Traer solo X elementos
+    skip: (currentPage - 1) * ITEMS_PER_PAGE, // Saltar los anteriores
   });
 
   return (
     <div className="w-full">
-      <div className="flex w-full items-center justify-between mb-6">
+      <div className="flex w-full flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2 text-dark dark:text-white">
           <Wrench className="text-primary" /> Gestión de Incidencias
         </h1>
+        {/* Etiqueta del total de resultados */}
+        <div className="bg-white dark:bg-neutral-800 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-neutral-700 shadow-sm text-sm font-medium text-gray-500 whitespace-nowrap">
+           Total: {totalItems}
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-100 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-100 dark:border-neutral-700 overflow-hidden flex flex-col min-h-[500px]">
         
         {/* BARRA DE FILTROS */}
         <div className="p-4 border-b border-gray-100 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900/50 flex flex-wrap gap-2 items-center">
@@ -62,13 +78,14 @@ export default async function AdminReportsPage(props: {
 
         {/* TABLA DE TICKETS */}
         {reports.length === 0 ? (
-          <div className="p-10 text-center text-gray-500 flex flex-col items-center">
+          <div className="p-10 text-center text-gray-500 flex flex-col items-center flex-grow justify-center">
             <CheckCircle size={48} className="text-green-400 mb-4" />
             <p className="text-xl font-bold text-dark dark:text-white mb-1">¡Todo en orden!</p>
             <p>No hay ninguna incidencia en esta categoría.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="overflow-x-auto flex-grow">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-500 bg-gray-50 dark:bg-neutral-900/50 uppercase border-b border-gray-100 dark:border-neutral-700">
                 <tr>
@@ -140,6 +157,12 @@ export default async function AdminReportsPage(props: {
               </tbody>
             </table>
           </div>
+
+          {/* PAGINACIÓN */}
+            <div className="p-4 border-t border-gray-200 dark:border-neutral-700 flex justify-center bg-gray-50 dark:bg-neutral-900/50">
+                <Pagination totalPages={totalPages} />
+            </div>
+          </>
         )}
       </div>
     </div>

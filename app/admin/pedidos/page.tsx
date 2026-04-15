@@ -136,12 +136,10 @@ export default async function AdminOrdersPage(props: {
                   </tbody>
               </table>
             </div>
-            
-            {totalPages > 1 && (
-                <div className="p-4 border-t border-gray-200 dark:border-neutral-700 flex justify-center bg-gray-50 dark:bg-neutral-900/50">
-                    <Pagination totalPages={totalPages} />
-                </div>
-            )}
+        
+            <div className="p-4 border-t border-gray-200 dark:border-neutral-700 flex justify-center bg-gray-50 dark:bg-neutral-900/50">
+                <Pagination totalPages={totalPages} />
+            </div>
             </>
         )}
       </div>
