@@ -13,6 +13,8 @@ services:
       DATABASE_URL: ${DOCKER_DATABASE_URL}
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_URL: "http://localhost:3000"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
     depends_on:
       - db
     # Comando para regenerar prisma si cambias el schema durante el desarrollo

@@ -1,5 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import Google from 'next-auth/providers/google';
+import { PrismaAdapter } from '@auth/prisma-adapter';
 import { z } from 'zod';
 import { prisma } from '@/app/lib/db';
 import bcrypt from 'bcryptjs';
@@ -11,25 +13,33 @@ const LoginSchema = z.object({
   password: z.string().min(6),
 });
 
-export const { auth, signIn, signOut } = NextAuth({
+export const { auth, signIn, signOut, handlers } = NextAuth({
   ...authConfig,
+  adapter: PrismaAdapter(prisma), 
+  session: { strategy: 'jwt' },   
   providers: [
+    // --- PROVEEDOR DE GOOGLE ---
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true, 
+    }),
+
+    // --- PROVEEDOR DE CREDENCIALES ---
     Credentials({
       async authorize(credentials) {
-        //1- Validar formato de email/password con Zod
         const parsedCredentials = LoginSchema.safeParse(credentials);
 
         if (parsedCredentials.success) {
           const { email, password } = parsedCredentials.data;
 
-          //2- Buscar usuario en MySQL usando PRISMA
           const user = await prisma.user.findUnique({
             where: { email },
           });
 
-          if (!user) return null;
+          // Si no hay usuario, o si el usuario NO tiene contraseña (Google), paramos aquí.
+          if (!user || !user.password) return null; 
 
-          //3- Comparar contraseñas
           const passwordsMatch = await bcrypt.compare(password, user.password);
 
           if (passwordsMatch) {

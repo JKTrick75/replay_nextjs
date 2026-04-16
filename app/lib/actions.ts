@@ -418,6 +418,11 @@ export async function updateProfile(prevState: State, formData: FormData) {
     if (!currentPassword) return { errors: { currentPassword: ['Falta contraseña actual.'] }, message: 'Falta contraseña actual.' };
     if (newPassword === currentPassword) return { errors: { newPassword: ['La nueva debe ser diferente.'] }, message: 'Contraseña igual.' };
 
+    // Comprobamos si es usuario de Google
+    if (!user.password) {
+        return { errors: { currentPassword: ['Tu cuenta está vinculada a Google. No puedes cambiar la contraseña aquí.'] }, message: 'Error de cuenta.' };
+    }
+
     const passwordsMatch = await bcrypt.compare(currentPassword, user.password);
     if (!passwordsMatch) return { errors: { currentPassword: ['Contraseña incorrecta.'] }, message: 'Error de seguridad.' };
 

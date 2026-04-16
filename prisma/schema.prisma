@@ -16,7 +16,8 @@ model User {
   id        String    @id @default(uuid()) @db.VarChar(36)
   name      String
   email     String    @unique @db.VarChar(191)
-  password  String
+  emailVerified DateTime?
+  password  String?   // OPCIONAL PARA SOCIAL LOGIN
   image     String?   @db.Text
   role      String    @default("user")
 
@@ -24,6 +25,9 @@ model User {
   lat       Float?    // Latitud base del usuario
   lng       Float?    // Longitud base del usuario
   
+  // --- RELACIÓN CON SOCIAL LOGIN ---
+  accounts  Account[]
+
   // --- RELACIONES DE VENTA Y COMPRA ---
   sales     Listing[] @relation("SellerRelation") // Lo que vende
   purchases Listing[] @relation("BuyerRelation")  // Lo que compra
@@ -55,10 +59,10 @@ model User {
 // --------------------------------------------------------
 
 model Brand {
-  id       String    @id @default(uuid()) @db.VarChar(36)
-  name     String    @unique @db.VarChar(191)
-  country  String?
-  logo     String?
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  name      String    @unique @db.VarChar(191)
+  country   String?
+  logo      String?
   
   consoles Console[]
 }
@@ -84,7 +88,6 @@ model Game {
   description String?   @db.Text
   genre       String    @default("Varios")
   releaseYear Int?
-  
   platforms   Console[] @relation("GamePlatforms") 
   listings    Listing[]
 }
@@ -108,7 +111,7 @@ model Listing {
   sellerId    String    @db.VarChar(36)
   seller      User      @relation("SellerRelation", fields: [sellerId], references: [id])
   
-  // --- COMPRADOR (Buyer) - Nuevo Campo ---
+  // --- COMPRADOR (Buyer) ---
   buyerId     String?   @db.VarChar(36)
   buyer       User?     @relation("BuyerRelation", fields: [buyerId], references: [id])
 
@@ -124,17 +127,17 @@ model Listing {
   photos      ListingPhoto[]
   favoritedBy Favorite[]
 
-  // RELACIÓN CARRITO (Para saber en qué carritos está este item)
+  // RELACIÓN CARRITO
   inCarts   CartItem[]
 
   // CAMPOS LOGÍSTICA
-  shippingAddress String?  @db.Text             // Dirección completa de envío
-  deliveryStatus  String   @default("pending")  // Estados: 'pending', 'shipped', 'delivered'
+  shippingAddress String?  @db.Text             
+  deliveryStatus  String   @default("pending")  
 
   // REVIEWS
   review      Review?
 
-  // Relación inversa para el Chat
+  // RELACIÓN CHAT
   chats       Chat[]
 
   // TICKETS / REPORTES
@@ -197,7 +200,6 @@ model CartItem {
 
   selected  Boolean  @default(true)
 
-  // Un mismo producto solo puede estar una vez en un mismo carrito
   @@unique([cartId, listingId])
 }
 
@@ -208,18 +210,17 @@ model CartItem {
 model Review {
   id        String   @id @default(uuid()) @db.VarChar(36)
   
-  rating    Int      // 1 a 5 estrellas
+  rating    Int      
   comment   String?  @db.Text
   createdAt DateTime @default(now())
 
-  // Relaciones
   buyerId   String   @db.VarChar(36)
   buyer     User     @relation("ReviewAuthor", fields: [buyerId], references: [id])
 
   sellerId  String   @db.VarChar(36)
   seller    User     @relation("ReviewTarget", fields: [sellerId], references: [id])
 
-  listingId String   @unique @db.VarChar(36) // Una review por venta
+  listingId String   @unique @db.VarChar(36) 
   listing   Listing  @relation(fields: [listingId], references: [id])
 }
 
@@ -281,9 +282,31 @@ model Report {
   message   String   @db.Text
   status    String   @default("pending") 
   
-  // NUEVO: Un ticket puede tener chats asociados
   chats     Chat[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// --------------------------------------------------------
+// 9. SOCIAL LOGIN (Auth.js)
+// --------------------------------------------------------
+
+model Account {
+  id                 String  @id @default(uuid()) @db.VarChar(36)
+  userId             String  @db.VarChar(36)
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
 }
