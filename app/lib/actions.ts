@@ -61,12 +61,25 @@ export async function authenticate(
 }
 
 export async function register(prevState: State, formData: FormData): Promise<State> {
-  const validatedFields = RegisterSchema.safeParse(Object.fromEntries(formData.entries()));
+  //Recogemos los valores en crudo por si hay error, poder devolverlos
+  const rawValues = {
+    name: formData.get('name')?.toString() || '',
+    email: formData.get('email')?.toString() || '',
+    password: formData.get('password')?.toString() || '',
+    confirmPassword: formData.get('confirmPassword')?.toString() || '',
+    city: formData.get('city')?.toString() || '',
+    lat: formData.get('lat')?.toString() || '',
+    lng: formData.get('lng')?.toString() || '',
+  };
+
+  const validatedFields = RegisterSchema.safeParse(rawValues);
 
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Revisa los errores del formulario.',
+      values: rawValues, //Devolvemos los valores
+      timestamp: Date.now(), //Añadimos timestamp para forzar recarga
     };
   }
 
@@ -83,7 +96,11 @@ export async function register(prevState: State, formData: FormData): Promise<St
     return { success: true, message: 'Cuenta creada correctamente.' };
   } catch (error) {
     console.error(error);
-    return { message: 'El correo ya está registrado.' };
+    return { 
+      message: 'El correo ya está registrado.',
+      values: rawValues, //Devolvemos los valores si falla la base de datos
+      timestamp: Date.now()
+    };
   }
 }
 
@@ -319,7 +336,6 @@ export async function deleteListing(id: string) {
   const listing = await prisma.listing.findUnique({ where: { id } });
   if (!listing) return { message: 'Anuncio no encontrado' };
 
-  //SEGURIDAD: Dueño o Admin
   if (listing.sellerId !== user.id && user.role !== 'admin') {
       return { message: 'No tienes permiso para eliminar este anuncio.' };
   }
@@ -891,7 +907,6 @@ export async function createOrGetChat(listingId: string) {
   }
 
   try {
-    // AHORA USAMOS findFirst Y COMPROBAMOS QUE reportId SEA null
     let chat = await prisma.chat.findFirst({
       where: {
         buyerId: currentUser.id,
@@ -1066,19 +1081,19 @@ export async function createOrGetSupportChat(userId: string, reportId: string, l
   if (admin?.role !== 'admin') return { message: 'Solo los administradores pueden usar esto.' };
 
   try {
-    // AHORA BUSCAMOS ESPECÍFICAMENTE EL CHAT DE ESTE TICKET
+    //BUSCAMOS ESPECÍFICAMENTE EL CHAT DE ESTE TICKET
     let chat = await prisma.chat.findFirst({
       where: { reportId: reportId }
     });
 
-    // Si no existe, lo creamos
+    //Si no existe, lo creamos
     if (!chat) {
       chat = await prisma.chat.create({
         data: {
-          buyerId: userId, // El usuario que pidió ayuda
-          sellerId: admin.id, // El admin que atiende
+          buyerId: userId,
+          sellerId: admin.id,
           listingId: listingId || null,
-          reportId: reportId // <-- Lo vinculamos
+          reportId: reportId
         }
       });
     }

@@ -14,6 +14,29 @@ export default function RegisterForm() {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
+  // --- ESTADOS CONTROLADOS ---
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [cityQuery, setCityQuery] = useState('');
+  const [selectedCity, setSelectedCity] = useState<{ name: string, lat: string, lng: string } | null>(null);
+
+  // --- SINCRONIZACIÓN DE VALORES RECHAZADOS ---
+  // Cuando falla el registro, el backend devuelve state.values. Lo sincronizamos aquí.
+  useEffect(() => {
+    if (state.values) {
+      if (state.values.password) setPassword(state.values.password);
+      if (state.values.confirmPassword) setConfirmPassword(state.values.confirmPassword);
+      if (state.values.city) {
+        setCityQuery(state.values.city);
+        setSelectedCity({
+          name: state.values.city,
+          lat: state.values.lat || '',
+          lng: state.values.lng || ''
+        });
+      }
+    }
+  }, [state]);
+
   useEffect(() => {
     setIsPending(false);
 
@@ -25,16 +48,11 @@ export default function RegisterForm() {
     }
   }, [state, router]);
 
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
   const passwordsMatch = password === confirmPassword && password.length > 0;
   const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   // --- LÓGICA DE CIUDAD ---
-  const [cityQuery, setCityQuery] = useState('');
   const [cityResults, setCityResults] = useState<any[]>([]);
-  const [selectedCity, setSelectedCity] = useState<{ name: string, lat: string, lng: string } | null>(null);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const cityWrapperRef = useRef<HTMLDivElement>(null);
@@ -96,6 +114,7 @@ export default function RegisterForm() {
     <form 
       action={formAction} 
       onSubmit={() => setIsPending(true)} 
+      key={`form-${state.timestamp ?? 'init'}`}
       className="bg-white dark:bg-neutral-800 shadow-xl rounded-2xl border border-gray-200 dark:border-neutral-700 overflow-hidden transition-colors duration-300"
     >
       <div className="px-8 pt-8 pb-4">
@@ -115,7 +134,13 @@ export default function RegisterForm() {
             Nombre completo
           </label>
           <div className="relative group">
-            <input name="name" type="text" placeholder="Tu nombre" className={inputClasses} />
+            <input 
+              name="name" 
+              type="text" 
+              placeholder="Tu nombre" 
+              className={inputClasses} 
+              defaultValue={state.values?.name || ''} 
+            />
             <User className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 peer-focus:text-primary peer-[:not(:placeholder-shown)]:text-primary transition-colors" />
           </div>
           {state.errors?.name && <p className="mt-1 text-xs text-primary font-medium">{state.errors.name[0]}</p>}
@@ -127,7 +152,13 @@ export default function RegisterForm() {
             Correo electrónico
           </label>
           <div className="relative group">
-            <input name="email" type="email" placeholder="ejemplo@correo.com" className={inputClasses} />
+            <input 
+              name="email" 
+              type="email" 
+              placeholder="ejemplo@correo.com" 
+              className={inputClasses} 
+              defaultValue={state.values?.email || ''} 
+            />
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 peer-focus:text-primary peer-[:not(:placeholder-shown)]:text-primary transition-colors" />
           </div>
           {state.errors?.email && <p className="mt-1 text-xs text-primary font-medium">{state.errors.email[0]}</p>}
@@ -156,9 +187,9 @@ export default function RegisterForm() {
             )}
           </div>
 
-          <input type="hidden" name="city" value={selectedCity?.name || ''} />
-          <input type="hidden" name="lat" value={selectedCity?.lat || ''} />
-          <input type="hidden" name="lng" value={selectedCity?.lng || ''} />
+          <input type="hidden" name="city" value={selectedCity?.name || state.values?.city || ''} />
+          <input type="hidden" name="lat" value={selectedCity?.lat || state.values?.lat || ''} />
+          <input type="hidden" name="lng" value={selectedCity?.lng || state.values?.lng || ''} />
 
           {showCityDropdown && cityResults.length > 0 && (
             <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 dark:border-neutral-600 bg-white dark:bg-neutral-900 shadow-xl overflow-hidden max-h-48 overflow-y-auto">
